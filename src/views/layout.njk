@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Shop{% endblock %}</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a href="/">Shop</a>
+      <nav class="site-nav">
+        {% if customerName %}
+          <a href="/account">{{ customerName }}</a>
+          <form method="post" action="/logout">
+            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+            <button type="submit" class="button button-link">Log out</button>
+          </form>
+        {% else %}
+          <a href="/login">Sign in</a>
+        {% endif %}
+      </nav>
+    </header>
+    <main class="site-main">
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>
