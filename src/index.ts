@@ -19,7 +19,10 @@ const app = createApp()
 // app.use('/', ...)
 
 // Keep everything below this comment at the bottom of the file
-const server = app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, (error?: Error) => {
+  if  (error) { 
+    throw error
+  }
   console.log(`Listening on http://${HOST}:${PORT}`)
 })
 
