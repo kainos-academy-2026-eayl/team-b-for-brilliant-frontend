@@ -1,0 +1,28 @@
+{
+  "name": "technologist-academy-node-service-template",
+  "version": "1.0.0",
+  "description": "A template repository for node services developed in the Technologist Academy",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "npm run typecheck && esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/index.js --sourcemap",
+    "typecheck": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/node": "26.4.1",
+    "esbuild": "0.28.2",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2"
+  },
+  "dependencies": {
+    "dotenv": "17.4.2",
+    "express": "^5.2.1",
+    "nunjucks": "^3.2.4"
+  }
+}
