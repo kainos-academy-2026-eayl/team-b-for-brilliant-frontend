@@ -1,9 +1,9 @@
-import 'express-session';
+import "express-session";
 
-declare module 'express-session' {
-    interface SessionData {
-        customerId: string;
-        name: string;
-        csrfToken: string;
-    }
+declare module "express-session" {
+	interface SessionData {
+		customerId: string;
+		name: string;
+		csrfToken: string;
+	}
 }
