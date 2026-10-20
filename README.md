@@ -140,6 +140,19 @@ Environment variables are loaded from `.env` by [dotenv](https://github.com/motd
 | Variable | Required | Description |
 | --- | --- | --- |
 | `PORT` | yes | Port the service listens on. The service exits at startup if it is missing or invalid. |
+| `SESSION_SECRET` | yes in production | Secret used to sign the session cookie. |
+| `CUSTOMER_ACCOUNT_SERVICE_URL` | yes | Base URL of the customer account service. Login calls `POST {url}/auth/verify`. |
+
+## Login
+
+| Route | Description |
+| --- | --- |
+| `GET /login`, `POST /login` | Sign-in page and form submission. Locks sign-in after 5 consecutive failed attempts. |
+| `POST /logout` | Ends the session. |
+| `GET /account` | Account page, requires sign-in. Signed-out visitors are redirected to `/login?returnTo=...`. |
+| `GET /forgot-password` | Placeholder page. |
+
+Run the unit tests with `npm test` and the end-to-end tests with `npm run test:e2e` (run `npx playwright install chromium` once first).
 
 The server binds to `0.0.0.0` so it is reachable from outside a container. Add new variables to both your `.env` and [.env.example](.env.example).
 

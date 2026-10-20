@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Shop{% endblock %}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="logo">Shop</a>
+    <nav>
+      {% if isSignedIn %}
+        <a href="/account">My account</a>
+        <form method="post" action="/logout" class="inline">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <button type="submit">Log out</button>
+        </form>
+      {% else %}
+        <a href="/login">Sign in</a>
+      {% endif %}
+    </nav>
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+</body>
+</html>
