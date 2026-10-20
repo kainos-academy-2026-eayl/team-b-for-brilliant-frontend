@@ -9,8 +9,7 @@
     "build": "prisma generate && npm run typecheck && esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/index.js --sourcemap",
     "postinstall": "prisma generate",
     "typecheck": "tsc",
-    "start": "node dist/index.js",
-    "test": "vitest run"
+    "start": "node dist/index.js"
   },
   "keywords": [],
   "author": "",
@@ -25,8 +24,7 @@
     "esbuild": "0.28.2",
     "prisma": "^7.10.1",
     "tsx": "4.23.13",
-    "typescript": "7.0.2",
-    "vitest": "^5.0.5"
+    "typescript": "7.0.2"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",
