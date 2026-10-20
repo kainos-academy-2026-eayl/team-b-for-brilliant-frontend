@@ -1,0 +1,63 @@
+{
+  "formatting": {
+    "indentSize": 2,
+    "quote": "double",
+    "attributeOrder": ["id", "name", "type", "for", "class", "value", "*", "aria-*", "data-*"]
+  },
+  "classes": {
+    "wrapper": "form-wrapper",
+    "title": "form-title",
+    "section": "form-section",
+    "sectionTitle": "form-section-title",
+    "legend": "form-legend",
+    "group": "form-group",
+    "field": "form-field",
+    "option": "form-option",
+    "label": "form-label",
+    "requiredMarker": "form-required",
+    "hint": "form-hint",
+    "error": "form-error",
+    "actions": "form-actions",
+    "primaryButton": "btn btn-primary",
+    "secondaryButton": "btn btn-secondary",
+    "disabledState": "is-disabled",
+    "readonlyState": "is-readonly"
+  },
+  "elements": {
+    "wrapper": "div",
+    "title": "h2",
+    "sectionHeading": "h3",
+    "field": "div",
+    "hint": "p",
+    "error": "p",
+    "actions": "div"
+  },
+  "requiredMarker": {
+    "text": "*"
+  },
+  "aliases": {
+    "hint": ["hint", "help", "help-text", "help-msg", "hint-text", "helper-text", "help-block", "form-text", "form-help", "field-hint", "description"],
+    "error": ["error", "errors", "error-message", "error-msg", "error-text", "field-error", "invalid-feedback", "text-danger", "validation-error"],
+    "buttonClassPattern": "^(btn|button)(-[a-z0-9-]+)?$|^(primary|secondary|submit|cancel)$",
+    "secondaryActionTextPattern": "^(cancel|back|close|reset|clear|go back|previous|skip)\\b"
+  },
+  "spacing": {
+    "adHocClassPattern": "^-?[mp][trblxyse]?-(\\d+|auto|px)$",
+    "removeLayoutBreaks": true
+  },
+  "inlineStyles": {
+    "whitelist": [],
+    "spacingPropertyPattern": "^(margin|padding|gap|row-gap|column-gap)(-|$)",
+    "classMap": {
+      "display:none": "is-hidden",
+      "text-align:center": "text-center",
+      "text-align:right": "text-right",
+      "font-weight:bold": "text-bold"
+    }
+  },
+  "structure": {
+    "requireTitle": true,
+    "requireSections": true,
+    "maxNestingDepth": 5
+  }
+}

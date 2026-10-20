@@ -1,0 +1,52 @@
+<div class="form-wrapper">
+  <h2 class="form-title">Create your account</h2>
+  <form action="/register" method="post" novalidate>
+    <fieldset class="form-section">
+      <legend class="form-legend">Your details</legend>
+      <div class="form-field">
+        <label for="full-name" class="form-label">Full name <span class="form-required" aria-hidden="true">*</span></label>
+        <input id="full-name" name="fullName" type="text" autocomplete="name" required>
+      </div>
+      <div class="form-field">
+        <label for="email" class="form-label">Email address <span class="form-required" aria-hidden="true">*</span></label>
+        <p id="email-hint" class="form-hint">We will only use this to contact you about your order.</p>
+        <input id="email" name="email" type="email" autocomplete="email" required aria-describedby="email-hint email-error" aria-invalid="true">
+        <p id="email-error" class="form-error">Enter an email address in the correct format, like name@example.com</p>
+      </div>
+      <div class="form-field">
+        <label for="password" class="form-label">Password <span class="form-required" aria-hidden="true">*</span></label>
+        <p id="password-hint" class="form-hint">Must be at least 8 characters.</p>
+        <input id="password" name="password" type="password" autocomplete="new-password" required aria-describedby="password-hint">
+      </div>
+    </fieldset>
+    <fieldset class="form-section">
+      <legend class="form-legend">Preferences</legend>
+      <fieldset class="form-group">
+        <legend class="form-legend">Contact method <span class="form-required" aria-hidden="true">*</span></legend>
+        <div class="form-option">
+          <input id="contact-email" name="contact" type="radio" value="email" required>
+          <label for="contact-email" class="form-label">Email</label>
+        </div>
+        <div class="form-option">
+          <input id="contact-phone" name="contact" type="radio" value="phone" required>
+          <label for="contact-phone" class="form-label">Phone</label>
+        </div>
+      </fieldset>
+      <div class="form-field">
+        <label for="country" class="form-label">Country</label>
+        <select id="country" name="country">
+          <option value="uk">United Kingdom</option>
+          <option value="ie">Ireland</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="notes" class="form-label">Delivery notes</label>
+        <textarea id="notes" name="notes" rows="3"></textarea>
+      </div>
+    </fieldset>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Create account</button>
+      <button type="button" class="btn btn-secondary">Cancel</button>
+    </div>
+  </form>
+</div>

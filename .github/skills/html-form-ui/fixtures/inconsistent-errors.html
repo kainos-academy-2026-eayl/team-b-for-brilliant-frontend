@@ -1,0 +1,27 @@
+<div class="form-wrapper">
+  <h2 class="form-title">Delivery address</h2>
+  <form action="/address" method="post">
+    <fieldset class="form-section">
+      <legend class="form-legend">Address</legend>
+      <div class="form-field">
+        <label for="line1" class="form-label">Address line 1 <span class="form-required" aria-hidden="true">*</span></label>
+        <input id="line1" name="line1" type="text" required>
+        <span class="error-message">Enter the first line of your address</span>
+      </div>
+      <div class="form-field">
+        <label for="town" class="form-label">Town <span class="form-required" aria-hidden="true">*</span></label>
+        <div class="invalid-feedback">Enter a town or city</div>
+        <input id="town" name="town" type="text" required>
+      </div>
+      <div class="form-field">
+        <label for="postcode" class="form-label">Postcode <span class="form-required" aria-hidden="true">*</span></label>
+        <input id="postcode" name="postcode" type="text" required aria-describedby="postcode-error">
+        <p id="postcode-error" class="form-error text-danger">Enter a real postcode</p>
+      </div>
+    </fieldset>
+    <p class="form-error">Please fix the errors above</p>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Continue</button>
+    </div>
+  </form>
+</div>
