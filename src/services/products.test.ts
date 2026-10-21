@@ -23,7 +23,7 @@ function jsonResponse(body: object, status = 200): Response {
 }
 
 describe('getProducts', () => {
-  it('fetches products from the backend and makes image URLs absolute', async () => {
+  it('fetches products from the backend and rewrites image URLs to the frontend proxy', async () => {
     const fetchFn = vi
       .fn<typeof fetch>()
       .mockResolvedValue(jsonResponse({ products: [backendProduct] }))
@@ -39,7 +39,7 @@ describe('getProducts', () => {
         productImages: [
           {
             ...backendProduct.productImages[0],
-            imageUrl: 'http://localhost:3001/images/product-1.svg',
+            imageUrl: '/images/product-1.svg',
           },
         ],
       },

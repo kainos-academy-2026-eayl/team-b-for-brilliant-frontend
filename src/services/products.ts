@@ -1,5 +1,6 @@
 import type { Product, ProductWithPrice } from '../models/product'
 import { ProductsResponseSchema } from '../schemas/product'
+import { toProxiedImageUrl } from './images'
 import { getCurrentPrice } from './productPrices'
 
 export const DEFAULT_API_BASE_URL = 'http://localhost:3001'
@@ -28,15 +29,15 @@ export async function getProducts(
     throw new Error('Products response from backend did not match schema')
   }
 
-  // Backend image URLs are relative to the backend host, so make them absolute for the browser.
+  // Image URLs are rewritten to frontend paths so the browser never contacts the backend directly.
   return result.data.products
     .filter((product) => product.visible)
     .map((product) => ({
       ...product,
-      productImages: product.productImages.map((image) => ({
-        ...image,
-        imageUrl: new URL(image.imageUrl, baseUrl).toString(),
-      })),
+      productImages: product.productImages.flatMap((image) => {
+        const imageUrl = toProxiedImageUrl(image.imageUrl, baseUrl)
+        return imageUrl === null ? [] : [{ ...image, imageUrl }]
+      }),
     }))
 }
 

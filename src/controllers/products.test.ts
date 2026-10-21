@@ -16,7 +16,7 @@ const product: ProductWithPrice = {
     {
       imageID: 'i1',
       productID: 'p1',
-      imageUrl: 'http://localhost:3001/images/product-1.svg',
+      imageUrl: '/images/product-1.svg',
     },
   ],
   currentPrice: '22.49',
@@ -54,7 +54,8 @@ describe('GET /products', () => {
     expect(html).not.toContain('A useful widget')
     expect(html).not.toContain('Quantity')
     expect(html).not.toContain('Weight')
-    expect(html).toContain('http://localhost:3001/images/product-1.svg')
+    expect(html).toContain('src="/images/product-1.svg"')
+    expect(html).not.toContain('localhost:3001')
   })
 
   it('renders a placeholder when a product has no current price', async () => {

@@ -1,12 +1,17 @@
 import { resolve } from 'node:path'
 import express, { type Express, type Request, type Response } from 'express'
 import nunjucks from 'nunjucks'
+import { createImagesRouter } from './controllers/images'
 import { createProductsRouter } from './controllers/products'
 import type { ProductWithPrice } from './models/product'
-import { getProductsWithPrices } from './services/products'
+import { fetchImage, type ProxiedImage } from './services/images'
+import { getApiBaseUrl, getProductsWithPrices } from './services/products'
 
 export function createApp(
   fetchProducts: () => Promise<ProductWithPrice[]> = getProductsWithPrices,
+  fetchProxiedImage: (fileName: string) => Promise<ProxiedImage | null> = (
+    fileName,
+  ) => fetchImage(fileName, getApiBaseUrl()),
 ): Express {
   const app = express()
 
@@ -26,6 +31,7 @@ export function createApp(
   })
 
   app.use('/products', createProductsRouter(fetchProducts))
+  app.use('/images', createImagesRouter(fetchProxiedImage))
 
   return app
 }
