@@ -7,7 +7,10 @@ async function getImage(
   fetchImage: (fileName: string) => Promise<ProxiedImage | null>,
   path = '/images/product-1.svg',
 ) {
-  const server = createApp(async () => [], fetchImage).listen(0)
+  const server = createApp({
+    fetchProducts: async () => [],
+    fetchProxiedImage: fetchImage,
+  }).listen(0)
   await once(server, 'listening')
 
   try {

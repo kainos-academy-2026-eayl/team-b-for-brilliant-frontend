@@ -23,7 +23,7 @@ const product: ProductWithPrice = {
 }
 
 async function getPage(fetchProducts: () => Promise<ProductWithPrice[]>) {
-  const server = createApp(fetchProducts).listen(0)
+  const server = createApp({ fetchProducts }).listen(0)
   await once(server, 'listening')
 
   try {
