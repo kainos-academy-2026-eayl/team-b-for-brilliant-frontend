@@ -1,17 +1,20 @@
 :root {
-  --colour-bg: #f5f6f8;
+  --colour-bg: #ffffff;
   --colour-surface: #ffffff;
   --colour-text: #1f2933;
   --colour-muted: #616e7c;
   --colour-border: #e4e7eb;
-  --colour-brand: #3b4cca;
+  --colour-brand: #028aa4;
+  --colour-brand-ink: #005b6b;
+  --colour-brand-soft: #e9fafa;
+  --colour-accent: #52dfdd;
   --colour-success: #1e7f4f;
   --colour-success-bg: #e3f5ec;
   --colour-danger: #b42318;
   --colour-danger-bg: #fdecea;
-  --radius: 12px;
-  --shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.05);
-  --shadow-hover: 0 4px 8px rgba(15, 23, 42, 0.1), 0 12px 24px rgba(15, 23, 42, 0.08);
+  --radius: 16px;
+  --shadow: 0 2px 8px rgba(15, 23, 42, 0.06), 0 10px 24px rgba(15, 23, 42, 0.04);
+  --shadow-hover: 0 8px 18px rgba(15, 23, 42, 0.1), 0 18px 36px rgba(15, 23, 42, 0.08);
 }
 
 *,
@@ -48,20 +51,32 @@ header a:focus-visible {
 }
 
 main {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1.5rem 3rem;
+  padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 4vw, 2rem) 3rem;
 }
 
 h1 {
-  margin: 0 0 1.5rem;
-  font-size: 2rem;
+  margin: 0 0 2rem;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+}
+
+h1::after {
+  display: block;
+  width: 3.5rem;
+  height: 0.25rem;
+  margin-top: 0.75rem;
+  background: var(--colour-accent);
+  border-radius: 999px;
+  content: "";
 }
 
 .product-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+  gap: clamp(1rem, 2.5vw, 1.75rem);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -75,11 +90,12 @@ h1 {
   border: 1px solid var(--colour-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .product:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  border-color: var(--colour-accent);
   box-shadow: var(--shadow-hover);
 }
 
@@ -88,7 +104,8 @@ h1 {
   align-items: center;
   justify-content: center;
   aspect-ratio: 4 / 3;
-  background: var(--colour-bg);
+  padding: 1rem;
+  background: var(--colour-brand-soft);
   color: var(--colour-muted);
   font-size: 0.875rem;
 }
@@ -96,24 +113,28 @@ h1 {
 .product__image img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .product__body {
   display: flex;
   flex: 1;
   flex-direction: column;
-  padding: 1rem 1.25rem 1.25rem;
+  padding: 1.125rem 1.25rem 1.25rem;
 }
 
 .product__name {
-  margin: 0 0 0.25rem;
+  min-height: 2.8em;
+  margin: 0 0 0.75rem;
   font-size: 1.125rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .product__price {
-  margin: 0;
-  color: var(--colour-brand);
+  margin: auto 0 0;
+  padding-top: 1rem;
+  color: var(--colour-brand-ink);
   font-size: 1.375rem;
   font-weight: 700;
 }
@@ -125,13 +146,15 @@ h1 {
 }
 
 .stock {
-  display: inline-block;
+  display: inline-flex;
   align-self: flex-start;
-  margin-bottom: 0.75rem;
-  padding: 0.125rem 0.625rem;
+  align-items: center;
+  margin-bottom: 0.25rem;
+  padding: 0.25rem 0.7rem;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .stock--in {
@@ -145,10 +168,46 @@ h1 {
 }
 
 .empty-state {
-  padding: 3rem 1rem;
+  padding: clamp(2.5rem, 8vw, 5rem) 1rem;
   text-align: center;
   color: var(--colour-muted);
   background: var(--colour-surface);
-  border: 1px dashed var(--colour-border);
+  border: 1px dashed var(--colour-brand);
   border-radius: var(--radius);
+}
+
+@media (max-width: 520px) {
+  .product-list {
+    grid-template-columns: 1fr;
+  }
+
+  .product {
+    display: grid;
+    grid-template-columns: minmax(110px, 0.8fr) 1.2fr;
+    align-items: stretch;
+  }
+
+  .product__image {
+    min-height: 100%;
+    aspect-ratio: auto;
+    padding: 0.75rem;
+  }
+
+  .product__body {
+    padding: 1rem;
+  }
+
+  .product__name {
+    min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product {
+    transition: none;
+  }
+
+  .product:hover {
+    transform: none;
+  }
 }
