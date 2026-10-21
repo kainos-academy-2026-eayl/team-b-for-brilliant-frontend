@@ -80,7 +80,11 @@ Before pushing, run `npm run format`, `npm run lint`, `npm run typecheck`, and `
 .
 ├── src/
 │   ├── index.ts          # entry point: config, server startup, shutdown
-│   └── app.ts            # builds the Express app and registers routes
+│   ├── app.ts            # builds the Express app, configures Nunjucks and registers routes
+│   ├── controllers/      # Express routers that handle requests and render views
+│   ├── services/         # calls to the backend API (e.g. fetching products)
+│   └── schemas/          # Zod schemas and types that validate backend responses
+├── views/                # Nunjucks templates (.njk) rendered by the controllers
 ├── .env                  # your local secrets and config (not committed)
 ├── .env.example          # template listing required env variables
 ├── .github/              # GitHub configuration
@@ -141,6 +145,11 @@ Environment variables are loaded from `.env` by [dotenv](https://github.com/motd
 | Variable | Required | Description |
 | --- | --- | --- |
 | `PORT` | yes | Port the service listens on. The service exits at startup if it is missing or invalid. |
+| `API_BASE_URL` | no | Base URL of the backend API used to fetch product data. Defaults to `http://localhost:3001`. |
+
+## Products page
+
+`GET /products` (and `/`, which redirects to it) fetches products from the backend's `GET /products` endpoint, keeps only those with `visible: true`, then fetches each one's current price from `GET /products/:productID/prices/current`. Responses are validated against the schemas in `src/schemas/`, and the result is rendered with `views/products/index.njk`. If a single price can't be loaded, that product shows "Price unavailable". If the product list itself can't be loaded, `views/error.njk` is rendered with a `502` status. Start the backend on port `3001` before running the frontend.
 
 The server binds to `0.0.0.0` so it is reachable from outside a container. Add new variables to both your `.env` and [.env.example](.env.example).
 
