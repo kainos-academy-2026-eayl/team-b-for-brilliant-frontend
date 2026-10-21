@@ -7,6 +7,8 @@ import {
   createAccountClient,
 } from './clients/accountClient'
 import { createAuthRouter } from './controllers/auth'
+import { createImagesRouter } from './controllers/images'
+import { createProductsRouter } from './controllers/products'
 import { registerRouter } from './controllers/register'
 import { verifyEmailRouter } from './controllers/verifyEmail'
 import { csrfProtection } from './middleware/csrf'
@@ -15,11 +17,16 @@ import {
   type LoginThrottle,
 } from './middleware/loginThrottle'
 import { requireAuth } from './middleware/requireAuth'
+import type { ProductWithPrice } from './models/product'
 import { createAuthService } from './services/authService'
+import { fetchImage, type ProxiedImage } from './services/images'
+import { getApiBaseUrl, getProductsWithPrices } from './services/products'
 
 interface AppOptions {
   accountClient?: AccountClient
   throttle?: LoginThrottle
+  fetchProducts?: () => Promise<ProductWithPrice[]>
+  fetchProxiedImage?: (fileName: string) => Promise<ProxiedImage | null>
 }
 
 export function createApp(options: AppOptions = {}): Express {
@@ -31,7 +38,11 @@ export function createApp(options: AppOptions = {}): Express {
 
   if (isProd) app.set('trust proxy', 1)
 
-  nunjucks.configure(path.resolve('views'), { autoescape: true, express: app })
+  nunjucks.configure(path.resolve('views'), {
+    autoescape: true,
+    express: app,
+    noCache: !isProd,
+  })
   app.set('view engine', 'njk')
   app.use('/static', express.static(path.resolve('public')))
 
@@ -62,6 +73,22 @@ export function createApp(options: AppOptions = {}): Express {
 
   app.use('/register', registerRouter)
   app.use('/verify-email', verifyEmailRouter)
+
+  app.get('/', (_req: Request, res: Response) => {
+    res.redirect('/products')
+  })
+
+  app.use(
+    '/products',
+    createProductsRouter(options.fetchProducts ?? getProductsWithPrices),
+  )
+  app.use(
+    '/images',
+    createImagesRouter(
+      options.fetchProxiedImage ??
+        ((fileName) => fetchImage(fileName, getApiBaseUrl())),
+    ),
+  )
 
   const accountClient =
     options.accountClient ??
