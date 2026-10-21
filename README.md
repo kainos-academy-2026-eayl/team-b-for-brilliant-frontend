@@ -32,7 +32,7 @@ node -v   # should print v22.x.x
 ```sh
 nvm use
 npm ci             # install exact dependency versions from package-lock.json
-cp .env.example .env
+printf 'PORT=3000\n' > .env
 npm run dev        # start the service with hot reload
 ```
 
@@ -56,10 +56,10 @@ After clicking **Use this template** on GitHub and creating your own repository:
    - `author` and `license`
    - `version` — reset to `0.1.0` if you prefer to start fresh
 3. Replace this README with documentation for your own service.
-4. Update `PORT` in [.env.example](.env.example) if your service should default to a different port, and keep it in sync with your own `.env`.
+4. Set `PORT` in your local `.env` if your service should use a different port, and keep it in sync with the URL in this README.
 5. Delete or replace the sample `/health` route once you have real endpoints — though keeping a health check is good practice for deployments.
 
-Never commit your `.env` file. It is already listed in [.gitignore](.gitignore); `.env.example` is the committed template that documents which variables are needed.
+Never commit your `.env` file. It is listed in [.gitignore](.gitignore). The quick-start command creates it with `PORT=3000`, matching the example URL.
 
 ## Scripts
 
@@ -157,13 +157,13 @@ Environment variables are loaded from `.env` by [dotenv](https://github.com/motd
 
 The browser never contacts the backend directly, so `API_BASE_URL` can be an internal-only address. Backend image URLs such as `/images/product-1.svg` are rewritten to the same path on this frontend, and `GET /images/:fileName` fetches the image from the backend on the server and returns it. Only single, plain file names under the backend's `/images/` path are proxied; anything else (other hosts, nested paths, `..`) is dropped from the page or returns `404`. Responses must have an `image/*` content type and be at most 5 MB, otherwise the route returns `502`.
 
-The server binds to `0.0.0.0` so it is reachable from outside a container. Add new variables to both your `.env` and [.env.example](.env.example).
+The server binds to `0.0.0.0` so it is reachable from outside a container. Add any new environment variables to your local `.env` and document them in this section.
 
 ## Troubleshooting
 
 **`Cannot find module` or unexpected type errors** — you may be on the wrong Node version. Run `nvm use`, then `rm -rf node_modules && npm ci`.
 
-**`PORT environment variable is not set`** — you have not created your `.env`. Run `cp .env.example .env`.
+**`PORT environment variable is not set`** — create a `.env` file in the repository root and add `PORT=3000`.
 
 **`EADDRINUSE`** — another process is already using that port. Stop it, or change `PORT` in `.env`.
 
