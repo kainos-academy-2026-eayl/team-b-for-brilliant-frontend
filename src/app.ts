@@ -23,6 +23,9 @@ interface AppOptions {
 export function createApp(options: AppOptions = {}): Express {
   const app = express()
   const isProd = process.env.NODE_ENV === 'production'
+  if (isProd && !process.env.SESSION_SECRET) {
+    throw new Error('SESSION_SECRET is required in production')
+  }
 
   if (isProd) app.set('trust proxy', 1)
 
