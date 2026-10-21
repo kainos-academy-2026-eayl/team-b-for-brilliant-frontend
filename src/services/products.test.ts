@@ -1,5 +1,10 @@
-import { describe, expect, it, vi } from 'vitest'
-import { getProducts, getProductsWithPrices } from './products'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  DEFAULT_PRICE_FETCH_CONCURRENCY,
+  getPriceFetchConcurrency,
+  getProducts,
+  getProductsWithPrices,
+} from './products'
 
 const backendProduct = {
   productID: 'p1',
@@ -133,5 +138,81 @@ describe('getProductsWithPrices', () => {
     expect(products).toHaveLength(1)
     expect(products[0]?.currentPrice).toBeNull()
     vi.restoreAllMocks()
+  })
+})
+
+describe('getProductsWithPrices concurrency', () => {
+  it('limits simultaneous price requests and keeps per-product fallbacks', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const ids = Array.from({ length: 12 }, (_, i) => `p${i}`)
+    let activePriceRequests = 0
+    let peakPriceRequests = 0
+
+    const fetchFn = vi.fn<typeof fetch>(async (input) => {
+      const url = String(input)
+      if (url.endsWith('/products')) {
+        return jsonResponse({
+          products: ids.map((productID) => ({
+            ...backendProduct,
+            productID,
+            productImages: [],
+          })),
+        })
+      }
+
+      activePriceRequests++
+      peakPriceRequests = Math.max(peakPriceRequests, activePriceRequests)
+      await new Promise((resolve) => setTimeout(resolve, 2))
+      activePriceRequests--
+
+      const productID = url.split('/')[4] ?? ''
+      if (productID === 'p3') {
+        return jsonResponse({}, 500)
+      }
+      return jsonResponse({
+        price: {
+          priceID: `price-${productID}`,
+          productID,
+          price: `${productID.slice(1)}.00`,
+          createdAt: '2026-10-03T00:00:00.000Z',
+        },
+      })
+    })
+
+    const products = await getProductsWithPrices(
+      'http://localhost:3001',
+      fetchFn,
+      4,
+    )
+
+    expect(peakPriceRequests).toBe(4)
+    expect(fetchFn).toHaveBeenCalledTimes(13)
+    expect(products.map((product) => product.productID)).toEqual(ids)
+    expect(products[3]?.currentPrice).toBeNull()
+    expect(products[11]?.currentPrice).toBe('11.00')
+    vi.restoreAllMocks()
+  })
+})
+
+describe('getPriceFetchConcurrency', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('defaults when PRICE_FETCH_CONCURRENCY is not set', () => {
+    vi.stubEnv('PRICE_FETCH_CONCURRENCY', '')
+    expect(getPriceFetchConcurrency()).toBe(DEFAULT_PRICE_FETCH_CONCURRENCY)
+  })
+
+  it('reads PRICE_FETCH_CONCURRENCY', () => {
+    vi.stubEnv('PRICE_FETCH_CONCURRENCY', '10')
+    expect(getPriceFetchConcurrency()).toBe(10)
+  })
+
+  it.each(['0', '-2', '2.5', 'abc'])('rejects %s', (value) => {
+    vi.stubEnv('PRICE_FETCH_CONCURRENCY', value)
+    expect(() => getPriceFetchConcurrency()).toThrow(
+      'Invalid PRICE_FETCH_CONCURRENCY',
+    )
   })
 })

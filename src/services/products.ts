@@ -1,12 +1,27 @@
 import type { Product, ProductWithPrice } from '../models/product'
 import { ProductsResponseSchema } from '../schemas/product'
+import { mapWithConcurrency } from '../utils/concurrency'
 import { toProxiedImageUrl } from './images'
 import { getCurrentPrice } from './productPrices'
 
 export const DEFAULT_API_BASE_URL = 'http://localhost:3001'
+export const DEFAULT_PRICE_FETCH_CONCURRENCY = 5
 
 export function getApiBaseUrl(): string {
   return process.env.API_BASE_URL || DEFAULT_API_BASE_URL
+}
+
+export function getPriceFetchConcurrency(): number {
+  const raw = process.env.PRICE_FETCH_CONCURRENCY
+  if (!raw) {
+    return DEFAULT_PRICE_FETCH_CONCURRENCY
+  }
+
+  const value = Number(raw)
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`Invalid PRICE_FETCH_CONCURRENCY: ${raw}`)
+  }
+  return value
 }
 
 export async function getProducts(
@@ -44,23 +59,22 @@ export async function getProducts(
 export async function getProductsWithPrices(
   baseUrl: string = getApiBaseUrl(),
   fetchFn: typeof fetch = fetch,
+  concurrency: number = getPriceFetchConcurrency(),
 ): Promise<ProductWithPrice[]> {
   const products = await getProducts(baseUrl, fetchFn)
 
-  return Promise.all(
-    products.map(async (product) => {
-      try {
-        const currentPrice = await getCurrentPrice(
-          product.productID,
-          baseUrl,
-          fetchFn,
-        )
-        return { ...product, currentPrice }
-      } catch (error) {
-        // A missing price shouldn't take down the whole page; show the product without one.
-        console.error(error)
-        return { ...product, currentPrice: null }
-      }
-    }),
-  )
+  return mapWithConcurrency(products, concurrency, async (product) => {
+    try {
+      const currentPrice = await getCurrentPrice(
+        product.productID,
+        baseUrl,
+        fetchFn,
+      )
+      return { ...product, currentPrice }
+    } catch (error) {
+      // A missing price shouldn't take down the whole page; show the product without one.
+      console.error(error)
+      return { ...product, currentPrice: null }
+    }
+  })
 }

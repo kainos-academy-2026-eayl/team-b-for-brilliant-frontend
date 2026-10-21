@@ -147,10 +147,11 @@ Environment variables are loaded from `.env` by [dotenv](https://github.com/motd
 | --- | --- | --- |
 | `PORT` | yes | Port the service listens on. The service exits at startup if it is missing or invalid. |
 | `API_BASE_URL` | no | Base URL of the backend API used to fetch product data. Defaults to `http://localhost:3001`. |
+| `PRICE_FETCH_CONCURRENCY` | no | Maximum number of current-price requests sent to the backend at once per page load. Defaults to `5`. Must be a positive integer; the service exits at startup if it is invalid. |
 
 ## Products page
 
-`GET /products` (and `/`, which redirects to it) fetches products from the backend's `GET /products` endpoint, keeps only those with `visible: true`, then fetches each one's current price from `GET /products/:productID/prices/current`. Responses are validated against the schemas in `src/schemas/`, and the result is rendered with `views/products/index.njk`. If a single price can't be loaded, that product shows "Price unavailable". If the product list itself can't be loaded, `views/error.njk` is rendered with a `502` status. Start the backend on port `3001` before running the frontend.
+`GET /products` (and `/`, which redirects to it) fetches products from the backend's `GET /products` endpoint, keeps only those with `visible: true`, then fetches each one's current price from `GET /products/:productID/prices/current`. At most `PRICE_FETCH_CONCURRENCY` price requests are in flight at once, so a large catalogue doesn't send a burst of simultaneous requests to the backend. Responses are validated against the schemas in `src/schemas/`, and the result is rendered with `views/products/index.njk`. If a single price can't be loaded, that product shows "Price unavailable". If the product list itself can't be loaded, `views/error.njk` is rendered with a `502` status. Start the backend on port `3001` before running the frontend.
 
 ### Product images
 

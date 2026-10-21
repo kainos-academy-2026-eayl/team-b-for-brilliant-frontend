@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import { createApp } from './app'
+import { getPriceFetchConcurrency } from './services/products'
 
 if (!process.env.PORT) {
   throw new Error('PORT environment variable is not set')
@@ -11,6 +12,9 @@ const PORT = Number(process.env.PORT)
 if (!Number.isInteger(PORT) || PORT < 0 || PORT > 65535) {
   throw new Error(`Invalid PORT: ${process.env.PORT}`)
 }
+
+// Fail fast on a bad value instead of returning a 502 on every page load.
+getPriceFetchConcurrency()
 
 const app = createApp()
 
