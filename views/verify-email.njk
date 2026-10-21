@@ -1,0 +1,30 @@
+{% extends "layout.njk" %}
+
+{% block title %}Verify email{% endblock %}
+
+{% block content %}
+  <div id="verify-page" data-api-base-url="{{ apiBaseUrl }}">
+    <h1>Email verification</h1>
+
+    <p id="verify-loading" role="status">Verifying your email...</p>
+
+    <div id="verify-success" role="status" hidden>
+      <p>Your email has been confirmed.</p>
+      <a href="/login">Go to login</a>
+    </div>
+
+    <div id="verify-error" hidden>
+      <p role="alert">This link is invalid or has expired.</p>
+      <form id="resend-form" novalidate>
+        <label for="resend-email">Email</label>
+        <input id="resend-email" type="email" autocomplete="email">
+        <p id="resend-message" role="status"></p>
+        <button type="submit">Send me a new email</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/verify-email.js"></script>
+{% endblock %}
