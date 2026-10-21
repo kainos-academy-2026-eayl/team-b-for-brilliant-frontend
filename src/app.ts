@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 import express, { type Express, type Request, type Response } from 'express'
 import nunjucks from 'nunjucks'
 import { createProductsRouter } from './controllers/products'
-import type { ProductWithPrice } from './schemas/product'
+import type { ProductWithPrice } from './models/product'
 import { getProductsWithPrices } from './services/products'
 
 export function createApp(

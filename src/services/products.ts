@@ -1,8 +1,5 @@
-import {
-  type Product,
-  type ProductWithPrice,
-  ProductsResponseSchema,
-} from '../schemas/product'
+import type { Product, ProductWithPrice } from '../models/product'
+import { ProductsResponseSchema } from '../schemas/product'
 import { getCurrentPrice } from './productPrices'
 
 export const DEFAULT_API_BASE_URL = 'http://localhost:3001'
@@ -24,8 +21,8 @@ export async function getProducts(
     throw new Error(`Failed to fetch products: HTTP ${response.status}`)
   }
 
-  const body: unknown = await response.json()
-  const result = ProductsResponseSchema.safeParse(body)
+  // Validate the raw JSON so the rest of the code can rely on the ProductsResponse model.
+  const result = ProductsResponseSchema.safeParse(await response.json())
 
   if (!result.success) {
     throw new Error('Products response from backend did not match schema')

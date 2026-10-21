@@ -1,5 +1,5 @@
 import { type Request, type Response, Router } from 'express'
-import type { ProductWithPrice } from '../schemas/product'
+import type { ProductWithPrice } from '../models/product'
 
 export function createProductsRouter(
   fetchProducts: () => Promise<ProductWithPrice[]>,

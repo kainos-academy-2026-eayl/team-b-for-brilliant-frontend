@@ -24,8 +24,8 @@ export async function getCurrentPrice(
     )
   }
 
-  const body: unknown = await response.json()
-  const result = CurrentPriceResponseSchema.safeParse(body)
+  // Validate the raw JSON so the rest of the code can rely on the CurrentPriceResponse model.
+  const result = CurrentPriceResponseSchema.safeParse(await response.json())
 
   if (!result.success) {
     throw new Error('Price response from backend did not match schema')

@@ -15,7 +15,7 @@ const backendProduct = {
   ],
 }
 
-function jsonResponse(body: unknown, status = 200): Response {
+function jsonResponse(body: object, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { 'Content-Type': 'application/json' },
