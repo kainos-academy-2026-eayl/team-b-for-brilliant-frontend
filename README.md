@@ -80,7 +80,12 @@ Before pushing, run `npm run format`, `npm run lint`, `npm run typecheck`, and `
 .
 ├── src/
 │   ├── index.ts          # entry point: config, server startup, shutdown
-│   └── app.ts            # builds the Express app and registers routes
+│   ├── app.ts            # builds the Express app, configures Nunjucks and registers routes
+│   ├── controllers/      # Express routers that handle requests and render views
+│   ├── services/         # calls to the backend API (fetching products and their current prices)
+│   ├── models/           # TypeScript interfaces describing the backend's JSON responses
+│   └── schemas/          # Zod schemas that check backend responses match the models
+├── views/                # Nunjucks templates (.njk) rendered by the controllers
 ├── .env                  # your local secrets and config (not committed)
 ├── .env.example          # template listing required env variables
 ├── .github/              # GitHub configuration
@@ -141,6 +146,16 @@ Environment variables are loaded from `.env` by [dotenv](https://github.com/motd
 | Variable | Required | Description |
 | --- | --- | --- |
 | `PORT` | yes | Port the service listens on. The service exits at startup if it is missing or invalid. |
+| `API_BASE_URL` | no | Base URL of the backend API used to fetch product data. Defaults to `http://localhost:3001`. |
+| `PRICE_FETCH_CONCURRENCY` | no | Maximum number of current-price requests sent to the backend at once per page load. Defaults to `5`. Must be a positive integer; the service exits at startup if it is invalid. |
+
+## Products page
+
+`GET /products` (and `/`, which redirects to it) fetches products from the backend's `GET /products` endpoint, keeps only those with `visible: true`, then fetches each one's current price from `GET /products/:productID/prices/current`. At most `PRICE_FETCH_CONCURRENCY` price requests are in flight at once, so a large catalogue doesn't send a burst of simultaneous requests to the backend. Responses are validated against the schemas in `src/schemas/`, and the result is rendered with `views/products/index.njk`. If a single price can't be loaded, that product shows "Price unavailable". If the product list itself can't be loaded, `views/error.njk` is rendered with a `502` status. Start the backend on port `3001` before running the frontend.
+
+### Product images
+
+The browser never contacts the backend directly, so `API_BASE_URL` can be an internal-only address. Backend image URLs such as `/images/product-1.svg` are rewritten to the same path on this frontend, and `GET /images/:fileName` fetches the image from the backend on the server and returns it. Only single, plain file names under the backend's `/images/` path are proxied; anything else (other hosts, nested paths, `..`) is dropped from the page or returns `404`. Responses must have an `image/*` content type and be at most 5 MB, otherwise the route returns `502`.
 
 The server binds to `0.0.0.0` so it is reachable from outside a container. Add any new environment variables to your local `.env` and document them in this section.
 
