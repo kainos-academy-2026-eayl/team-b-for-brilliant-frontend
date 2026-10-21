@@ -7,13 +7,20 @@ import { registerRouter } from './controllers/register'
 import { verifyEmailRouter } from './controllers/verifyEmail'
 import type { ProductWithPrice } from './models/product'
 import { fetchImage, type ProxiedImage } from './services/images'
-import { getApiBaseUrl, getProductsWithPrices } from './services/products'
+import {
+  getApiBaseUrl,
+  getProductsWithPrices,
+  getProductWithPrice,
+} from './services/products'
 
 export function createApp(
   fetchProducts: () => Promise<ProductWithPrice[]> = getProductsWithPrices,
   fetchProxiedImage: (fileName: string) => Promise<ProxiedImage | null> = (
     fileName,
   ) => fetchImage(fileName, getApiBaseUrl()),
+  fetchProduct: (
+    productID: string,
+  ) => Promise<ProductWithPrice | null> = getProductWithPrice,
 ): Express {
   const app = express()
 
@@ -37,7 +44,7 @@ export function createApp(
     res.redirect('/products')
   })
 
-  app.use('/products', createProductsRouter(fetchProducts))
+  app.use('/products', createProductsRouter(fetchProducts, fetchProduct))
   app.use('/images', createImagesRouter(fetchProxiedImage))
 
   return app

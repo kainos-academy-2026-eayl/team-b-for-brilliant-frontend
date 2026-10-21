@@ -153,7 +153,34 @@ Environment variables are loaded from `.env` by [dotenv](https://github.com/motd
 
 `GET /products` (and `/`, which redirects to it) fetches products from the backend's `GET /products` endpoint, keeps only those with `visible: true`, then fetches each one's current price from `GET /products/:productID/prices/current`. At most `PRICE_FETCH_CONCURRENCY` price requests are in flight at once, so a large catalogue doesn't send a burst of simultaneous requests to the backend. Responses are validated against the schemas in `src/schemas/`, and the result is rendered with `views/products/index.njk`. If a single price can't be loaded, that product shows "Price unavailable". If the product list itself can't be loaded, `views/error.njk` is rendered with a `502` status. Start the backend on port `3001` before running the frontend.
 
+### Product detail pages
+
+Each product card links to `GET /products/:productID`. This route freshly requests
+`GET /products/:productID` from the backend (a `{ "product": {...} }` response)
+and its current price, then renders the shared `views/products/show.njk`
+template. It does not reuse the catalogue response. Missing or hidden products
+return `404`; backend failures return `502`. A failed price lookup still shows
+the product with "Price unavailable". Detail pages are served with `Cache-Control: no-store`.
+
+Products with multiple images show a vertical thumbnail list to the left of the
+main image. Clicking a thumbnail (or activating it with Enter or Space) replaces
+the main image and marks that thumbnail as selected. Images are sorted by their
+non-negative integer `imageOrder`, ascending. The image with `imageOrder: 0`
+appears at the top, is selected initially, and is used as the catalogue thumbnail.
+If there is no image with order 0, the image with the lowest order is used instead.
+Products with one image show it without thumbnails, and products with
+no images show "No image available".
+
+Between the price and description, detail pages show a quantity dropdown from
+1 to the available stock and an "Add to basket" button underneath. Out-of-stock
+products show quantity 0 with both controls disabled. These controls are UI-only:
+the button does not yet save items or call a basket API.
+
 ### Product images
+
+Both backend product endpoints must include `imageOrder` on every image.
+Missing, fractional, or negative orders fail response validation rather than
+silently displaying an incorrect image order.
 
 The browser never contacts the backend directly, so `API_BASE_URL` can be an internal-only address. Backend image URLs such as `/images/product-1.svg` are rewritten to the same path on this frontend, and `GET /images/:fileName` fetches the image from the backend on the server and returns it. Only single, plain file names under the backend's `/images/` path are proxied; anything else (other hosts, nested paths, `..`) is dropped from the page or returns `404`. Responses must have an `image/*` content type and be at most 5 MB, otherwise the route returns `502`.
 
