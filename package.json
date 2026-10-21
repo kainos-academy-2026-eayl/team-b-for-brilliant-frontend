@@ -10,8 +10,9 @@
     "lint": "biome lint src",
     "build": "npm run typecheck && esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/index.js --sourcemap",
     "test": "vitest run",
-    "typecheck": "tsc",
-    "start": "node dist/index.js"
+    "typecheck": "tsc && tsc -p src/client",
+    "start": "node dist/index.js",
+    "build:client": "esbuild src/client/admin-login.ts src/client/logout.ts --bundle --outdir=public"
   },
   "keywords": [],
   "author": "",

@@ -1,0 +1,31 @@
+{% extends "layout.njk" %}
+
+{% block title %}Admin sign in{% endblock %}
+
+{% block content %}
+  <h1>Admin sign in</h1>
+
+  <div id="form-error" role="alert"></div>
+
+  <form id="login-form" method="post" data-api-base-url="{{ apiBaseUrl }}" novalidate>
+    <div>
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="username" aria-describedby="email-error">
+      <p id="email-error" role="alert"></p>
+    </div>
+
+    <div>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" aria-describedby="password-error">
+      <p id="password-error" role="alert"></p>
+    </div>
+
+    <button type="submit" id="submit-button">Sign in</button>
+  </form>
+
+  <p><a href="/admin/forgot-password">Forgot password?</a></p>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/admin-login.js"></script>
+{% endblock %}

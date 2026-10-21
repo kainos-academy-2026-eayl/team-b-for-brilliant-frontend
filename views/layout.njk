@@ -6,11 +6,17 @@
   <link rel="stylesheet" href="/styles.css">
   <title>{% block title %}Team B{% endblock %}</title>
 </head>
-<body>
+<body data-api-base-url="{{ apiBaseUrl }}">
+  <header>
+    <nav>
+      <a href="/">Home</a>
+      <button type="button" id="logout-button">Log out</button>
+    </nav>
+  </header>
   <main>
     {% block content %}{% endblock %}
   </main>
+  <script src="/logout.js"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
-
