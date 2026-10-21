@@ -16,5 +16,9 @@ jobs:
           node-version: "20"
       - run: npm ci
       - run: npm run lint
+<<<<<<< HEAD
       - run: npm run format
+=======
+      - run: npm exec -- biome format src
+>>>>>>> main
       - run: npm test
