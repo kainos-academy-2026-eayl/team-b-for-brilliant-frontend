@@ -7,6 +7,8 @@ import {
   createAccountClient,
 } from './clients/accountClient'
 import { createAuthRouter } from './controllers/auth'
+import { registerRouter } from './controllers/register'
+import { verifyEmailRouter } from './controllers/verifyEmail'
 import { csrfProtection } from './middleware/csrf'
 import {
   createLoginThrottle,
