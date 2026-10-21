@@ -31,6 +31,17 @@ Inspect the target form's linked/imported CSS and the shared styles that affect 
 
 If no relevant stylesheet, sibling form or design/copy guide exists, say that the standard cannot be inferred yet. Do not invent colours, CSS tokens, or product wording and present them as established conventions. You may offer a proposed standard, clearly labelled as a proposal, for the user to approve.
 
+## B-Brilliant brand guidance
+
+The company name is **B-Brilliant**. When the brand is relevant to the page or form, use a white background with these accent colours:
+
+- Primary accent: `#52dfdd`
+- Secondary accent: `#028aa4`
+
+Prefer existing shared tokens or components for these colours. Do not add one-off colour values if the application already provides an equivalent token, and check contrast rather than assuming either accent is suitable for every text/background pairing.
+
+When applicable, the page may show the slogan **“Never Settle for less”**, preferably near the top-left. This is a preference, not a requirement; do not force it into forms or pages where it would be out of place.
+
 ## Procedure
 
 1. **Identify the comparison set.** Read the target HTML, linked/imported CSS, shared theme/token files and comparable forms. If the user supplied reference files, prefer them. Do not modify unrelated forms.
