@@ -80,7 +80,12 @@ Before pushing, run `npm run format`, `npm run lint`, `npm run typecheck`, and `
 .
 ├── src/
 │   ├── index.ts          # entry point: config, server startup, shutdown
-│   └── app.ts            # builds the Express app and registers routes
+│   ├── app.ts            # builds the Express app, configures Nunjucks and registers routes
+│   ├── controllers/      # Express routers that handle requests and render views
+│   ├── services/         # calls to the backend API (fetching products and their current prices)
+│   ├── models/           # TypeScript interfaces describing the backend's JSON responses
+│   └── schemas/          # Zod schemas that check backend responses match the models
+├── views/                # Nunjucks templates (.njk) rendered by the controllers
 ├── .env                  # your local secrets and config (not committed)
 ├── .env.example          # template listing required env variables
 ├── .github/              # GitHub configuration

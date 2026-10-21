@@ -57,11 +57,11 @@ export function createApp(options: AppOptions = {}): Express {
   })
 
   app.get('/health', (_req: Request, res: Response) => {
-    res.json({ status: 'ok', uptime: process.uptime() });
-  });
+    res.json({ status: 'ok', uptime: process.uptime() })
+  })
 
-  app.use('/register', registerRouter);
-  app.use('/verify-email', verifyEmailRouter);
+  app.use('/register', registerRouter)
+  app.use('/verify-email', verifyEmailRouter)
 
   const accountClient =
     options.accountClient ??
