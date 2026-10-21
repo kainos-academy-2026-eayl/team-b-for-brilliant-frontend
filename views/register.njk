@@ -1,0 +1,36 @@
+{% extends "layout.njk" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+  <h1>Create an account</h1>
+
+  <div id="form-error" role="alert"></div>
+  <div id="success-message" role="status" hidden>Check your email to confirm your account</div>
+
+    <form id="register-form" method="post" data-api-base-url="{{ apiBaseUrl }}" novalidate>
+    <div>
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="email" aria-describedby="email-error">
+      <p id="email-error" role="alert"></p>
+    </div>
+
+    <div>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="new-password" aria-describedby="password-error">
+      <p id="password-error" role="alert"></p>
+    </div>
+
+    <div>
+      <label for="confirm-password">Confirm Password</label>
+      <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" aria-describedby="confirm-password-error">
+      <p id="confirm-password-error" role="alert"></p>
+    </div>
+
+    <button type="submit" id="submit-button">Register</button>
+  </form>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/register.js"></script>
+{% endblock %}
