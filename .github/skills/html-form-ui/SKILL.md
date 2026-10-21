@@ -13,11 +13,6 @@ This skill has two parts:
 - The CLI checks and formats supported HTML conventions using parse5.
 - Cross-file CSS, keyboard interaction, colour and wording comparisons require inspecting the relevant stylesheets and forms. Report these findings separately; the CLI does not check them.
 
-References:
-
-- Review checklist and auto-fix limits: [conventions.md](./references/conventions.md)
-- HTML formatter configuration: [form-ui.config.json](./config/form-ui.config.json)
-- Example HTML fixture: [golden.html](./fixtures/golden.html)
 
 ## Source of truth
 
@@ -56,7 +51,7 @@ When applicable, the page may show the slogan **“Never Settle for less”**, p
 
    Use `check` for review, `diff` to preview a requested fix, and `fix --write` only when the user asks for changes. Raw HTML can be passed with `--html` or stdin (`-`).
 3. **Review the HTML/CSS relationship.** Check that the form uses shared component classes and CSS custom properties rather than introducing one-off colours or spacing. Confirm that stylesheet selectors cover the form's normal, focus, invalid, disabled/read-only and error states. Find inline styles and local overrides that conflict with shared styles.
-4. **Check keyboard-only use.** Follow the checklist in [conventions.md](./references/conventions.md). Inspect source first; if the application can be run in a browser, verify navigation with only the keyboard as well.
+4. **Check keyboard-only use.** Follow general accessibility guidelines. Inspect source first; if the application can be run in a browser, verify navigation with only the keyboard as well.
 5. **Compare colour and wording across forms.** Compare equivalent states and messages across the selected forms. Identify the exact file/selector or text examples that match or differ. Preserve product meaning; do not silently rewrite substantive wording.
 6. **Report results by category.** Summarise:
    - CSS and component consistency
@@ -99,5 +94,3 @@ node .github/skills/html-form-ui/scripts/form-ui.mjs check - < path/to/form.html
 ```
 
 Exit codes: `0` clean, `1` issues remain (`check`: any issue; `fix`/`diff`: manual issues), `2` usage error. The HTML CLI report does not include CSS, keyboard, colour-contrast or wording-comparison findings; add those as a separate manual review section.
-
-The formatter options and HTML rules are in [form-ui.config.json](./config/form-ui.config.json). Tests and fixtures are in [tests/](./tests/) and [fixtures/](./fixtures/).
