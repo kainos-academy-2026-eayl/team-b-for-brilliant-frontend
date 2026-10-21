@@ -1,0 +1,31 @@
+{% extends "layout.njk" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Welcome back</h1>
+  <p class="card-subtitle">Sign in to access your account, orders and saved details.</p>
+
+  {% if error %}
+    <p class="alert" role="alert">{{ error }}</p>
+  {% endif %}
+
+  <form method="post" action="/login" novalidate>
+    <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+    <input type="hidden" name="returnTo" value="{{ returnTo }}">
+
+    <div class="form-field">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required value="{{ email }}">
+    </div>
+
+    <div class="form-field">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required>
+    </div>
+
+    <button type="submit" class="button">Sign in</button>
+  </form>
+
+  <p class="card-footer"><a href="/forgot-password">Forgot password?</a></p>
+</section>
+{% endblock %}

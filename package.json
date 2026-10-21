@@ -20,9 +20,12 @@
     "@biomejs/biome": "^2.5.15",
     "@playwright/test": "^1.64.1",
     "@types/express": "5.0.6",
+    "@types/express-session": "^1.19.0",
     "@types/node": "26.4.1",
     "@types/nunjucks": "^3.2.6",
+    "@types/supertest": "^7.2.1",
     "esbuild": "0.28.2",
+    "supertest": "^7.3.1",
     "tsx": "4.23.13",
     "typescript": "7.0.2",
     "vitest": "^5.0.5"
@@ -30,6 +33,7 @@
   "dependencies": {
     "dotenv": "17.4.2",
     "express": "^5.2.1",
+    "express-session": "^1.19.0",
     "husky": "^9.1.7",
     "nunjucks": "^3.2.4",
     "zod": "4.6.7",

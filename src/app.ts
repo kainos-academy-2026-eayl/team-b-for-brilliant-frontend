@@ -1,11 +1,24 @@
-import { resolve } from 'node:path'
+import path from 'node:path'
 import express, { type Express, type Request, type Response } from 'express'
+import session from 'express-session'
 import nunjucks from 'nunjucks'
+import {
+  type AccountClient,
+  createAccountClient,
+} from './clients/accountClient'
+import { createAuthRouter } from './controllers/auth'
 import { createImagesRouter } from './controllers/images'
 import { createProductsRouter } from './controllers/products'
 import { registerRouter } from './controllers/register'
 import { verifyEmailRouter } from './controllers/verifyEmail'
+import { csrfProtection } from './middleware/csrf'
+import {
+  createLoginThrottle,
+  type LoginThrottle,
+} from './middleware/loginThrottle'
+import { requireAuth } from './middleware/requireAuth'
 import type { ProductWithPrice } from './models/product'
+import { createAuthService } from './services/authService'
 import { fetchImage, type ProxiedImage } from './services/images'
 import {
   getApiBaseUrl,
@@ -23,15 +36,41 @@ export function createApp(
   ) => Promise<ProductWithPrice | null> = getProductWithPrice,
 ): Express {
   const app = express()
+  const isProd = process.env.NODE_ENV === 'production'
+  if (isProd && !process.env.SESSION_SECRET) {
+    throw new Error('SESSION_SECRET is required in production')
+  }
 
-  nunjucks.configure(resolve('views'), {
+  if (isProd) app.set('trust proxy', 1)
+
+  nunjucks.configure(path.resolve('views'), {
     autoescape: true,
     express: app,
-    noCache: process.env.NODE_ENV !== 'production',
+    noCache: !isProd,
   })
-
   app.set('view engine', 'njk')
-  app.use(express.static('public'))
+  app.use('/static', express.static(path.resolve('public')))
+
+  app.use(express.urlencoded({ extended: false, limit: '10kb' }))
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET ?? 'dev-only-secret',
+      resave: false,
+      saveUninitialized: true,
+      cookie: {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 60 * 2,
+      },
+    }),
+  )
+  app.use(csrfProtection)
+  app.use((req, res, next) => {
+    res.locals.isSignedIn = Boolean(req.session.customerId)
+    res.locals.csrfToken = req.session.csrfToken
+    next()
+  })
 
   app.get('/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', uptime: process.uptime() })
