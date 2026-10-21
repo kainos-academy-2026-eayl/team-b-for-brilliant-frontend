@@ -8,7 +8,7 @@
   <div id="form-error" role="alert"></div>
   <div id="success-message" role="status" hidden>Check your email to confirm your account</div>
 
-    <form id="register-form" data-api-base-url="{{ apiBaseUrl }}" novalidate>
+    <form id="register-form" method="post" data-api-base-url="{{ apiBaseUrl }}" novalidate>
     <div>
       <label for="email">Email</label>
       <input id="email" name="email" type="email" autocomplete="email" aria-describedby="email-error">

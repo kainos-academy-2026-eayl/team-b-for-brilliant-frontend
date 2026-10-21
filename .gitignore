@@ -1,8 +1,4 @@
 node_modules
 dist/
-<<<<<<< HEAD
 .env
 test-results/
-=======
-.env
->>>>>>> main
