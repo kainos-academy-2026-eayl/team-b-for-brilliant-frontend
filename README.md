@@ -177,7 +177,7 @@ Products with one image show it without thumbnails, and products with
 no images show "No image available".
 
 Between the price and description, detail pages show a quantity dropdown from
-1 to the available stock and an "Add to basket" button underneath. Out-of-stock
+1 to the available stock (capped at 10) and an "Add to basket" button underneath. Out-of-stock
 products show quantity 0 with both controls disabled. These controls are UI-only:
 the button does not yet save items or call a basket API.
 

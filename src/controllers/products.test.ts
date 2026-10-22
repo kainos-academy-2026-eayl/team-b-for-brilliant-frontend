@@ -141,6 +141,19 @@ describe('GET /products', () => {
       expect(html.indexOf('Add to basket')).toBeLessThan(html.indexOf('<h2>Description</h2>'))
     })
 
+    it('caps quantity choices at 10 when stock is higher', async () => {
+      const { html } = await getPage(
+        async () => [],
+        '/products/p1',
+        async () => ({ ...product, quantity: 50 }),
+      )
+
+      const values = html.match(/<option value="\d+">/g) ?? []
+      expect(values).toHaveLength(10)
+      expect(html).toContain('<option value="10">10</option>')
+      expect(html).not.toContain('<option value="11">')
+    })
+
     it.each([0, -1])('disables basket controls when stock is %s', async (quantity) => {
       const { html } = await getPage(
         async () => [],
