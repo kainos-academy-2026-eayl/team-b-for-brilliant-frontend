@@ -1,10 +1,16 @@
 import * as z from 'zod'
-import type { Product, ProductImage, ProductsResponse } from '../models/product'
+import type {
+  Product,
+  ProductImage,
+  ProductResponse,
+  ProductsResponse,
+} from '../models/product'
 
 export const ProductImageSchema: z.ZodType<ProductImage> = z.object({
   imageID: z.string(),
   productID: z.string(),
   imageUrl: z.string(),
+  imageOrder: z.int().nonnegative(),
 })
 
 export const ProductSchema: z.ZodType<Product> = z.object({
@@ -21,4 +27,8 @@ export const ProductSchema: z.ZodType<Product> = z.object({
 
 export const ProductsResponseSchema: z.ZodType<ProductsResponse> = z.object({
   products: z.array(ProductSchema),
+})
+
+export const ProductResponseSchema: z.ZodType<ProductResponse> = z.object({
+  product: ProductSchema,
 })

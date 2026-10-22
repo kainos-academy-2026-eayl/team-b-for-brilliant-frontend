@@ -24,7 +24,9 @@
             {% endif %}
           </div>
           <div class="product__body">
-            <h2 class="product__name">{{ product.name }}</h2>
+            <h2 class="product__name">
+              <a class="product__link" href="/products/{{ product.productID | urlencode }}">{{ product.name }}</a>
+            </h2>
             {% if product.quantity > 0 %}
               <span class="stock stock--in">In stock</span>
             {% else %}
