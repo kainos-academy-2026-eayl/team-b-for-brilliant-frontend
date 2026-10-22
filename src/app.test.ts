@@ -30,10 +30,35 @@ describe('GET /health', () => {
 })
 
 describe('site menu', () => {
-  it('renders safely without current-page context', () => {
-    const env = new nunjucks.Environment(new nunjucks.FileSystemLoader('views'), {
-      autoescape: true,
+  it('renders logout without requiring JavaScript and hides drawer-only controls', () => {
+    const env = new nunjucks.Environment(
+      new nunjucks.FileSystemLoader('views'),
+      {
+        autoescape: true,
+      },
+    )
+    const html = env.render('account.njk', {
+      isSignedIn: true,
+      csrfToken: 'test-token',
     })
+
+    expect(html).toContain('<form method="post" action="/logout">')
+    expect(html).toContain('name="_csrf" value="test-token"')
+    expect(html).toMatch(/id="menu-toggle"\s+hidden/)
+    expect(html).toMatch(/id="menu-close"[^>]*hidden/)
+    expect(html.match(/<nav[^>]*id="site-menu"[^>]*>/)?.[0]).not.toContain(
+      'hidden',
+    )
+    expect(html).not.toContain('<body class="menu-enhanced">')
+  })
+
+  it('renders safely without current-page context', () => {
+    const env = new nunjucks.Environment(
+      new nunjucks.FileSystemLoader('views'),
+      {
+        autoescape: true,
+      },
+    )
     const html = env.render('login.njk', {})
 
     expect(html).toContain('Welcome back')
@@ -46,17 +71,22 @@ describe('site menu', () => {
     ['/products', '/products', 'page'],
     ['/products/missing', '/products', 'location'],
     ['/login?returnTo=%2Faccount', '/login', 'page'],
-  ])('highlights the current menu destination on %s', async (path, href, current) => {
-    const response = await request(
-      createApp({
-        fetchProducts: async () => [],
-        fetchProduct: async () => null,
-      }),
-    ).get(path)
+  ])(
+    'highlights the current menu destination on %s',
+    async (path, href, current) => {
+      const response = await request(
+        createApp({
+          fetchProducts: async () => [],
+          fetchProduct: async () => null,
+        }),
+      ).get(path)
 
-    expect(response.text).toContain(`href="${href}" aria-current="${current}"`)
-    expect(response.text.match(/aria-current=/g)).toHaveLength(1)
-  })
+      expect(response.text).toContain(
+        `href="${href}" aria-current="${current}"`,
+      )
+      expect(response.text.match(/aria-current=/g)).toHaveLength(1)
+    },
+  )
 
   it('does not highlight an unrelated destination', async () => {
     const response = await request(createApp()).get('/forgot-password')

@@ -103,6 +103,16 @@ Generated folders — `node_modules/` and `dist/` — are ignored by git and saf
 
 [src/app.ts](src/app.ts) creates and configures the Express app but never starts listening. [src/index.ts](src/index.ts) reads configuration and starts the server. Keeping those responsibilities separate makes route registration independent from server startup.
 
+Navigation is visible in normal document flow by default, including the signed-in
+logout form. After the menu script initializes successfully, it enables the
+slide-out drawer and reveals its open/close controls. Navigation remains usable
+if JavaScript is disabled or the menu script cannot load.
+
+The shared drawer makes the header and main content inert while open, keeping
+background controls out of keyboard and assistive-technology navigation.
+Closing it by its close button, the overlay or Escape restores the regions'
+previous inert state before returning focus to the menu toggle.
+
 ## Adding a new route
 
 Say you want a `GET /bookings` endpoint.
