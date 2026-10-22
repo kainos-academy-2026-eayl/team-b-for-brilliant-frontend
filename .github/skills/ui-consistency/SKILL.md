@@ -1,6 +1,6 @@
 ---
 name: ui-consistency
-description: "Review HTML forms and their CSS for consistent application-wide form UI. Use when asked to match a form to CSS, check forms against shared styles, compare form colours or wording, check keyboard-only navigation or visible focus, review accessibility, or format HTML form markup."
+description: "Create or update Nunjucks (.njk) pages using the shared main.njk header and menu, and review HTML forms and CSS for consistent application-wide UI. Use when creating or styling Nunjucks pages, matching a form to CSS, checking shared styles, comparing form colours or wording, checking keyboard navigation or visible focus, reviewing accessibility, or formatting HTML form markup."
 argument-hint: "form HTML path and related CSS path(s), or paste the markup"
 ---
 
@@ -36,6 +36,19 @@ The company name is **B-Brilliant**. When the brand is relevant to the page or f
 Prefer existing shared tokens or components for these colours. Do not add one-off colour values if the application already provides an equivalent token, and check contrast rather than assuming either accent is suitable for every text/background pairing.
 
 When applicable, the page may show the slogan **“Never Settle for less”**, preferably near the top-left. This is a preference, not a requirement; do not force it into forms or pages where it would be out of place.
+
+## Shared Nunjucks layout
+
+Every page template this skill creates under `views/`, including nested folders, must begin with `{% extends "main.njk" %}`. The shared [main.njk](../../../views/main.njk) owns the document structure, header, branding, burger menu, navigation behaviour and shared stylesheet.
+
+- Put page markup inside `{% block content %}` and set the page title in `{% block title %}`.
+- Add page-specific styles through `{% block head %}` and scripts through `{% block scripts %}`. Keep shared assets in the base template.
+- Do not duplicate the header or menu, add a second document shell, or extend the retired `layout.njk`.
+- Preserve current-page navigation highlighting and signed-in/signed-out menu behaviour.
+- When updating an existing page, preserve or restore its inheritance from `main.njk`.
+- `main.njk` itself must not extend itself. Include-only partials and macro files are fragments rather than pages and must not extend a document layout.
+
+Before completing a Nunjucks page, verify that it renders through `main.njk` with exactly one header and menu, with its page content and page-specific assets intact.
 
 ## Procedure
 

@@ -69,6 +69,7 @@ export function createApp(options: AppOptions = {}): Express {
   app.use((req, res, next) => {
     res.locals.isSignedIn = Boolean(req.session.customerId)
     res.locals.csrfToken = req.session.csrfToken
+    res.locals.currentPath = req.path
     next()
   })
 

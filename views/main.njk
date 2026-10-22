@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}B-Brilliant{% endblock %}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <a href="/" class="logo">
+        <svg class="brand__mark" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+          <rect class="brand__mark-tile" x="1" y="1" width="38" height="38" rx="12"/>
+          <path class="brand__mark-letter" fill-rule="evenodd" d="M10 9h10c5 0 8 2.5 8 6.5 0 2.3-1.2 4-3 5 2.5.8 4 2.5 4 5 0 4-3.2 6.5-8.5 6.5H10V9Zm6 5v5h3.5c2 0 3-.9 3-2.5s-1-2.5-3-2.5H16Zm0 9v4h4c2 0 3-.6 3-2s-1-2-3-2h-4Z"/>
+          <path d="m31 4 1.5 4.5L37 10l-4.5 1.5L31 16l-1.5-4.5L25 10l4.5-1.5Z"/>
+        </svg>
+        B-Brilliant
+      </a>
+      <span class="tagline">Never Settle for less</span>
+    </div>
+    <button
+      type="button"
+      class="menu-toggle"
+      id="menu-toggle"
+      aria-label="Open menu"
+      aria-expanded="false"
+      aria-controls="site-menu"
+    >
+      <span class="menu-toggle__label" aria-hidden="true">Menu</span>
+      <span class="menu-toggle__icon" aria-hidden="true">
+        <span class="menu-toggle__bar"></span>
+        <span class="menu-toggle__bar"></span>
+        <span class="menu-toggle__bar"></span>
+      </span>
+    </button>
+  </header>
+
+  <div class="menu-overlay" id="menu-overlay" hidden></div>
+  <nav class="site-menu" id="site-menu" aria-label="Main menu" data-open="false">
+    <div class="site-menu__header">
+      <div>
+        <span class="site-menu__eyebrow">B-Brilliant</span>
+        <span class="site-menu__title">Explore</span>
+      </div>
+      <button type="button" class="site-menu__close" id="menu-close" aria-label="Close menu">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <ul class="site-menu__list">
+      <li><a href="/products"{% if currentPath == '/products' %} aria-current="page"{% elif currentPath and currentPath.startsWith('/products/') %} aria-current="location"{% endif %}>Shop all products<span class="site-menu__hint">Find your next favourite</span></a></li>
+      {% if isSignedIn %}
+        <li><a href="/account"{% if currentPath == '/account' %} aria-current="page"{% endif %}>My account</a></li>
+        <li>
+          <form method="post" action="/logout">
+            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+            <button type="submit" class="site-menu__button">Log out</button>
+          </form>
+        </li>
+      {% else %}
+        <li><a href="/login"{% if currentPath == '/login' %} aria-current="page"{% endif %}>Sign in</a></li>
+        <li><a href="/register"{% if currentPath == '/register' %} aria-current="page"{% endif %}>Create an account</a></li>
+      {% endif %}
+    </ul>
+    <div class="site-menu__footer">
+      <svg class="brand__mark" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+        <rect class="brand__mark-tile" x="1" y="1" width="38" height="38" rx="12"/>
+        <path class="brand__mark-letter" fill-rule="evenodd" d="M10 9h10c5 0 8 2.5 8 6.5 0 2.3-1.2 4-3 5 2.5.8 4 2.5 4 5 0 4-3.2 6.5-8.5 6.5H10V9Zm6 5v5h3.5c2 0 3-.9 3-2.5s-1-2.5-3-2.5H16Zm0 9v4h4c2 0 3-.6 3-2s-1-2-3-2h-4Z"/>
+        <path d="m31 4 1.5 4.5L37 10l-4.5 1.5L31 16l-1.5-4.5L25 10l4.5-1.5Z"/>
+      </svg>
+      <p>Never Settle for less</p>
+    </div>
+  </nav>
+
+  <main>{% block content %}{% endblock %}</main>
+  <script src="/static/menu.js" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
