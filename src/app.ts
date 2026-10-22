@@ -40,10 +40,6 @@ export function createApp(options: AppOptions = {}): Express {
     throw new Error('SESSION_SECRET is required in production')
   }
 
-export function createApp(): Express {
-  const app = express();
-  
-
     if (isProd) app.set('trust proxy', 1)
   
   nunjucks.configure(path.resolve('views'), {
@@ -108,8 +104,6 @@ export function createApp(): Express {
 
   app.use(createAuthRouter(authService))
 
-  app.use('/register', registerRouter);
-  app.use('/verify-email', verifyEmailRouter);
   app.use('/admin/login', adminLoginRouter);
   app.get('/forgot-password', (_req, res) => res.render('forgot-password'))
   app.get('/account', requireAuth, (_req, res) => res.render('account'))

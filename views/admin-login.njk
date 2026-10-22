@@ -24,6 +24,11 @@
   </form>
 {% endblock %}
 
+{% block admin_actions %}
+  <button type="button" id="logout-button">Log out</button>
+{% endblock %}
+
 {% block scripts %}
-  <script src="/admin-login.js"></script>
+  <script src="/static/admin-login.js"></script>
+  <script src="/static/logout.js"></script>
 {% endblock %}

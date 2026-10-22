@@ -5,12 +5,15 @@
   var apiBase = document.body.dataset.apiBaseUrl ?? "";
   logoutButton.addEventListener("click", async () => {
     try {
-      await fetch(`${apiBase}/api/v1/auth/admin/logout`, {
+      const response = await fetch(`${apiBase}/api/v1/auth/admin/logout`, {
         method: "POST",
         credentials: "include"
       });
-    } finally {
-      window.location.href = "/admin/login";
+      if (!response.ok) throw new Error("Logout failed");
+    } catch {
+      window.alert("Unable to log out. Please try again.");
+      return;
     }
+    window.location.href = "/admin/login";
   });
 })();

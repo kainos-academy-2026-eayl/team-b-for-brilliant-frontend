@@ -7,17 +7,6 @@
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body data-api-base-url="{{ apiBaseUrl }}">
-  <header>
-    <nav>
-      <button type="button" id="logout-button">Log out</button>
-    </nav>
-  </header>
-  <main>
-    {% block content %}{% endblock %}
-  </main>
-  <script src="/logout.js"></script>
-  {% block scripts %}{% endblock %}
-<body>
   <header class="site-header">
     <div class="brand">
       <a href="/" class="logo">B-Brilliant</a>
@@ -33,8 +22,10 @@
       {% else %}
         <a href="/login">Sign in</a>
       {% endif %}
+      {% block admin_actions %}{% endblock %}
     </nav>
   </header>
   <main>{% block content %}{% endblock %}</main>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

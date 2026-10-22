@@ -6,7 +6,7 @@
   var passwordInput = document.getElementById("password");
   var submitButton = document.getElementById("submit-button");
   var formError = document.getElementById("form-error");
-  var COMPANY_DOMAIN = "@b-brilliant.com";
+  var COMPANY_DOMAIN = "@bebrilliant.com";
   function setError(input, message) {
     const errorElement = document.getElementById(`${input.id}-error`);
     if (errorElement) errorElement.textContent = message;
@@ -18,7 +18,14 @@
   }
   function getSafeNextUrl() {
     const next = new URLSearchParams(window.location.search).get("next");
-    if (next && next.startsWith("/") && !next.startsWith("//")) return next;
+    if (next && next.startsWith("/") && !next.startsWith("//")) {
+      try {
+        const target = new URL(next, window.location.origin);
+        if (target.origin === window.location.origin) return target.href;
+      } catch {
+        return "/admin/account";
+      }
+    }
     return "/admin/account";
   }
   form.addEventListener("submit", async (event) => {
