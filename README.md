@@ -68,7 +68,6 @@ Never commit your `.env` file. It is listed in [.gitignore](.gitignore). The qui
 | `npm run dev` | `tsx watch src/index.ts` | Runs the service from TypeScript source and restarts on file changes. Use this while developing. |
 | `npm run format` | `biome format --write src` | Formats application source files. |
 | `npm run lint` | `biome lint src` | Lints application source files. |
-| `npm run test` | `vitest run` | Runs the test suite once. |
 | `npm run typecheck` | `tsc` | Checks types without emitting files. |
 | `npm run build` | `tsc` then `esbuild` | Type-checks, then bundles the service into `dist/index.js` for production. |
 | `npm start` | `node dist/index.js` | Runs the built output. Requires `npm run build` first. |
@@ -157,8 +156,6 @@ Environment variables are loaded from `.env` by [dotenv](https://github.com/motd
 | `POST /logout` | Ends the session. |
 | `GET /account` | Account page, requires sign-in. Signed-out visitors are redirected to `/login?returnTo=...`. |
 | `GET /forgot-password` | Placeholder page. |
-
-Run the unit tests with `npm test` and the end-to-end tests with `npm run test:e2e` (run `npx playwright install chromium` once first).
 
 The server binds to `0.0.0.0` so it is reachable from outside a container. Add any new environment variables to your local `.env` and document them in this section.
 
