@@ -176,6 +176,23 @@ If there is no image with order 0, the image with the lowest order is used inste
 Products with one image show it without thumbnails, and products with
 no images show "No image available".
 
+Product responses include `categories` (category ID, name, nullable description,
+and department ID) and `departments` (department ID, name, nullable description).
+Both arrays are validated and retained for catalogue and detail responses.
+Detail pages list categories after the description, grouped by `departmentID`
+with each department name shown once as a heading. Categories without a matching
+department remain visible under "Other categories". When there are no categories,
+any departments are shown below the product title. Empty sections are hidden.
+
+The products page includes a category dropdown populated from the products'
+categories, deduplicated by category ID and sorted alphabetically by name.
+Select a category and press "Filter products" to submit its ID to
+`GET /products?category=<categoryID>`. The selection is retained, and all category
+options remain available after filtering. "All categories" or "Clear search"
+shows all products. A link to a category that is no longer available shows an
+explicit message. Filtering uses the categories already returned by the backend,
+so no additional API is needed.
+
 Between the price and description, detail pages show a quantity dropdown from
 1 to the available stock (capped at 10) and an "Add to basket" button underneath. Out-of-stock
 products show quantity 0 with both controls disabled. These controls are UI-only:

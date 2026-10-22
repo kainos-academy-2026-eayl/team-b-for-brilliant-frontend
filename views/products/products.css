@@ -73,6 +73,79 @@ h1::after {
   content: "";
 }
 
+.products-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius);
+  background: var(--colour-surface);
+}
+
+.products-search .form-field {
+  flex: 1 1 16rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.products-search select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+  color: var(--colour-text);
+  background: var(--colour-surface);
+  border: 1px solid var(--color-input-border);
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.products-search select:hover {
+  border-color: var(--colour-brand-ink);
+}
+
+.products-search select:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.products-search .button {
+  width: auto;
+  min-height: 48px;
+  margin-top: 1.75rem;
+}
+
+.products-search__clear {
+  margin-top: 2.5rem;
+  color: var(--colour-brand-ink);
+  text-underline-offset: 0.2em;
+}
+
+.products-search__hint,
+.products-search__results {
+  color: var(--colour-muted);
+  overflow-wrap: anywhere;
+}
+
+.products-search__hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 500px) {
+  .products-search .button {
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .products-search__clear {
+    margin-top: 0;
+  }
+}
+
 .product-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
@@ -283,6 +356,42 @@ h1::after {
   color: var(--colour-muted);
   line-height: 1.75;
   white-space: pre-line;
+}
+
+.product-detail__classification {
+  margin: 0 0 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--colour-border);
+  border-radius: calc(var(--radius) / 2);
+  background: var(--colour-brand-soft);
+  overflow-wrap: anywhere;
+}
+
+.product-detail__classification dt {
+  color: var(--colour-brand-ink);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.product-detail__description + .product-detail__classification {
+  margin-top: 1.5rem;
+}
+
+.product-detail__classification dd {
+  margin: 0.25rem 0 1rem;
+}
+
+.product-detail__classification dd:last-child {
+  margin-bottom: 0;
+}
+
+.product-detail__classification ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .product-detail__basket {

@@ -10,10 +10,44 @@ export function createProductsRouter(
 ): Router {
   const router = Router()
 
-  router.get('/', async (_req: Request, res: Response) => {
+  router.get('/', async (req: Request, res: Response) => {
+    if (
+      req.query.category !== undefined &&
+      typeof req.query.category !== 'string'
+    ) {
+      res.status(400).render('error.njk', {
+        message: 'Select a single category to filter products.',
+      })
+      return
+    }
+    const categoryFilter = (req.query.category ?? '').trim()
     try {
       const products = await fetchProducts()
-      res.render('products/index.njk', { products })
+      const categories = Array.from(
+        new Map(
+          products.flatMap((product) =>
+            product.categories.map(
+              (category) => [category.categoryID, category] as const,
+            ),
+          ),
+        ).values(),
+      ).sort((a, b) => a.name.localeCompare(b.name))
+      const selectedCategory = categories.find(
+        (category) => category.categoryID === categoryFilter,
+      )
+      const matchingProducts = categoryFilter
+        ? products.filter((product) =>
+            product.categories.some(
+              (category) => category.categoryID === categoryFilter,
+            ),
+          )
+        : products
+      res.render('products/index.njk', {
+        products: matchingProducts,
+        categories,
+        categoryFilter,
+        selectedCategory,
+      })
     } catch (error) {
       console.error(error)
       res.status(502).render('error.njk', {

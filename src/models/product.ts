@@ -5,6 +5,19 @@ export interface ProductImage {
   imageOrder: number
 }
 
+export interface ProductCategory {
+  categoryID: string
+  name: string
+  description: string | null
+  departmentID: string
+}
+
+export interface ProductDepartment {
+  departmentID: string
+  name: string
+  description: string | null
+}
+
 export interface Product {
   productID: string
   name: string
@@ -14,6 +27,8 @@ export interface Product {
   visible: boolean
   weight: number
   deletedAt: string | null
+  categories: ProductCategory[]
+  departments: ProductDepartment[]
   productImages: ProductImage[]
 }
 

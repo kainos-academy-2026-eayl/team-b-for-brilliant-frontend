@@ -16,6 +16,21 @@ const backendProduct = {
   visible: true,
   weight: 1.5,
   deletedAt: null,
+  categories: [
+    {
+      categoryID: 'c1',
+      name: 'Accessories',
+      description: null,
+      departmentID: 'd1',
+    },
+  ],
+  departments: [
+    {
+      departmentID: 'd1',
+      name: 'Lifestyle',
+      description: 'Lifestyle products',
+    },
+  ],
   productImages: [
     {
       imageID: 'i1',
@@ -34,14 +49,31 @@ function jsonResponse(body: object, status = 200): Response {
 }
 
 describe.each(['catalogue', 'detail'] as const)('%s image ordering', (page) => {
-  const loadProducts = async (images: object[]) => {
+  const loadProducts = async (
+    images: object[],
+    classification: object = {},
+  ) => {
     const fetchFn = vi.fn<typeof fetch>(async (input) =>
       String(input).endsWith('/prices/current')
         ? jsonResponse({ price: null })
         : jsonResponse(
             page === 'catalogue'
-              ? { products: [{ ...backendProduct, productImages: images }] }
-              : { product: { ...backendProduct, productImages: images } },
+              ? {
+                  products: [
+                    {
+                      ...backendProduct,
+                      ...classification,
+                      productImages: images,
+                    },
+                  ],
+                }
+              : {
+                  product: {
+                    ...backendProduct,
+                    ...classification,
+                    productImages: images,
+                  },
+                },
           ),
     )
     if (page === 'catalogue') {
@@ -49,6 +81,35 @@ describe.each(['catalogue', 'detail'] as const)('%s image ordering', (page) => {
     }
     return [await getProductWithPrice('p1', 'http://localhost:3001', fetchFn)]
   }
+
+  it('retains validated categories and departments', async () => {
+    const products = await loadProducts(backendProduct.productImages)
+
+    expect(products[0]?.categories).toEqual(backendProduct.categories)
+    expect(products[0]?.departments).toEqual(backendProduct.departments)
+  })
+
+  it('accepts products with no category or department assignments', async () => {
+    const products = await loadProducts([], { categories: [], departments: [] })
+
+    expect(products[0]?.categories).toEqual([])
+    expect(products[0]?.departments).toEqual([])
+  })
+
+  it.each([
+    { categories: undefined },
+    { departments: null },
+    {
+      categories: [
+        { categoryID: 'c1', name: 'Accessories', description: null },
+      ],
+    },
+    { departments: [{ departmentID: 'd1', name: 42, description: null }] },
+  ])('rejects invalid classification data %j', async (classification) => {
+    await expect(loadProducts([], classification)).rejects.toThrow(
+      'did not match schema',
+    )
+  })
 
   it('sorts images numerically without mutating the source array', async () => {
     const images = [10, 0, 2].map((imageOrder) => ({
@@ -59,9 +120,9 @@ describe.each(['catalogue', 'detail'] as const)('%s image ordering', (page) => {
     }))
     const products = await loadProducts(images)
 
-    expect(products[0]?.productImages.map((image) => image.imageOrder)).toEqual([
-      0, 2, 10,
-    ])
+    expect(products[0]?.productImages.map((image) => image.imageOrder)).toEqual(
+      [0, 2, 10],
+    )
     expect(products[0]?.productImages[0]?.imageUrl).toBe('/images/order-0.svg')
     expect(images.map((image) => image.imageOrder)).toEqual([10, 0, 2])
   })
