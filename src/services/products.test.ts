@@ -9,6 +9,7 @@ import {
 
 const backendProduct = {
   productID: 'p1',
+  salesNo: 10,
   name: 'Widget',
   description: null,
   quantity: 3,
@@ -32,6 +33,34 @@ function jsonResponse(body: object, status = 200): Response {
     headers: { 'Content-Type': 'application/json' },
   })
 }
+
+describe('product sales totals', () => {
+  it('preserves salesNo from the backend when attaching current prices', async () => {
+    const fetchFn = vi.fn<typeof fetch>(async (input) =>
+      String(input).endsWith('/prices/current')
+        ? jsonResponse({ price: null })
+        : jsonResponse({ products: [backendProduct] }),
+    )
+    const products = await getProductsWithPrices(
+      'http://localhost:3001',
+      fetchFn,
+    )
+
+    expect(products[0]?.salesNo).toBe(10)
+  })
+
+  it.each([undefined, null, '10', -1, 1.5])(
+    'rejects missing or invalid salesNo %s rather than inventing a ranking',
+    async (salesNo) => {
+      const fetchFn = vi.fn<typeof fetch>(async () =>
+        jsonResponse({ products: [{ ...backendProduct, salesNo }] }),
+      )
+      await expect(
+        getProducts('http://localhost:3001', fetchFn),
+      ).rejects.toThrow('did not match schema')
+    },
+  )
+})
 
 describe.each(['catalogue', 'detail'] as const)('%s image ordering', (page) => {
   const loadProducts = async (images: object[]) => {
@@ -59,9 +88,9 @@ describe.each(['catalogue', 'detail'] as const)('%s image ordering', (page) => {
     }))
     const products = await loadProducts(images)
 
-    expect(products[0]?.productImages.map((image) => image.imageOrder)).toEqual([
-      0, 2, 10,
-    ])
+    expect(products[0]?.productImages.map((image) => image.imageOrder)).toEqual(
+      [0, 2, 10],
+    )
     expect(products[0]?.productImages[0]?.imageUrl).toBe('/images/order-0.svg')
     expect(images.map((image) => image.imageOrder)).toEqual([10, 0, 2])
   })

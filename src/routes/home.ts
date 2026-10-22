@@ -1,6 +1,12 @@
 import { Router } from 'express'
-import { showHome } from '../controllers/home'
+import { createShowHome } from '../controllers/home'
+import type { ProductWithPrice } from '../models/product'
 
-export const homeRouter = Router()
+export function createHomeRouter(
+  fetchProducts: () => Promise<ProductWithPrice[]>,
+) {
+  const router = Router()
 
-homeRouter.get('/', showHome)
+  router.get('/', createShowHome(fetchProducts))
+  return router
+}

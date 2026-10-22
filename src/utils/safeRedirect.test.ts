@@ -7,14 +7,14 @@ describe('safeRedirect', () => {
   })
 
   it('rejects absolute URLs', () => {
-    expect(safeRedirect('https://evil.com')).toBe('/account')
+    expect(safeRedirect('https://evil.com')).toBe('/home')
   })
 
   it('rejects protocol-relative URLs', () => {
-    expect(safeRedirect('//evil.com')).toBe('/account')
+    expect(safeRedirect('//evil.com')).toBe('/home')
   })
 
   it('falls back when missing', () => {
-    expect(safeRedirect(undefined)).toBe('/account')
+    expect(safeRedirect(undefined)).toBe('/home')
   })
 })

@@ -6,6 +6,7 @@ import { getProductsWithPrices, getProductWithPrice } from '../services/products
 
 const product: ProductWithPrice = {
   productID: 'p1',
+  salesNo: 10,
   name: '<Widget>',
   description: 'A useful widget',
   quantity: 3,

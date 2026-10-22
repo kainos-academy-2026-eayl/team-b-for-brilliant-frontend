@@ -7,6 +7,7 @@ export interface ProductImage {
 
 export interface Product {
   productID: string
+  salesNo: number
   name: string
   description: string | null
   quantity: number

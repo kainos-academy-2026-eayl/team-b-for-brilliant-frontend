@@ -13,7 +13,7 @@ export function createAuthRouter(authService: AuthService): Router {
 
   router.get('/login', (req: Request, res: Response) => {
     if (req.session.customerId) {
-      res.redirect('/account')
+      res.redirect('/home')
       return
     }
     res.render('login', { returnTo: safeRedirect(req.query.returnTo) })

@@ -6,12 +6,12 @@ async function signIn(page: Page, email: string, password: string) {
   await page.getByRole('button', { name: 'Sign in' }).click()
 }
 
-test('valid login lands on the account page and can log out', async ({
+test('valid login lands on the home page and can log out', async ({
   page,
 }) => {
   await page.goto('/login')
   await signIn(page, 'jane@example.com', 'correct')
-  await expect(page).toHaveURL(/\/account$/)
+  await expect(page).toHaveURL(/\/home$/)
 
   await page.getByRole('button', { name: 'Log out' }).click()
   await page.goto('/account')

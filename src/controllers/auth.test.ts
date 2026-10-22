@@ -24,7 +24,7 @@ async function csrf(agent: Agent, path = '/login') {
 }
 
 describe('login flow', () => {
-  it('signs in and lands on the account page', async () => {
+  it('signs in and lands on the home page', async () => {
     const agent = request.agent(createApp({ accountClient }))
     const token = await csrf(agent)
 
@@ -34,7 +34,7 @@ describe('login flow', () => {
       .send({ _csrf: token, email: 'jane@example.com', password: 'correct' })
 
     expect(res.status).toBe(302)
-    expect(res.headers.location).toBe('/account')
+    expect(res.headers.location).toBe('/home')
     expect((await agent.get('/account')).status).toBe(200)
   })
 
