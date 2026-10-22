@@ -1,0 +1,15 @@
+{% extends "layout.njk" %}
+
+{% block title %}Product not found | B-Brilliant{% endblock %}
+
+{% block head %}
+  <style>
+    {% include "products/products.css" %}
+  </style>
+{% endblock %}
+
+{% block content %}
+  <h1>Product not found</h1>
+  <p>This product is not available.</p>
+  <a class="products-back" href="/products">Back to products</a>
+{% endblock %}

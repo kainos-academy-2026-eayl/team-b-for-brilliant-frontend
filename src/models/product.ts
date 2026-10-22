@@ -2,6 +2,7 @@ export interface ProductImage {
   imageID: string
   productID: string
   imageUrl: string
+  imageOrder: number
 }
 
 export interface Product {
@@ -18,6 +19,10 @@ export interface Product {
 
 export interface ProductsResponse {
   products: Product[]
+}
+
+export interface ProductResponse {
+  product: Product
 }
 
 export interface ProductWithPrice extends Product {
