@@ -29,7 +29,10 @@ async function getPage(
   path = '/products',
   fetchProduct?: (productID: string) => Promise<ProductWithPrice | null>,
 ) {
-  const server = createApp(fetchProducts, undefined, fetchProduct).listen(0)
+  const server = createApp({
+    fetchProducts,
+    ...(fetchProduct && { fetchProduct }),
+  }).listen(0)
   await once(server, 'listening')
 
   try {
@@ -115,7 +118,7 @@ describe('GET /products', () => {
       expect(html).toContain('Out of stock')
       expect(html).not.toContain('<h2>Description</h2>')
       expect(html).not.toContain('class="product-detail__thumbnail"')
-      expect(html).not.toContain('src="/product-gallery.js"')
+      expect(html).not.toContain('product-gallery.js')
     })
 
     it('shows stock-limited quantity choices and a UI-only basket button between price and description', async () => {
@@ -161,7 +164,7 @@ describe('GET /products', () => {
       expect(html).toContain('id="product-main-image" src="/images/product-1.svg"')
       expect(html.match(/<img /g)).toHaveLength(1)
       expect(html).not.toContain('class="product-detail__thumbnail"')
-      expect(html).not.toContain('src="/product-gallery.js"')
+      expect(html).not.toContain('product-gallery.js')
     })
 
     it('renders every thumbnail beside an initially selected first image', async () => {
@@ -197,7 +200,7 @@ describe('GET /products', () => {
         expect(html).toContain(`data-image-src="/images/product-${index}.svg"`)
         expect(html).toContain(`View image ${index} of 3 for &lt;Widget&gt;`)
       }
-      expect(html).toContain('src="/product-gallery.js"')
+      expect(html).toContain('src="/static/product-gallery.js"')
     })
 
     it('returns a useful 404 when the product cannot be shown', async () => {

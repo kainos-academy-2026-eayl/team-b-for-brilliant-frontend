@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}B-Brilliant{% endblock %}</title>
   <link rel="stylesheet" href="/static/styles.css">
+  {% block head %}{% endblock %}
 </head>
 <body>
   <header class="site-header">
@@ -25,5 +26,6 @@
     </nav>
   </header>
   <main>{% block content %}{% endblock %}</main>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

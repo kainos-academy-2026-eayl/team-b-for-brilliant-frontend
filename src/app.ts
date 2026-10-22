@@ -26,15 +26,15 @@ import {
   getProductWithPrice,
 } from './services/products'
 
-export function createApp(
-  fetchProducts: () => Promise<ProductWithPrice[]> = getProductsWithPrices,
-  fetchProxiedImage: (fileName: string) => Promise<ProxiedImage | null> = (
-    fileName,
-  ) => fetchImage(fileName, getApiBaseUrl()),
-  fetchProduct: (
-    productID: string,
-  ) => Promise<ProductWithPrice | null> = getProductWithPrice,
-): Express {
+interface AppOptions {
+  accountClient?: AccountClient
+  throttle?: LoginThrottle
+  fetchProducts?: () => Promise<ProductWithPrice[]>
+  fetchProduct?: (productID: string) => Promise<ProductWithPrice | null>
+  fetchProxiedImage?: (fileName: string) => Promise<ProxiedImage | null>
+}
+
+export function createApp(options: AppOptions = {}): Express {
   const app = express()
   const isProd = process.env.NODE_ENV === 'production'
   if (isProd && !process.env.SESSION_SECRET) {
@@ -83,8 +83,33 @@ export function createApp(
     res.redirect('/products')
   })
 
-  app.use('/products', createProductsRouter(fetchProducts, fetchProduct))
-  app.use('/images', createImagesRouter(fetchProxiedImage))
+  app.use(
+    '/products',
+    createProductsRouter(
+      options.fetchProducts ?? getProductsWithPrices,
+      options.fetchProduct ?? getProductWithPrice,
+    ),
+  )
+  app.use(
+    '/images',
+    createImagesRouter(
+      options.fetchProxiedImage ??
+        ((fileName) => fetchImage(fileName, getApiBaseUrl())),
+    ),
+  )
+
+  const accountClient =
+    options.accountClient ??
+    createAccountClient(process.env.CUSTOMER_ACCOUNT_SERVICE_URL ?? '')
+  const authService = createAuthService(
+    accountClient,
+    options.throttle ?? createLoginThrottle(),
+  )
+
+  app.use(createAuthRouter(authService))
+
+  app.get('/forgot-password', (_req, res) => res.render('forgot-password'))
+  app.get('/account', requireAuth, (_req, res) => res.render('account'))
 
   return app
 }
