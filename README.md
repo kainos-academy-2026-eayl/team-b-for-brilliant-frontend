@@ -157,8 +157,6 @@ Environment variables are loaded from `.env` by [dotenv](https://github.com/motd
 | `GET /account` | Account page, requires sign-in. Signed-out visitors are redirected to `/login?returnTo=...`. |
 | `GET /forgot-password` | Placeholder page. |
 
-<<<<<<< HEAD
-=======
 ### Product detail pages
 
 Each product card links to `GET /products/:productID`. This route freshly requests
@@ -191,7 +189,6 @@ silently displaying an incorrect image order.
 The browser never contacts the backend directly, so `API_BASE_URL` can be an internal-only address. Backend image URLs such as `/images/product-1.svg` are rewritten to the same path on this frontend, and `GET /images/:fileName` fetches the image from the backend on the server and returns it. Only single, plain file names under the backend's `/images/` path are proxied; anything else (other hosts, nested paths, `..`) is dropped from the page or returns `404`. Responses must have an `image/*` content type and be at most 5 MB, otherwise the route returns `502`.
 Run the unit tests with `npm test` and the end-to-end tests with `npm run test:e2e` (run `npx playwright install chromium` once first).
 
->>>>>>> main
 The server binds to `0.0.0.0` so it is reachable from outside a container. Add any new environment variables to your local `.env` and document them in this section.
 
 ## Troubleshooting
