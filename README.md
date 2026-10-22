@@ -186,6 +186,9 @@ any departments are shown below the product title. Empty sections are hidden.
 
 The products page includes a category dropdown populated from the products'
 categories, deduplicated by category ID and sorted alphabetically by name.
+When different IDs have the same name (ignoring case and surrounding whitespace),
+their labels include the full category ID, for example `Accessories (ID: c0)`,
+including in the selected-category summary. Unique names remain unchanged.
 Select a category and press "Filter products" to submit its ID to
 `GET /products?category=<categoryID>`. The selection is retained, and all category
 options remain available after filtering. "All categories" or "Clear search"

@@ -175,28 +175,97 @@ describe('GET /products', () => {
       )
     })
 
-    it('filters by ID rather than including unrelated categories with the same name', async () => {
-      const { html } = await getPage(
-        async () => [
-          ...products,
+    it.each(['', 'c0', 'different-id'])(
+      'distinguishes same-name categories in the same department when selecting "%s"',
+      async (categoryID) => {
+        const { html } = await getPage(
+          async () => [
+            ...products,
+            {
+              ...product,
+              productID: 'unrelated',
+              categories: [
+                {
+                  categoryID: 'different-id',
+                  name: 'Accessories',
+                  description: null,
+                  departmentID: 'd1',
+                },
+              ],
+            },
+          ],
+          `/products?category=${categoryID}`,
+        )
+
+        for (const id of ['c0', 'different-id']) {
+          const selected = categoryID === id ? ' selected' : ''
+          expect(html).toContain(
+            `<option value="${id}"${selected}>Accessories (ID: ${id})</option>`,
+          )
+        }
+        expect(html).toContain('>Clothing</option>')
+        expect(html).not.toContain('>Accessories</option>')
+        if (categoryID) {
+          expect(html).toContain(
+            `found in &ldquo;Accessories (ID: ${categoryID})&rdquo;.`,
+          )
+          expect(html).toContain(
+            `href="/products/${categoryID === 'c0' ? 'accessories' : 'unrelated'}"`,
+          )
+          expect(html).not.toContain(
+            `href="/products/${categoryID === 'c0' ? 'unrelated' : 'accessories'}"`,
+          )
+        }
+      },
+    )
+
+    it.each(['ACCESSORIES', ' Accessories '])(
+      'disambiguates visually similar category name "%s"',
+      async (name) => {
+        const { html } = await getPage(async () => [
           {
             ...product,
-            productID: 'unrelated',
-            categories: [
-              {
-                categoryID: 'different-id',
-                name: 'Accessories',
-                description: null,
-                departmentID: 'd1',
-              },
-            ],
+            categories: ['Accessories', name].map((categoryName, index) => ({
+              categoryID: `similar-${index}`,
+              name: categoryName,
+              description: null,
+              departmentID: 'd1',
+            })),
+          },
+        ])
+
+        expect(html).toContain('>Accessories (ID: similar-0)</option>')
+        expect(html).toContain(`>${name} (ID: similar-1)</option>`)
+      },
+    )
+
+    it('escapes duplicate category names and ID suffixes', async () => {
+      const { html } = await getPage(
+        async () => [
+          {
+            ...product,
+            categories: ['<first>', '<second>'].map((categoryID) => ({
+              categoryID,
+              name: '<Accessories>',
+              description: null,
+              departmentID: 'd1',
+            })),
           },
         ],
-        '/products?category=c0',
+        `/products?category=${encodeURIComponent('<first>')}`,
       )
 
-      expect(html).toContain('href="/products/accessories"')
-      expect(html).not.toContain('href="/products/unrelated"')
+      expect(html).toContain(
+        'value="&lt;first&gt;" selected>&lt;Accessories&gt; (ID: &lt;first&gt;)</option>',
+      )
+      expect(html).toContain(
+        'value="&lt;second&gt;">&lt;Accessories&gt; (ID: &lt;second&gt;)</option>',
+      )
+      expect(html).toContain(
+        'found in &ldquo;&lt;Accessories&gt; (ID: &lt;first&gt;)&rdquo;.',
+      )
+      expect(html).not.toContain('<Accessories>')
+      expect(html).not.toContain('<first>')
     })
 
     it('escapes category names in the dropdown and result summary', async () => {

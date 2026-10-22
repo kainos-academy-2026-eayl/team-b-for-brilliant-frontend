@@ -20,7 +20,7 @@
           <option value="{{ categoryFilter }}" selected disabled>Category no longer available</option>
         {% endif %}
         {% for category in categories %}
-          <option value="{{ category.categoryID }}"{% if categoryFilter == category.categoryID %} selected{% endif %}>{{ category.name }}</option>
+          <option value="{{ category.categoryID }}"{% if categoryFilter == category.categoryID %} selected{% endif %}>{{ category.label }}</option>
         {% endfor %}
       </select>
       <p id="category-search-hint" class="products-search__hint">Choose a category to find products.</p>
@@ -32,7 +32,7 @@
   </form>
   {% if categoryFilter %}
     {% if selectedCategory %}
-      <p class="products-search__results">{{ products.length }} product{{ 's' if products.length != 1 }} found in &ldquo;{{ selectedCategory.name }}&rdquo;.</p>
+      <p class="products-search__results">{{ products.length }} product{{ 's' if products.length != 1 }} found in &ldquo;{{ selectedCategory.label }}&rdquo;.</p>
     {% else %}
       <p class="products-search__results">This category is no longer available. Choose another category or clear your search.</p>
     {% endif %}

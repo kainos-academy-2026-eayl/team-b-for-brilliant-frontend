@@ -23,7 +23,7 @@ export function createProductsRouter(
     const categoryFilter = (req.query.category ?? '').trim()
     try {
       const products = await fetchProducts()
-      const categories = Array.from(
+      const uniqueCategories = Array.from(
         new Map(
           products.flatMap((product) =>
             product.categories.map(
@@ -32,6 +32,18 @@ export function createProductsRouter(
           ),
         ).values(),
       ).sort((a, b) => a.name.localeCompare(b.name))
+      const categoryNameCounts = new Map<string, number>()
+      for (const category of uniqueCategories) {
+        const name = category.name.trim().toLowerCase()
+        categoryNameCounts.set(name, (categoryNameCounts.get(name) ?? 0) + 1)
+      }
+      const categories = uniqueCategories.map((category) => ({
+        ...category,
+        label:
+          (categoryNameCounts.get(category.name.trim().toLowerCase()) ?? 0) > 1
+            ? `${category.name} (ID: ${category.categoryID})`
+            : category.name,
+      }))
       const selectedCategory = categories.find(
         (category) => category.categoryID === categoryFilter,
       )
