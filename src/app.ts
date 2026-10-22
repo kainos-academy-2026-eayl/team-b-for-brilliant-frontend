@@ -6,7 +6,7 @@ import {
   type AccountClient,
   createAccountClient,
 } from './clients/accountClient'
-import { createAuthRouter } from './controllers/auth'
+import { createAuthRouter } from './controllers/auth-controllers'
 import { createImagesRouter } from './controllers/images'
 import { createProductsRouter } from './controllers/products'
 import { registerRouter } from './controllers/register'
