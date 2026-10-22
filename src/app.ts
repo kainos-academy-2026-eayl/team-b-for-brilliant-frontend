@@ -4,6 +4,8 @@ import session from 'express-session'
 import nunjucks from 'nunjucks'
 import { adminLoginRouter } from './controllers/adminLogin';
 import { adminAccountRouter } from './controllers/adminAccount';
+import { requireAuth } from './middleware/requireAuth';
+
 import {
   type AccountClient,
   createAccountClient,
@@ -18,11 +20,11 @@ import {
   createLoginThrottle,
   type LoginThrottle,
 } from './middleware/loginThrottle'
-import { requireAuth } from './middleware/requireAuth'
 import type { ProductWithPrice } from './models/product'
 import { createAuthService } from './services/authService'
 import { fetchImage, type ProxiedImage } from './services/images'
 import { getApiBaseUrl, getProductsWithPrices } from './services/products'
+import { requireAdmin } from './middleware/requireAdmin';
 
 interface AppOptions {
   accountClient?: AccountClient
@@ -40,7 +42,7 @@ export function createApp(options: AppOptions = {}): Express {
 
 export function createApp(): Express {
   const app = express();
-  app.locals.apiBaseUrl = process.env.API_BASE_URL ?? '';
+  
 
     if (isProd) app.set('trust proxy', 1)
   
@@ -109,9 +111,9 @@ export function createApp(): Express {
   app.use('/register', registerRouter);
   app.use('/verify-email', verifyEmailRouter);
   app.use('/admin/login', adminLoginRouter);
-  app.use('/admin/account', adminAccountRouter);
   app.get('/forgot-password', (_req, res) => res.render('forgot-password'))
   app.get('/account', requireAuth, (_req, res) => res.render('account'))
+  app.use('/admin/account', requireAdmin, adminAccountRouter);
 
   return app
 }
