@@ -4,6 +4,7 @@ import {
   getPriceFetchConcurrency,
   getProducts,
   getProductsWithPrices,
+  getProductWithPrice,
 } from './products'
 
 const backendProduct = {
@@ -16,7 +17,12 @@ const backendProduct = {
   weight: 1.5,
   deletedAt: null,
   productImages: [
-    { imageID: 'i1', productID: 'p1', imageUrl: '/images/product-1.svg' },
+    {
+      imageID: 'i1',
+      productID: 'p1',
+      imageUrl: '/images/product-1.svg',
+      imageOrder: 0,
+    },
   ],
 }
 
@@ -26,6 +32,180 @@ function jsonResponse(body: object, status = 200): Response {
     headers: { 'Content-Type': 'application/json' },
   })
 }
+
+describe.each(['catalogue', 'detail'] as const)('%s image ordering', (page) => {
+  const loadProducts = async (images: object[]) => {
+    const fetchFn = vi.fn<typeof fetch>(async (input) =>
+      String(input).endsWith('/prices/current')
+        ? jsonResponse({ price: null })
+        : jsonResponse(
+            page === 'catalogue'
+              ? { products: [{ ...backendProduct, productImages: images }] }
+              : { product: { ...backendProduct, productImages: images } },
+          ),
+    )
+    if (page === 'catalogue') {
+      return getProducts('http://localhost:3001', fetchFn)
+    }
+    return [await getProductWithPrice('p1', 'http://localhost:3001', fetchFn)]
+  }
+
+  it('sorts images numerically without mutating the source array', async () => {
+    const images = [10, 0, 2].map((imageOrder) => ({
+      imageID: `i${imageOrder}`,
+      productID: 'p1',
+      imageUrl: `http://localhost:3001/images/order-${imageOrder}.svg`,
+      imageOrder,
+    }))
+    const products = await loadProducts(images)
+
+    expect(products[0]?.productImages.map((image) => image.imageOrder)).toEqual([
+      0, 2, 10,
+    ])
+    expect(products[0]?.productImages[0]?.imageUrl).toBe('/images/order-0.svg')
+    expect(images.map((image) => image.imageOrder)).toEqual([10, 0, 2])
+  })
+
+  it.each([undefined, null, '0', 0.5, -1])(
+    'rejects invalid imageOrder %s',
+    async (imageOrder) => {
+      await expect(
+        loadProducts([
+          {
+            imageID: 'i1',
+            productID: 'p1',
+            imageUrl: '/images/product-1.svg',
+            imageOrder,
+          },
+        ]),
+      ).rejects.toThrow('did not match schema')
+    },
+  )
+})
+
+describe('getProductWithPrice', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('requests just the selected product and price again on every call', async () => {
+    let revision = 0
+    const fetchFn = vi.fn<typeof fetch>(async (input) =>
+      String(input).endsWith('/prices/current')
+        ? jsonResponse({ price: null })
+        : jsonResponse({
+            product: {
+              ...backendProduct,
+              name: `Revision ${++revision}`,
+              productImages: [
+                {
+                  imageID: 'i1',
+                  productID: 'p1',
+                  imageUrl: 'http://localhost:3001/images/product-1.svg',
+                  imageOrder: 0,
+                },
+              ],
+            },
+          }),
+    )
+    const first = await getProductWithPrice(
+      'p1',
+      'http://localhost:3001',
+      fetchFn,
+    )
+    const second = await getProductWithPrice(
+      'p1',
+      'http://localhost:3001',
+      fetchFn,
+    )
+    expect(first?.name).toBe('Revision 1')
+    expect(second?.name).toBe('Revision 2')
+    expect(first?.productImages[0]?.imageUrl).toBe('/images/product-1.svg')
+    expect(fetchFn.mock.calls.map(([input]) => String(input))).toEqual([
+      'http://localhost:3001/products/p1',
+      'http://localhost:3001/products/p1/prices/current',
+      'http://localhost:3001/products/p1',
+      'http://localhost:3001/products/p1/prices/current',
+    ])
+  })
+
+  it('encodes product IDs and attaches the current price', async () => {
+    const fetchFn = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ product: backendProduct }))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          price: {
+            priceID: 'price-1',
+            productID: 'p1',
+            price: '22.49',
+            createdAt: '2026-10-03T00:00:00.000Z',
+          },
+        }),
+      )
+    const result = await getProductWithPrice(
+      'p/1?',
+      'http://localhost:3001',
+      fetchFn,
+    )
+    expect(String(fetchFn.mock.calls[0]?.[0])).toBe(
+      'http://localhost:3001/products/p%2F1%3F',
+    )
+    expect(result?.currentPrice).toBe('22.49')
+  })
+
+  it.each([404, 200])(
+    'returns null for a missing or hidden product (HTTP %s)',
+    async (status) => {
+      const fetchFn = vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(
+          jsonResponse(
+            { product: { ...backendProduct, visible: false } },
+            status,
+          ),
+        )
+      expect(
+        await getProductWithPrice('p1', 'http://localhost:3001', fetchFn),
+      ).toBeNull()
+      expect(fetchFn).toHaveBeenCalledTimes(1)
+    },
+  )
+
+  it('rejects a failed product request', async () => {
+    const fetchFn = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(jsonResponse({}, 500))
+    await expect(
+      getProductWithPrice('p1', 'http://localhost:3001', fetchFn),
+    ).rejects.toThrow('HTTP 500')
+  })
+
+  it('rejects malformed product data', async () => {
+    const fetchFn = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(jsonResponse({ product: { name: 'Widget' } }))
+    await expect(
+      getProductWithPrice('p1', 'http://localhost:3001', fetchFn),
+    ).rejects.toThrow('did not match schema')
+  })
+
+  it('logs price failures and still returns the product', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const fetchFn = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ product: backendProduct }))
+      .mockRejectedValueOnce(new Error('Price unavailable'))
+    const result = await getProductWithPrice(
+      'p1',
+      'http://localhost:3001',
+      fetchFn,
+    )
+    expect(result?.productID).toBe('p1')
+    expect(result?.currentPrice).toBeNull()
+    expect(log).toHaveBeenCalledOnce()
+  })
+})
 
 describe('getProducts', () => {
   it('fetches products from the backend and rewrites image URLs to the frontend proxy', async () => {

@@ -23,13 +23,18 @@ import {
 import type { ProductWithPrice } from './models/product'
 import { createAuthService } from './services/authService'
 import { fetchImage, type ProxiedImage } from './services/images'
-import { getApiBaseUrl, getProductsWithPrices } from './services/products'
 import { requireAdmin } from './middleware/requireAdmin';
+import {
+  getApiBaseUrl,
+  getProductsWithPrices,
+  getProductWithPrice,
+} from './services/products'
 
 interface AppOptions {
   accountClient?: AccountClient
   throttle?: LoginThrottle
   fetchProducts?: () => Promise<ProductWithPrice[]>
+  fetchProduct?: (productID: string) => Promise<ProductWithPrice | null>
   fetchProxiedImage?: (fileName: string) => Promise<ProxiedImage | null>
 }
 
@@ -79,12 +84,15 @@ export function createApp(options: AppOptions = {}): Express {
   app.use('/verify-email', verifyEmailRouter)
 
   app.get('/', (_req: Request, res: Response) => {
-    res.redirect('/products')
+    res.redirect('/login')
   })
 
   app.use(
     '/products',
-    createProductsRouter(options.fetchProducts ?? getProductsWithPrices),
+    createProductsRouter(
+      options.fetchProducts ?? getProductsWithPrices,
+      options.fetchProduct ?? getProductWithPrice,
+    ),
   )
   app.use(
     '/images',
