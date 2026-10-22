@@ -158,6 +158,36 @@ Environment variables are loaded from `.env` by [dotenv](https://github.com/motd
 | `GET /account` | Account page, requires sign-in. Signed-out visitors are redirected to `/login?returnTo=...`. |
 | `GET /forgot-password` | Placeholder page. |
 
+### Product detail pages
+
+Each product card links to `GET /products/:productID`. This route freshly requests
+`GET /products/:productID` from the backend (a `{ "product": {...} }` response)
+and its current price, then renders the shared `views/products/show.njk`
+template. It does not reuse the catalogue response. Missing or hidden products
+return `404`; backend failures return `502`. A failed price lookup still shows
+the product with "Price unavailable". Detail pages are served with `Cache-Control: no-store`.
+
+Products with multiple images show a vertical thumbnail list to the left of the
+main image. Clicking a thumbnail (or activating it with Enter or Space) replaces
+the main image and marks that thumbnail as selected. Images are sorted by their
+non-negative integer `imageOrder`, ascending. The image with `imageOrder: 0`
+appears at the top, is selected initially, and is used as the catalogue thumbnail.
+If there is no image with order 0, the image with the lowest order is used instead.
+Products with one image show it without thumbnails, and products with
+no images show "No image available".
+
+Between the price and description, detail pages show a quantity dropdown from
+1 to the available stock (capped at 10) and an "Add to basket" button underneath. Out-of-stock
+products show quantity 0 with both controls disabled. These controls are UI-only:
+the button does not yet save items or call a basket API.
+
+### Product images
+
+Both backend product endpoints must include `imageOrder` on every image.
+Missing, fractional, or negative orders fail response validation rather than
+silently displaying an incorrect image order.
+
+The browser never contacts the backend directly, so `API_BASE_URL` can be an internal-only address. Backend image URLs such as `/images/product-1.svg` are rewritten to the same path on this frontend, and `GET /images/:fileName` fetches the image from the backend on the server and returns it. Only single, plain file names under the backend's `/images/` path are proxied; anything else (other hosts, nested paths, `..`) is dropped from the page or returns `404`. Responses must have an `image/*` content type and be at most 5 MB, otherwise the route returns `502`.
 Run the unit tests with `npm test` and the end-to-end tests with `npm run test:e2e` (run `npx playwright install chromium` once first).
 
 The server binds to `0.0.0.0` so it is reachable from outside a container. Add any new environment variables to your local `.env` and document them in this section.
