@@ -22,7 +22,14 @@ function setError(input: HTMLInputElement, message: string): void {
 
 function getSafeNextUrl(): string {
     const next = new URLSearchParams(window.location.search).get('next');
-    if (next && next.startsWith('/') && !next.startsWith('//')) return next;
+    if (next && next.startsWith('/') && !next.startsWith('//')) {
+        try {
+            const target = new URL(next, window.location.origin);
+            if (target.origin === window.location.origin) return target.href;
+        } catch {
+            return '/admin/account';
+        }
+    }
     return '/admin/account';
 }
 
