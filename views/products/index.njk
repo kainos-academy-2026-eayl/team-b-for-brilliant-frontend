@@ -1,0 +1,45 @@
+{% extends "layout.njk" %}
+
+{% block title %}Products | Team B for Brilliant{% endblock %}
+
+{% block head %}
+  <style>
+    {% include "products/products.css" %}
+  </style>
+{% endblock %}
+
+{% block content %}
+  <h1>Products</h1>
+
+  {% if products.length %}
+    <ul class="product-list">
+      {% for product in products %}
+        <li class="product">
+          <div class="product__image">
+            {% set image = product.productImages[0] %}
+            {% if image %}
+              <img src="{{ image.imageUrl }}" alt="{{ product.name }}">
+            {% else %}
+              <span>No image available</span>
+            {% endif %}
+          </div>
+          <div class="product__body">
+            <h2 class="product__name">{{ product.name }}</h2>
+            {% if product.quantity > 0 %}
+              <span class="stock stock--in">In stock</span>
+            {% else %}
+              <span class="stock stock--out">Out of stock</span>
+            {% endif %}
+            {% if product.currentPrice %}
+              <p class="product__price">£{{ product.currentPrice }}</p>
+            {% else %}
+              <p class="product__price product__price--unavailable">Price unavailable</p>
+            {% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-state">No products available.</p>
+  {% endif %}
+{% endblock %}
