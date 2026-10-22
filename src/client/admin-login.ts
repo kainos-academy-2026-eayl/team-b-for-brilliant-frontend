@@ -5,7 +5,7 @@ const emailInput = document.getElementById('email') as HTMLInputElement;
 const passwordInput = document.getElementById('password') as HTMLInputElement;
 const submitButton = document.getElementById('submit-button') as HTMLButtonElement;
 const formError = document.getElementById('form-error') as HTMLDivElement;
-const COMPANY_DOMAIN = '@bebrilliant.com';
+const COMPANY_DOMAIN = '@b-brilliant.com';
 
 type LoginErrorBody = { field?: 'email' | 'password'; };
 
