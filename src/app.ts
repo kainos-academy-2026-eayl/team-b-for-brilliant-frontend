@@ -80,7 +80,7 @@ export function createApp(options: AppOptions = {}): Express {
   app.use('/verify-email', verifyEmailRouter)
 
   app.get('/', (_req: Request, res: Response) => {
-    res.redirect('/products')
+    res.redirect('/login')
   })
 
   app.use(
