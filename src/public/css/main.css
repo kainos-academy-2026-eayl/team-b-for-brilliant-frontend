@@ -15,6 +15,7 @@ html { scroll-behavior: smooth; }
 body { margin: 0; }
 a { color: inherit; }
 button { font: inherit; }
+/* biome-ignore lint/complexity/noImportantStyles: Hidden states must override component display rules. */
 [hidden] { display: none !important; }
 :focus-visible { outline: 3px solid #486421; outline-offset: 5px; }
 .shell { width: min(1240px, calc(100% - 96px)); margin-inline: auto; }
@@ -59,13 +60,13 @@ h2 { font-size: 34px; line-height: 1.2; font-weight: 600; letter-spacing: -1.4px
 .product-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 34px 24px; list-style: none; margin: 0; padding: 0; }
 .product-visual { position: relative; border-radius: 5px; overflow: hidden; background: #edeee5; aspect-ratio: 1.15; }
 .product-visual img { display: block; width: 100%; height: 100%; object-fit: contain; padding: 18px; transition: transform 250ms ease; }
-.product-card:hover .product-visual img { transform: scale(1.035); }
 .product-tone-1 .product-visual { background: #eee5dc; }
 .product-tone-2 .product-visual { background: #e8ebf0; }
 .product-tone-3 .product-visual { background: #e1e8dc; }
 .product-tone-4 .product-visual { background: #f1e9df; }
 .product-tone-5 .product-visual { background: #e4e3d7; }
 .product-tone-5 img { filter: hue-rotate(35deg) saturate(0.8); }
+.product-card:hover .product-visual img { transform: scale(1.035); }
 .stock-label { position: absolute; top: 13px; left: 13px; font-size: 9px; padding: 6px 9px; border-radius: 3px; font-weight: 600; background: #fcfbf5; }
 .available { color: #365027; }
 .unavailable { color: #6a3b2c; background: #fff4ed; }
