@@ -88,6 +88,8 @@ describe('GET /home', () => {
     expect(first.text).toContain('href="/products">View all products');
     expect(first.text).toContain('href="/products/p5"');
     expect(first.text).toContain('src="/images/product-5.svg"');
+    expect(first.text).toContain('class="home-hero-image" src="/images/product-5.svg" alt="Product 5"');
+    expect(first.text).not.toContain('/assets/images/tote.svg');
     expect(first.text).toContain('£12.50');
     expect(first.text).not.toContain('Demo catalogue');
     expect(first.text).not.toContain('/assets/js/home.js');
@@ -120,6 +122,20 @@ describe('GET /home', () => {
     ].map((match) => match[1]);
 
     expect(names).toEqual(['Product 10', 'Product 9', 'Product 3']);
+    expect(response.text).toContain('class="home-hero-image" src="/images/product-10.svg" alt="Product 10"');
+  });
+
+  it('does not substitute a lower-selling image when the highest seller has none', async () => {
+    const agent = await signedInAgent(async () => [
+      product(1),
+      { ...product(2), productImages: [] },
+    ]);
+    const response = await agent.get('/home');
+
+    expect(response.status).toBe(200);
+    expect(response.text).toContain('class="home-hero-placeholder">No image available');
+    expect(response.text).not.toContain('class="home-hero-image"');
+    expect(response.text).toContain('src="/images/product-1.svg"');
   });
 
   it.each([0, 1, 2, 3])(
@@ -135,6 +151,10 @@ describe('GET /home', () => {
         count,
       );
       expect(response.text.includes('No products available')).toBe(count === 0);
+      if (count === 0) {
+        expect(response.text).toContain('class="home-hero-placeholder">No image available');
+        expect(response.text).not.toContain('class="home-hero-image"');
+      }
       expect(response.text).toContain('href="/products">View all products');
     },
   );
@@ -171,6 +191,7 @@ describe('GET /home', () => {
     expect(response.text).toContain('&lt;Widget&gt;');
     expect(response.text).toContain('href="/products/id%2Fwith%20space"');
     expect(response.text).toContain('No image available');
+    expect(response.text).not.toContain('class="home-hero-image"');
     expect(response.text).toContain('Price unavailable');
     expect(response.text).toContain('Out of stock');
   });
@@ -186,6 +207,7 @@ describe('GET /home', () => {
     expect(response.status).toBe(502);
     expect(response.text).toContain('role="alert"');
     expect(response.text).toContain('We could not load products right now.');
+    expect(response.text).toContain('class="home-hero-placeholder">No image available');
     expect(response.text).toContain('href="/home">Try again');
     expect(response.text).toContain('href="/products">View all products');
     expect(response.text).not.toContain('No products available');

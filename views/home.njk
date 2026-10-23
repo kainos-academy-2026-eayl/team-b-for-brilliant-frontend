@@ -17,11 +17,16 @@
       <a class="button home-cta" href="/products">View all products <span aria-hidden="true">&rarr;</span></a>
       <p class="home-caption">Good finds. Fresh inspiration. All in one place.</p>
     </div>
-    <div class="home-hero-art" aria-hidden="true">
-      <span class="home-art-label">THE EVERYDAY EDIT<br>BY B-BRILLIANT</span>
-      <span class="home-art-circle"></span>
-      <img class="home-hero-image" src="/assets/images/tote.svg" alt="" width="400" height="330">
-      <span class="home-art-sticker">Less ordinary.<br><em>More you.</em><span>*</span></span>
+    <div class="home-hero-art">
+      <span class="home-art-label" aria-hidden="true">THE EVERYDAY EDIT<br>BY B-BRILLIANT</span>
+      <span class="home-art-circle" aria-hidden="true"></span>
+      {% set heroProduct = products[0] %}
+      {% if heroProduct and heroProduct.productImages.length %}
+        <img class="home-hero-image" src="{{ heroProduct.productImages[0].imageUrl }}" alt="{{ heroProduct.name }}" width="400" height="330">
+      {% else %}
+        <p class="home-hero-placeholder">No image available</p>
+      {% endif %}
+      <span class="home-art-sticker" aria-hidden="true">Less ordinary.<br><em>More you.</em><span>*</span></span>
     </div>
   </section>
 

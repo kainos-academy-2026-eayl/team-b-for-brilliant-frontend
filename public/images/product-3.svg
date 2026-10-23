@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 360" role="img" aria-labelledby="title">
+  <title id="title">Volumizing Mascara with a bristled wand</title>
+  <rect width="400" height="360" rx="20" fill="#f2eff8"/>
+  <ellipse cx="200" cy="310" rx="100" ry="12" fill="#ded8e9"/>
+  <rect x="115" y="140" width="65" height="165" rx="12" fill="#1f2933"/>
+  <rect x="115" y="150" width="65" height="12" fill="#52dfdd"/>
+  <path d="M255 155V80" stroke="#1f2933" stroke-width="8"/>
+  <rect x="235" y="155" width="40" height="105" rx="9" fill="#028aa4"/>
+  <path d="M239 55h32m-32 9h32m-32 9h32m-32 9h32m-32 9h32" stroke="#1f2933" stroke-width="6" stroke-linecap="round"/>
+  <g fill="#fff" font-family="sans-serif" font-size="10" text-anchor="middle"><text x="148" y="210">VOLUME</text><text x="148" y="230">MASCARA</text></g>
+</svg>

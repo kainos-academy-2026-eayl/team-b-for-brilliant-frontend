@@ -92,6 +92,13 @@
     object-fit: contain;
 }
 
+.home-hero-placeholder {
+    margin: 0;
+    padding: 5rem 1rem;
+    color: var(--color-muted);
+    text-align: center;
+}
+
 .home-art-sticker {
     position: absolute;
     right: 1rem;
