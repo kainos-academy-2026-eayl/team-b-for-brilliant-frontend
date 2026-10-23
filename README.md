@@ -69,6 +69,7 @@ Never commit your `.env` file. It is listed in [.gitignore](.gitignore). The qui
 | `npm run format` | `biome format --write src` | Formats application source files. |
 | `npm run lint` | `biome lint src` | Lints application source files. |
 | `npm run typecheck` | `tsc` | Checks types without emitting files. |
+| `npm test` | `vitest run` | Runs automated tests in `tests/`. Browser tests in `e2e/` are not included. |
 | `npm run build` | `tsc` then `esbuild` | Type-checks, then bundles the service into `dist/index.js` for production. |
 | `npm start` | `node dist/index.js` | Runs the built output. Requires `npm run build` first. |
 Before pushing, run `npm run format`, `npm run lint`, `npm run typecheck`, and `npm run build`.
@@ -156,6 +157,17 @@ Environment variables are loaded from `.env` by [dotenv](https://github.com/motd
 | `POST /logout` | Ends the session. |
 | `GET /account` | Account page, requires sign-in. Signed-out visitors are redirected to `/login?returnTo=...`. |
 | `GET /forgot-password` | Placeholder page. |
+
+### Home page
+
+`GET /home` requires sign-in and displays up to three visible, published,
+non-deleted products from the backend product API, ranked by `salesNo` descending,
+then product ID descending for equal sales totals (numeric portions compare
+numerically, so ID `10` ranks above `9`). The API must return a non-negative integer
+`salesNo` for each product. The selection is made on each page request, with
+current prices and product-detail links. Products render on the server
+without requiring JavaScript. “View all products” opens `/products`.
+Backend failures show an error and a retry link rather than demo products.
 
 ### Product detail pages
 

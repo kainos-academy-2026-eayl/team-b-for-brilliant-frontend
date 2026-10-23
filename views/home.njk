@@ -1,0 +1,84 @@
+{% extends "layout.njk" %}
+
+{% block title %}Home{% endblock %}
+
+{% block main_class %}home-main{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="/static/home.css">
+{% endblock %}
+
+{% block content %}
+  <section class="home-hero card" aria-labelledby="hero-title">
+    <div class="home-hero-copy">
+      <p class="home-eyebrow">Small things. Brilliant possibilities.</p>
+      <h1 id="hero-title">Your everyday.<br>A little more <em>brilliant.</em></h1>
+      <p class="home-description">Discover thoughtful essentials for your home, your desk, and everywhere life takes you.</p>
+      <a class="button home-cta" href="/products">View all products <span aria-hidden="true">&rarr;</span></a>
+      <p class="home-caption">Good finds. Fresh inspiration. All in one place.</p>
+    </div>
+    <div class="home-hero-art" aria-hidden="true">
+      <span class="home-art-label">THE EVERYDAY EDIT<br>BY B-BRILLIANT</span>
+      <span class="home-art-circle"></span>
+      <img class="home-hero-image" src="/assets/images/tote.svg" alt="" width="400" height="330">
+      <span class="home-art-sticker">Less ordinary.<br><em>More you.</em><span>*</span></span>
+    </div>
+  </section>
+
+  <section class="home-collection card" id="products" aria-labelledby="collection-title">
+    <div class="collection-heading">
+      <div>
+        <p class="home-eyebrow">Find your next favourite</p>
+        <h2 id="collection-title">Featured products</h2>
+      </div>
+      <p class="collection-description">A few good things to get you started.</p>
+    </div>
+
+    {% if productError %}
+      <p class="alert" role="alert">{{ productError }}</p>
+      <a class="button home-cta" href="/home">Try again</a>
+    {% elif products.length %}
+      <ul class="product-grid" id="product-grid" aria-label="Featured products">
+        {% for product in products %}
+          <li class="product-card">
+            <article>
+              <div class="product-visual">
+                {% set image = product.productImages[0] %}
+                {% if image %}
+                  <img src="{{ image.imageUrl }}" alt="{{ product.name }}" width="360" height="320" loading="lazy">
+                {% else %}
+                  <span class="product-image-placeholder">No image available</span>
+                {% endif %}
+                {% if product.quantity > 0 %}
+                  <span class="stock-label">In stock</span>
+                {% else %}
+                  <span class="stock-label unavailable">Out of stock</span>
+                {% endif %}
+              </div>
+              <div class="product-detail">
+                <h3 class="product-name"><a href="/products/{{ product.productID | urlencode }}">{{ product.name }}</a></h3>
+                {% if product.currentPrice %}
+                  <p class="product-price">£{{ product.currentPrice }}</p>
+                {% else %}
+                  <p class="product-price">Price unavailable</p>
+                {% endif %}
+              </div>
+            </article>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div id="empty-state" class="message-state" role="status">
+        <h3>No products available</h3>
+        <p>Please check back soon for something brilliant.</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <aside class="closing-note">
+    <span aria-hidden="true">*</span>
+    <p>Everyday essentials.<br>Extraordinary little moments.</p>
+    <p>That's the B-Brilliant way.</p>
+  </aside>
+
+{% endblock %}

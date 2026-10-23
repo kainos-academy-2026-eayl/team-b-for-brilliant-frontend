@@ -8,6 +8,7 @@
   {% block head %}{% endblock %}
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
     <div class="brand">
       <a href="/" class="logo">B-Brilliant</a>
@@ -25,7 +26,7 @@
       {% endif %}
     </nav>
   </header>
-  <main>{% block content %}{% endblock %}</main>
+  <main id="main" class="{% block main_class %}{% endblock %}">{% block content %}{% endblock %}</main>
   {% block scripts %}{% endblock %}
 </body>
 </html>
