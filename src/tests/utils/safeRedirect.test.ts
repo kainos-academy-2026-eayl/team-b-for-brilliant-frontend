@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { safeRedirect } from '../src/utils/safeRedirect';
+import { safeRedirect } from '../../utils/safeRedirect';
 
 describe('safeRedirect', () => {
   it('allows local paths', () => {

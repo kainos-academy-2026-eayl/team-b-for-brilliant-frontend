@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { createApp } from '../src/app';
-import type { AccountClient } from '../src/clients/accountClient';
+import { createApp } from '../../app';
+import type { AccountClient } from '../../clients/accountClient';
 
 const accountClient: AccountClient = {
   async verifyCredentials(email, password,) {
