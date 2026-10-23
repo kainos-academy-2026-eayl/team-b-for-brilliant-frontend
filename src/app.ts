@@ -18,6 +18,7 @@ import {
 } from './middleware/loginThrottle'
 import { requireAuth } from './middleware/requireAuth'
 import type { ProductWithPrice } from './models/product'
+import { createHomeRouter } from './routes/home'
 import { createAuthService } from './services/authService'
 import { fetchImage, type ProxiedImage } from './services/images'
 import {
@@ -50,6 +51,7 @@ export function createApp(options: AppOptions = {}): Express {
   })
   app.set('view engine', 'njk')
   app.use('/static', express.static(path.resolve('public')))
+  app.use('/assets', express.static(path.resolve('src/public')))
 
   app.use(express.urlencoded({ extended: false, limit: '10kb' }))
   app.use(
@@ -76,6 +78,11 @@ export function createApp(options: AppOptions = {}): Express {
     res.json({ status: 'ok', uptime: process.uptime() })
   })
 
+  app.use(
+    '/home',
+    requireAuth,
+    createHomeRouter(options.fetchProducts ?? getProductsWithPrices),
+  )
   app.use('/register', registerRouter)
   app.use('/verify-email', verifyEmailRouter)
 

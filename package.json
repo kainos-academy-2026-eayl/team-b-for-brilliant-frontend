@@ -10,7 +10,7 @@
     "lint": "biome lint src",
     "build": "npm run typecheck && esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/index.js --sourcemap",
     "typecheck": "tsc",
-    "test": "echo \"No automated tests configured\"",
+    "test": "vitest run",
     "start": "node dist/index.js"
   },
   "keywords": [],
@@ -22,9 +22,12 @@
     "@types/express-session": "^1.19.0",
     "@types/node": "26.4.1",
     "@types/nunjucks": "^3.2.6",
+    "@types/supertest": "^7.2.1",
     "esbuild": "0.28.2",
     "tsx": "4.23.13",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "supertest": "^7.3.1",
+    "vitest": "^5.0.5"
   },
   "dependencies": {
     "dotenv": "17.4.2",

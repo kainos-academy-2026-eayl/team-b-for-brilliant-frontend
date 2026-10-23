@@ -1,11 +1,15 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "lib": ["ES2023"],
-    "types": ["node"],
+    "lib": [
+      "ES2023"
+    ],
+    "types": [
+      "node"
+    ],
     "module": "Preserve",
     "moduleResolution": "Bundler",
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "./dist",
     "noEmit": true,
     "strict": true,
@@ -17,14 +21,18 @@
     "exactOptionalPropertyTypes": true,
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
-
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-
     "incremental": true,
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo"
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*",
+    "tests/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }
