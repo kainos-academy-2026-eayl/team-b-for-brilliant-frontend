@@ -3,3 +3,7 @@ dist/
 .env
 src/generated
 .DS_Store
+code_reviews
+learning-records
+lessons
+reference

@@ -11,6 +11,33 @@
 {% block content %}
   <h1>Products</h1>
 
+  <form class="products-search" role="search" aria-label="Search products by category" method="get" action="/products">
+    <div class="form-field">
+      <label for="category-search">Category</label>
+      <select id="category-search" name="category" aria-describedby="category-search-hint">
+        <option value=""{% if not categoryFilter %} selected{% endif %}>All categories</option>
+        {% if categoryFilter and not selectedCategory %}
+          <option value="{{ categoryFilter }}" selected disabled>Category no longer available</option>
+        {% endif %}
+        {% for category in categories %}
+          <option value="{{ category.categoryID }}"{% if categoryFilter == category.categoryID %} selected{% endif %}>{{ category.label }}</option>
+        {% endfor %}
+      </select>
+      <p id="category-search-hint" class="products-search__hint">Choose a category to find products.</p>
+    </div>
+    <button type="submit" class="button">Filter products</button>
+    {% if categoryFilter %}
+      <a class="products-search__clear" href="/products">Clear search</a>
+    {% endif %}
+  </form>
+  {% if categoryFilter %}
+    {% if selectedCategory %}
+      <p class="products-search__results">{{ products.length }} product{{ 's' if products.length != 1 }} found in &ldquo;{{ selectedCategory.label }}&rdquo;.</p>
+    {% else %}
+      <p class="products-search__results">This category is no longer available. Choose another category or clear your search.</p>
+    {% endif %}
+  {% endif %}
+
   {% if products.length %}
     <ul class="product-list">
       {% for product in products %}
@@ -42,6 +69,6 @@
       {% endfor %}
     </ul>
   {% else %}
-    <p class="empty-state">No products available.</p>
+    <p class="empty-state">{{ 'No products match this category. Choose another category or clear your search.' if categoryFilter else 'No products available.' }}</p>
   {% endif %}
 {% endblock %}

@@ -69,7 +69,7 @@ Never commit your `.env` file. It is listed in [.gitignore](.gitignore). The qui
 | `npm run format` | `biome format --write src` | Formats application source files. |
 | `npm run lint` | `biome lint src` | Lints application source files. |
 | `npm run typecheck` | `tsc` | Checks types without emitting files. |
-| `npm test` | `vitest run` | Runs automated tests in `tests/`. Browser tests in `e2e/` are not included. |
+| `npm test` | `vitest run` | Runs automated tests under `tests/`, organised to mirror source modules. Browser tests in `e2e/` are not included. |
 | `npm run build` | `tsc` then `esbuild` | Type-checks, then bundles the service into `dist/index.js` for production. |
 | `npm start` | `node dist/index.js` | Runs the built output. Requires `npm run build` first. |
 Before pushing, run `npm run format`, `npm run lint`, `npm run typecheck`, and `npm run build`.
@@ -187,6 +187,26 @@ If there is no image with order 0, the image with the lowest order is used inste
 Products with one image show it without thumbnails, and products with
 no images show "No image available".
 
+Product responses include `categories` (category ID, name, nullable description,
+and department ID) and `departments` (department ID, name, nullable description).
+Both arrays are validated and retained for catalogue and detail responses.
+Detail pages list categories after the description, grouped by `departmentID`
+with each department name shown once as a heading. Categories without a matching
+department remain visible under "Other categories". When there are no categories,
+any departments are shown below the product title. Empty sections are hidden.
+
+The products page includes a category dropdown populated from the products'
+categories, deduplicated by category ID and sorted alphabetically by name.
+When different IDs have the same name (ignoring case and surrounding whitespace),
+their labels include the full category ID, for example `Accessories (ID: c0)`,
+including in the selected-category summary. Unique names remain unchanged.
+Select a category and press "Filter products" to submit its ID to
+`GET /products?category=<categoryID>`. The selection is retained, and all category
+options remain available after filtering. "All categories" or "Clear search"
+shows all products. A link to a category that is no longer available shows an
+explicit message. Filtering uses the categories already returned by the backend,
+so no additional API is needed.
+
 Between the price and description, detail pages show a quantity dropdown from
 1 to the available stock (capped at 10) and an "Add to basket" button underneath. Out-of-stock
 products show quantity 0 with both controls disabled. These controls are UI-only:
@@ -218,7 +238,11 @@ Missing, fractional, or negative orders fail response validation rather than
 silently displaying an incorrect image order.
 
 The browser never contacts the backend directly, so `API_BASE_URL` can be an internal-only address. Backend image URLs such as `/images/product-1.svg` are rewritten to the same path on this frontend, and `GET /images/:fileName` fetches the image from the backend on the server and returns it. Only single, plain file names under the backend's `/images/` path are proxied; anything else (other hosts, nested paths, `..`) is dropped from the page or returns `404`. Responses must have an `image/*` content type and be at most 5 MB, otherwise the route returns `502`.
-Run the unit tests with `npm test` and the end-to-end tests with `npm run test:e2e` (run `npx playwright install chromium` once first).
+Run the automated test suites with `npm test`. These tests mock
+backend calls and do not require a running backend or a local `.env` file.
+Controller tests live in `tests/controllers/`, service tests in `tests/services/`,
+and utility tests in `tests/utils/`. The `products.categories.test.ts` suites
+retain the category-specific coverage alongside the general product suites.
 
 The server binds to `0.0.0.0` so it is reachable from outside a container. Add any new environment variables to your local `.env` and document them in this section.
 

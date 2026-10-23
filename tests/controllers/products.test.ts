@@ -1,8 +1,8 @@
 import { once } from 'node:events'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createApp } from '../src/app'
-import type { ProductWithPrice } from '../src/models/product'
-import { getProductsWithPrices, getProductWithPrice } from '../src/services/products'
+import { createApp } from '../../src/app'
+import type { ProductWithPrice } from '../../src/models/product'
+import { getProductsWithPrices, getProductWithPrice } from '../../src/services/products'
 
 const product: ProductWithPrice = {
   productID: 'p1',
@@ -14,6 +14,8 @@ const product: ProductWithPrice = {
   visible: true,
   weight: 1.5,
   deletedAt: null,
+  categories: [],
+  departments: [],
   productImages: [
     {
       imageID: 'i1',
