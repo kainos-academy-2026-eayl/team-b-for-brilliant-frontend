@@ -51,6 +51,10 @@ export function createApp(options: AppOptions = {}): Express {
   })
   app.set('view engine', 'njk')
   app.use('/static', express.static(path.resolve('public')))
+  app.use(
+    '/images',
+    express.static(path.resolve('public/images'), { index: false, redirect: false }),
+  )
   app.use('/assets', express.static(path.resolve('src/public')))
 
   app.use(express.urlencoded({ extended: false, limit: '10kb' }))

@@ -214,6 +214,25 @@ the button does not yet save items or call a basket API.
 
 ### Product images
 
+The home-page hero uses the first image of the highest-ranked featured product:
+highest `salesNo`, then highest product ID for ties. Image ordering uses the
+existing ascending `imageOrder` rule. If that product has no usable image, the
+hero displays "No image available"; it does not substitute a lower-selling product.
+
+No new backend endpoint is needed. `GET /products` must return the actual
+non-negative integer `salesNo` for each product and its `productImages` records
+(`imageID`, `productID`, `imageUrl`, and non-negative integer `imageOrder`).
+If `salesNo` exists in the database but is absent from the API response, add it
+to the backend product query/selection and response mapping. Image URLs must use
+the supported `/images/<filename>` path and reference an existing local image
+or an image served by the backend. The frontend does not query the database directly.
+
+Local product illustrations live in `public/images/product-1.svg` through
+`product-10.svg` and are served at `/images/product-N.svg`. Local files take
+precedence; image paths without a matching local file use the backend proxy.
+The product-10 image record must reference `/images/product-10.svg` for the
+eyeshadow palette, rather than sharing product-9's hammer image.
+
 Both backend product endpoints must include `imageOrder` on every image.
 Missing, fractional, or negative orders fail response validation rather than
 silently displaying an incorrect image order.
