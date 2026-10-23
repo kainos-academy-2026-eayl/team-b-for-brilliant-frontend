@@ -15,6 +15,7 @@ export const ProductImageSchema: z.ZodType<ProductImage> = z.object({
 
 export const ProductSchema: z.ZodType<Product> = z.object({
   productID: z.string(),
+  salesNo: z.int().nonnegative(),
   name: z.string(),
   description: z.string().nullable(),
   quantity: z.int(),

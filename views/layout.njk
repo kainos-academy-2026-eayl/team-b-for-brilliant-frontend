@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}B-Brilliant{% endblock %}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="brand">
+      <a href="/" class="logo">B-Brilliant</a>
+      <span class="tagline">Never Settle for less</span>
+    </div>
+    <nav class="site-nav">
+      {% if isSignedIn %}
+        <a href="/account">My account</a>
+        <form method="post" action="/logout">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <button type="submit" class="button button-link">Log out</button>
+        </form>
+      {% else %}
+        <a href="/login">Sign in</a>
+      {% endif %}
+    </nav>
+  </header>
+  <main id="main" class="{% block main_class %}{% endblock %}">{% block content %}{% endblock %}</main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
