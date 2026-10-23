@@ -1,8 +1,8 @@
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createApp } from '../src/app';
-import type { AccountClient } from '../src/clients/accountClient';
-import type { ProductWithPrice } from '../src/models/product';
+import { createApp } from '../../app';
+import type { AccountClient } from '../../clients/accountClient';
+import type { ProductWithPrice } from '../../models/product';
 
 const accountClient: AccountClient = {
   async verifyCredentials() {
