@@ -1,11 +1,11 @@
 import { once } from 'node:events'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createApp } from '../app'
-import type { ProductWithPrice } from '../models/product'
+import { createApp } from '../../src/app'
+import type { ProductWithPrice } from '../../src/models/product'
 import {
   getProductsWithPrices,
   getProductWithPrice,
-} from '../services/products'
+} from '../../src/services/products'
 
 const product: ProductWithPrice = {
   productID: 'p1',
