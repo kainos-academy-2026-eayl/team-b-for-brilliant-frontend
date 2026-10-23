@@ -2,6 +2,10 @@ import path from 'node:path'
 import express, { type Express, type Request, type Response } from 'express'
 import session from 'express-session'
 import nunjucks from 'nunjucks'
+import { adminLoginRouter } from './controllers/adminLogin';
+import { adminAccountRouter } from './controllers/adminAccount';
+import { requireAuth } from './middleware/requireAuth';
+
 import {
   type AccountClient,
   createAccountClient,
@@ -16,10 +20,10 @@ import {
   createLoginThrottle,
   type LoginThrottle,
 } from './middleware/loginThrottle'
-import { requireAuth } from './middleware/requireAuth'
 import type { ProductWithPrice } from './models/product'
 import { createAuthService } from './services/authService'
 import { fetchImage, type ProxiedImage } from './services/images'
+import { requireAdmin } from './middleware/requireAdmin';
 import {
   getApiBaseUrl,
   getProductsWithPrices,
@@ -41,8 +45,8 @@ export function createApp(options: AppOptions = {}): Express {
     throw new Error('SESSION_SECRET is required in production')
   }
 
-  if (isProd) app.set('trust proxy', 1)
-
+    if (isProd) app.set('trust proxy', 1)
+  
   nunjucks.configure(path.resolve('views'), {
     autoescape: true,
     express: app,
@@ -108,8 +112,10 @@ export function createApp(options: AppOptions = {}): Express {
 
   app.use(createAuthRouter(authService))
 
+  app.use('/admin/login', adminLoginRouter);
   app.get('/forgot-password', (_req, res) => res.render('forgot-password'))
   app.get('/account', requireAuth, (_req, res) => res.render('account'))
+  app.use('/admin/account', requireAdmin, adminAccountRouter);
 
   return app
 }

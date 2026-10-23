@@ -1,0 +1,16 @@
+{% extends "layout.njk" %}
+
+{% block title %}Account{% endblock %}
+
+{% block content %}
+  <h1>Your account</h1>
+  <p>You are signed in.</p>
+{% endblock %}
+
+{% block admin_actions %}
+  <button type="button" id="logout-button">Log out</button>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/logout.js"></script>
+{% endblock %}

@@ -9,9 +9,10 @@
     "format": "biome format --write src",
     "lint": "biome lint src",
     "build": "npm run typecheck && esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/index.js --sourcemap",
-    "typecheck": "tsc",
-    "test": "echo \"No automated tests configured\"",
-    "start": "node dist/index.js"
+    "test": "vitest run",
+    "typecheck": "tsc && tsc -p src/client",
+    "start": "node dist/index.js",
+    "build:client": "esbuild src/client/admin-login.ts src/client/logout.ts --bundle --outdir=public"
   },
   "keywords": [],
   "author": "",

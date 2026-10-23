@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/static/styles.css">
   {% block head %}{% endblock %}
 </head>
-<body>
+<body data-api-base-url="{{ apiBaseUrl }}">
   <header class="site-header">
     <div class="brand">
       <a href="/" class="logo">B-Brilliant</a>
@@ -23,6 +23,7 @@
       {% else %}
         <a href="/login">Sign in</a>
       {% endif %}
+      {% block admin_actions %}{% endblock %}
     </nav>
   </header>
   <main>{% block content %}{% endblock %}</main>
