@@ -305,13 +305,6 @@ body:not(.menu-enhanced) .site-menu__footer {
     background: var(--color-primary-hover);
 }
 
-.site-menu__hint {
-    display: block;
-    margin-top: 0.4rem;
-    font-size: 0.875rem;
-    font-weight: 400;
-}
-
 .site-menu__footer {
     margin-top: auto;
     padding: 1.5rem;

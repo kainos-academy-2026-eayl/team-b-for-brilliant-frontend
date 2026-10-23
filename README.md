@@ -113,6 +113,9 @@ The shared drawer makes the header and main content inert while open, keeping
 background controls out of keyboard and assistive-technology navigation.
 Closing it by its close button, the overlay or Escape restores the regions'
 previous inert state before returning focus to the menu toggle.
+Tab and Shift+Tab wrap within the open drawer, and the existing slide transitions
+respect reduced-motion preferences. "Shop all products" is a single navigation
+label without subtitle text.
 
 ## Adding a new route
 
