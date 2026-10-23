@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Frontend/backend folder map | Architecture lab</title>
+  <link rel="stylesheet" href="../assets/learning.css">
+</head>
+<body>
+  <header>
+    <nav aria-label="Learning documents"><a href="../lessons/0001-follow-a-product-request.html">Lesson 01: follow a product request</a><a href="#folders">Jump to folder roles</a></nav>
+    <p class="eyebrow">B-Brilliant · Quick reference · Printable</p>
+    <h1>Where does this responsibility live?</h1>
+    <p class="lede">A map of this application, not a rule that every application must use the same folder names.</p>
+  </header>
+  <main>
+    <section id="path" aria-labelledby="path-title">
+      <h2 id="path-title">The product-list path</h2>
+      <pre><code>Browser GET /products
+  → app.ts: middleware and router wiring
+  → controllers/products.ts: incoming HTTP handler
+  → services/products.ts: outgoing backend fetch
+  ← backend JSON
+  → schemas/product.ts: runtime shape check
+  → services: filter visibility, proxy/sort images, fetch prices
+  → controller: res.render(..., { products })
+  → views/products/index.njk + views/main.njk: HTML
+  ← browser displays HTML, then requests assets</code></pre>
+      <p>The arrows between frontend folders are ordinary function/data flow, not HTTP between folders. Only the browser/server and frontend/backend boundaries shown above involve HTTP.</p>
+      <p class="source">Framework background: <a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Server-side/First_steps/Client-Server_overview">MDN client-server overview</a>, <a href="https://nodejs.org/en/learn/getting-started/fetch">Node fetch</a> and <a href="https://mozilla.github.io/nunjucks/api.html#render">Nunjucks rendering</a>.</p>
+    </section>
+
+    <section id="folders" aria-labelledby="folder-title">
+      <h2 id="folder-title">The eight folders you asked about</h2>
+      <div class="folder-grid">
+        <article id="clients">
+          <h3><a href="../src/clients/">clients/</a></h3>
+          <p><strong>Job:</strong> speak the protocol of a particular external API.</p>
+          <p><a href="../src/clients/accountClient.ts"><code>accountClient.ts</code></a> sends credential and MFA requests to the account service and interprets its responses. Here, “client” means an HTTP-calling component, not the browser or a customer.</p>
+          <p><strong>Boundary:</strong> it does not render HTML. Product services currently call <code>fetch</code> directly; product requests do not pass through this folder.</p>
+        </article>
+        <article id="controllers">
+          <h3><a href="../src/controllers/">controllers/</a></h3>
+          <p><strong>Job:</strong> handle an incoming HTTP request and choose its response.</p>
+          <p><a href="../src/controllers/products.ts"><code>products.ts</code></a> calls a product-fetching function, renders a template, or returns an error page/status. This repository also defines Express routers in these files; it has no separate routes folder.</p>
+          <p><strong>Clue:</strong> <code>req</code>, <code>res</code>, <code>res.status</code>, <code>res.render</code>.</p>
+        </article>
+        <article id="middleware">
+          <h3><a href="../src/middleware/">middleware/</a></h3>
+          <p><strong>Job:</strong> apply request-wide or route-specific checks before passing control on.</p>
+          <p><a href="../src/middleware/csrf.ts"><code>csrf.ts</code></a> prepares a session token and rejects POSTs with an invalid token. <a href="../src/middleware/requireAuth.ts"><code>requireAuth.ts</code></a> protects the account route, not every product route.</p>
+          <p><strong>Clue:</strong> <code>next()</code> continues the chain; a response/redirect can stop it. <a href="https://expressjs.com/en/guide/using-middleware.html">Express reference</a>.</p>
+        </article>
+        <article id="models">
+          <h3><a href="../src/models/">models/</a></h3>
+          <p><strong>Job here:</strong> describe application data shapes to TypeScript.</p>
+          <p><a href="../src/models/product.ts"><code>product.ts</code></a> declares interfaces such as <code>Product</code>, <code>ProductImage</code> and <code>ProductWithPrice</code>. They aid autocomplete and static checking.</p>
+          <p><strong>Not:</strong> a database connection or executable validator. These interfaces are erased from the JavaScript. <a href="https://www.typescriptlang.org/docs/handbook/2/basic-types.html#erased-types">TypeScript reference</a>.</p>
+        </article>
+        <article id="schemas">
+          <h3><a href="../src/schemas/">schemas/</a></h3>
+          <p><strong>Job:</strong> check actual external data when the application runs.</p>
+          <p><a href="../src/schemas/product.ts"><code>product.ts</code></a> uses Zod to require the expected fields and types, including a non-negative integer <code>imageOrder</code>. The service calls <code>safeParse</code> on decoded JSON.</p>
+          <p><strong>Not:</strong> SQL tables or database migrations. Valid JSON can still be invalid product data. <a href="https://zod.dev/basics">Zod reference</a>.</p>
+        </article>
+        <article id="services">
+          <h3><a href="../src/services/">services/</a></h3>
+          <p><strong>Job:</strong> retrieve and prepare data and apply application rules.</p>
+          <p><a href="../src/services/products.ts"><code>products.ts</code></a> fetches products, checks schemas, filters hidden products, rewrites/sorts images and obtains prices. <code>authService.ts</code> applies sign-in/MFA rules using the account client.</p>
+          <p><strong>Boundary:</strong> services return data to controllers; they do not call <code>res.render</code>.</p>
+        </article>
+        <article id="types">
+          <h3><a href="../src/types/">types/</a></h3>
+          <p><strong>Job here:</strong> extend library type declarations for this application.</p>
+          <p><a href="../src/types/express-session.d.ts"><code>express-session.d.ts</code></a> tells TypeScript the session can contain <code>customerId</code>, <code>csrfToken</code> and pending MFA details.</p>
+          <p><strong>Not:</strong> code that creates or saves a session. The session middleware does that at runtime. Both this folder and <code>models/</code> contain type information; their separation is organisational.</p>
+        </article>
+        <article id="utils">
+          <h3><a href="../src/utils/">utils/</a></h3>
+          <p><strong>Job:</strong> small reusable helpers, not whole page flows.</p>
+          <p><a href="../src/utils/concurrency.ts"><code>concurrency.ts</code></a> limits how many asynchronous jobs run at once. Product services use it when fetching prices. <a href="../src/utils/safeRedirect.ts"><code>safeRedirect.ts</code></a> accepts local redirect paths or uses a fallback.</p>
+          <p><strong>Boundary:</strong> neither helper decides which HTML page to render.</p>
+        </article>
+      </div>
+      <p class="source">The <a href="https://raw.githubusercontent.com/eoinmcbennett/grad-academy-2026/refs/heads/content-updates-march-26/slides/new-slides/week-1/4-mini-project-api/3-mvc-controllers-services/mvc-controllers-services/mvc-controllers-services.md">academy MVC slides</a> explain the general separation of responsibilities. Their class-based examples differ from this project's function/router factories. The <a href="https://raw.githubusercontent.com/eoinmcbennett/grad-academy-2026/refs/heads/content-updates-march-26/slides/new-slides/week-1/4-mini-project-api/4-models-dtos/models-and-dtos/models-and-dtos.md">models/DTOs slides</a> discuss richer domain classes; this project's product models are plain interfaces.</p>
+    </section>
+
+    <section id="supporting" aria-labelledby="supporting-title">
+      <h2 id="supporting-title">Three supporting locations</h2>
+      <ul>
+        <li><a href="../src/index.ts"><code>src/index.ts</code></a>: loads environment configuration and starts the listening server. <a href="../src/app.ts"><code>src/app.ts</code></a>: configures middleware, templates and routes.</li>
+        <li><a href="../views/"><code>views/</code></a>: Nunjucks templates executed on the frontend server. <code>main.njk</code> supplies the common layout; product templates supply page content.</li>
+        <li><a href="../public/"><code>public/</code></a>: browser assets. For example, <a href="../public/menu.js"><code>menu.js</code></a> changes the drawer in the browser; it does not fetch products. Public assets are mounted at <code>/static</code>.</li>
+      </ul>
+      <div class="callout"><strong>Not every route visits every folder.</strong> Product retrieval uses product services directly. Sign-in uses a controller, an auth service and the account client. Models and type declarations are development-time descriptions, not extra runtime “stations” through which a request travels.</div>
+      <p>In this repository, the product route is server-rendered. Do not generalise that to every feature: the intended registration/verification browser scripts make their own API requests. The earlier review found their served-script wiring needs separate repair; these lessons do not change application behavior.</p>
+    </section>
+
+    <section id="handling" aria-labelledby="handling-title">
+      <h2 id="handling-title">What happens to retrieved product information?</h2>
+      <table>
+        <caption>Data handling in the checked-out product implementation</caption>
+        <thead><tr><th scope="col">Stage</th><th scope="col">What happens</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">HTTP result</th><td><code>response.ok</code> checks for a successful HTTP status before parsing.</td></tr>
+          <tr><th scope="row">Decode</th><td><code>response.json()</code> converts JSON text into JavaScript values. It does not prove they are valid products.</td></tr>
+          <tr><th scope="row">Validate</th><td>Zod checks expected data fields/types. A schema failure throws; it is not treated as an empty catalogue.</td></tr>
+          <tr><th scope="row">Prepare</th><td>Invisible products are removed. Valid backend image URLs are rewritten to frontend image routes, images are ordered and prices are attached.</td></tr>
+          <tr><th scope="row">Render</th><td>The controller passes prepared data to Nunjucks. The template produces the browser's HTML response.</td></tr>
+          <tr><th scope="row">Failure</th><td>A failed catalogue lookup produces a <code>502</code> error page. A missing/hidden selected product produces <code>404</code>. A price lookup failure is logged and leaves the product visible with “Price unavailable”.</td></tr>
+        </tbody>
+      </table>
+      <p>The product-fetching code does not write these products to a frontend database. It prepares data for a response. Backend storage is a separate responsibility.</p>
+      <p class="source">Implementation: <a href="../src/services/products.ts">product service</a>, <a href="../src/services/productPrices.ts">price service</a>, <a href="../src/controllers/products.ts">product controller</a> and <a href="../src/schemas/product.ts">product schemas</a>.</p>
+    </section>
+
+    <section id="debugging" aria-labelledby="debugging-title">
+      <h2 id="debugging-title">Where would I look first?</h2>
+      <ul>
+        <li><strong>“Products response ... did not match schema”:</strong> compare actual backend JSON with <code>schemas/product.ts</code>. A model interface alone cannot repair a mismatched response.</li>
+        <li><strong>“Failed to fetch products: HTTP 500”:</strong> the frontend received an error status from the backend. Check the backend response/logs as well as the frontend service.</li>
+        <li><strong>Correct data, wrong page markup:</strong> check controller-to-template data and the product templates.</li>
+        <li><strong>Menu fails to open:</strong> check the browser-side menu script and served asset, not the product API.</li>
+      </ul>
+      <p>These are starting points, not guarantees about the cause. Read the observed error and follow its data path.</p>
+    </section>
+  </main>
+  <footer><p><a href="../lessons/0001-follow-a-product-request.html#practice">Return to the lesson's recall checks</a> · <a href="nunjucks-data-and-layout.html">Nunjucks data and layout reference</a>. Ask the agent for feedback on your own explanation before treating a term as learned.</p></footer>
+</body>
+</html>

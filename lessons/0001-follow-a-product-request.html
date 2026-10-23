@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>01 · Follow a product request | Architecture lab</title>
+  <link rel="stylesheet" href="../assets/learning.css">
+  <script src="../assets/quiz.js" defer></script>
+</head>
+<body>
+  <header>
+    <nav aria-label="Learning documents">
+      <a href="../reference/frontend-backend-map.html">Folder-role reference</a>
+      <a href="#practice">Try the recall checks</a>
+    </nav>
+    <p class="eyebrow">B-Brilliant · Architecture lab · Lesson 01 · About 7 minutes</p>
+    <h1>From click to product card.</h1>
+    <p class="lede">Your win: explain who asks for product data, who receives it, and who turns it into the page you see.</p>
+  </header>
+
+  <main>
+    <p>You said AI wrote much of this app and you want to understand it personally. Start with one real journey: opening <code>/products</code>. You do not need to memorise every folder today.</p>
+
+    <section aria-labelledby="participants">
+      <h2 id="participants">1. There are three participants, not two</h2>
+      <div class="flow" aria-label="The browser asks the frontend server, which asks the backend server">
+        <article><h3>Your browser</h3><p>Displays the page and runs browser JavaScript such as the menu.</p></article>
+        <span class="connector" aria-hidden="true">asks</span>
+        <article><h3>Frontend server</h3><p>This repository. Node.js runs Express, calls the backend and builds HTML.</p></article>
+        <span class="connector" aria-hidden="true">asks</span>
+        <article><h3>Backend server</h3><p>A separate service that provides the product API. Its database internals are outside this lesson.</p></article>
+      </div>
+      <p><strong>Frontend does not mean “everything runs in the browser”.</strong> In this app, much of the frontend runs on a server. That server is a server to the browser, but a client when it asks the backend for data.</p>
+      <p class="source">Read: <a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Server-side/First_steps/Client-Server_overview#web_servers_and_http_a_primer">MDN's client-server primer</a>. HTTP clients are programs that send requests; they need not be browsers. <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#components_of_http-based_systems">HTTP roles</a>.</p>
+    </section>
+
+    <section aria-labelledby="messages">
+      <h2 id="messages">2. Two requests, two kinds of response</h2>
+      <p>An <strong>HTTP request</strong> is a message asking a server to do something. <code>GET</code> asks to retrieve something. A <strong>response</strong> is the server's reply, with a status such as <code>200</code> for success and a body containing the result.</p>
+      <pre><code>Browser → frontend: GET http://localhost:8000/products
+Frontend → backend: GET {API_BASE_URL}/products
+
+Backend → frontend: JSON product data
+Frontend → browser: HTML product page</code></pre>
+      <p class="muted">Port 8000 is an example frontend address. The backend address comes from configuration; the product service defaults to port 3001 if <code>API_BASE_URL</code> is absent.</p>
+      <p><strong>JSON</strong> is a text format for transferring data. <strong>HTML</strong> describes page content. They are not interchangeable.</p>
+      <pre><code>JSON data, shortened:
+{"products":[{"name":"Travel bag"}]}
+
+HTML page fragment:
+&lt;h2&gt;Travel bag&lt;/h2&gt;</code></pre>
+      <p class="muted">The JSON above is an illustration, not a complete response accepted by this app's schema.</p>
+      <p class="source">Sources: <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview">HTTP overview</a> and <a href="https://developer.mozilla.org/en-US/docs/Glossary/JSON">JSON</a>.</p>
+    </section>
+
+    <section aria-labelledby="journey">
+      <h2 id="journey">3. Follow the actual product-list request</h2>
+      <ol class="steps">
+        <li><strong>Enter the frontend.</strong> <a href="../src/app.ts"><code>src/app.ts</code></a> configures Express. Matching middleware runs first: it can prepare request/session information, continue the request or stop it. The <code>/products</code> route is mounted here. <a href="https://expressjs.com/en/guide/using-middleware.html">Middleware reference</a>.</li>
+        <li><strong>Choose the handler.</strong> <a href="../src/controllers/products.ts"><code>controllers/products.ts</code></a> handles the incoming <code>GET</code>. Its <code>fetchProducts()</code> parameter is normally wired to <code>getProductsWithPrices</code> by <code>app.ts</code>. This is a function call inside the frontend process, not another HTTP request.</li>
+        <li><strong>Ask the backend.</strong> <a href="../src/services/products.ts"><code>services/products.ts</code></a> calls <code>fetch</code> for the backend's <code>/products</code>. <code>response.json()</code> turns the JSON response body into JavaScript values. <code>await</code> waits for the operation's result before the next line uses it. <a href="https://nodejs.org/en/learn/getting-started/fetch">Node.js fetch reference</a>.</li>
+        <li><strong>Check and prepare the data.</strong> The product service uses <a href="../src/schemas/product.ts"><code>ProductsResponseSchema.safeParse</code></a> to check the actual values. It keeps visible products, rewrites image URLs through the frontend, sorts images by <code>imageOrder</code> and obtains each current price. <a href="https://zod.dev/basics">Zod validation reference</a>.</li>
+        <li><strong>Build the page.</strong> The controller calls <code>res.render('products/index.njk', { products })</code>. Nunjucks combines <a href="../views/products/index.njk">the product template</a>, <a href="../views/main.njk">the shared layout</a> and the prepared data to produce HTML. The browser receives that HTML. This is <strong>server-side rendering</strong>. <a href="https://mozilla.github.io/nunjucks/api.html#render">Nunjucks rendering reference</a>.</li>
+      </ol>
+      <div class="callout"><strong>The data path to remember:</strong><br>backend JSON → JavaScript values → schema check → prepared products → template → HTML.</div>
+      <p>The browser then makes additional requests for CSS, scripts and images referenced by that HTML. The menu script is one of those browser-side assets; it does not fetch the catalogue. <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Overview#client_the_user-agent">How browsers load page resources</a>.</p>
+    </section>
+
+    <details>
+      <summary>One important distinction: models versus schemas</summary>
+      <p><a href="../src/models/product.ts">The product model</a> is a TypeScript interface describing the expected shape while writing/checking code. It does not inspect a backend response while the app runs.</p>
+      <p><a href="../src/schemas/product.ts">The product schema</a> is executable Zod validation. It checks real incoming values at runtime. JSON can be syntactically valid yet fail that schema, for example if <code>imageOrder</code> is a string instead of the required integer.</p>
+      <p class="source"><a href="https://www.typescriptlang.org/docs/handbook/2/basic-types.html#erased-types">TypeScript: erased types</a> · <a href="https://zod.dev/basics">Zod: parsing data</a>.</p>
+    </details>
+
+    <section id="practice" aria-labelledby="practice-title">
+      <h2 id="practice-title">4. Close the diagram. Retrieve it from memory.</h2>
+      <p>Try before looking back. Each answer gives immediate feedback; nothing is uploaded or saved.</p>
+
+      <form class="quiz" data-quiz data-answer="html" data-correct-feedback="Yes. Nunjucks renders the product data into HTML on the frontend server before the browser receives the page." data-incorrect-feedback="Not yet. JSON comes back from the backend to the frontend server. The frontend renders HTML for the browser. Revisit section 2, then try again." action="#practice">
+        <fieldset>
+          <legend>For a successful GET /products page request, which is the main response sent to the browser?</legend>
+          <label class="option"><input type="radio" name="response" value="html" required>Browser receives HTML</label>
+          <label class="option"><input type="radio" name="response" value="json">Browser receives JSON</label>
+        </fieldset>
+        <div class="actions"><button type="submit">Check answer</button><button type="reset">Try again</button></div>
+        <p data-feedback role="status" aria-live="polite"></p>
+      </form>
+
+      <form class="quiz" data-quiz data-answer="server" data-correct-feedback="Yes. The product service runs in Node.js on the frontend server and sends the backend request." data-incorrect-feedback="Not yet. The browser first asks the frontend for a page. The frontend server's product service makes the backend request in this flow." action="#practice">
+        <fieldset>
+          <legend>Who sends the backend GET /products request in this flow?</legend>
+          <label class="option"><input type="radio" name="requester" value="browser" required>The browser process</label>
+          <label class="option"><input type="radio" name="requester" value="server">The frontend server</label>
+        </fieldset>
+        <div class="actions"><button type="submit">Check answer</button><button type="reset">Try again</button></div>
+        <p data-feedback role="status" aria-live="polite"></p>
+      </form>
+
+      <form class="quiz" data-quiz data-answer="schema" data-correct-feedback="Yes. The schema checks the actual response values. The TypeScript model describes the expected shape during development." data-incorrect-feedback="Not yet. A TypeScript interface is erased from the running JavaScript. The Zod schema performs the runtime check." action="#practice">
+        <fieldset>
+          <legend>The backend sends imageOrder as a string. Which checks the actual value while the frontend runs?</legend>
+          <label class="option"><input type="radio" name="validator" value="schema" required>The schema file</label>
+          <label class="option"><input type="radio" name="validator" value="model">The model types</label>
+        </fieldset>
+        <div class="actions"><button type="submit">Check answer</button><button type="reset">Try again</button></div>
+        <p data-feedback role="status" aria-live="polite"></p>
+      </form>
+
+      <details>
+        <summary>Check answers without JavaScript, or after you have tried</summary>
+        <ol><li>The browser receives HTML.</li><li>The frontend server requests the backend product data.</li><li>The schema file checks the actual values at runtime.</li></ol>
+      </details>
+      <noscript><p>The automatic checks need JavaScript. The expandable answers above still work without it.</p></noscript>
+    </section>
+
+    <section aria-labelledby="next">
+      <h2 id="next">5. One small real-world check</h2>
+      <p>Open <a href="../src/controllers/products.ts"><code>controllers/products.ts</code></a>. Find the line that gets products and the line that renders the template. Explain, in your own words, what happens between them using the diagram only if you need it.</p>
+      <p><strong>Tomorrow:</strong> without opening this lesson first, sketch the browser, frontend server and backend, and label the two response formats. This delayed recall matters more than getting every answer right immediately.</p>
+      <p>Ask the agent about any unclear step, or send your own explanation of the journey for feedback. The next lesson should follow what you can explain, not just what you have read.</p>
+    </section>
+  </main>
+  <footer>
+    <p><strong>Primary reading:</strong> the opening section of <a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Server-side/First_steps/Client-Server_overview">MDN's client-server overview</a>.</p>
+    <p><a href="../reference/frontend-backend-map.html#folders">Keep the folder-role reference nearby</a>. The course slides explain the general pattern; this lesson follows the actual functions and interfaces in <code>feat/KAN-88_Consistent-Header</code>.</p>
+    <p><a href="0002-data-into-nunjucks.html">Next: lesson 02, passing data into Nunjucks and filling the shared layout.</a></p>
+  </footer>
+</body>
+</html>

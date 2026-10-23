@@ -24,6 +24,8 @@ function product(index: number): ProductWithPrice {
     visible: true,
     weight: 1,
     deletedAt: null,
+    categories: [],
+    departments: [],
     productImages: [
       {
         imageID: `i${index}`,

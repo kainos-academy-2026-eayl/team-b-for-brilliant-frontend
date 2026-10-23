@@ -9,6 +9,7 @@ import {
 
 const backendProduct = {
   productID: 'p1',
+  salesNo: 10,
   name: 'Widget',
   description: null,
   quantity: 3,
