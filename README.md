@@ -68,8 +68,8 @@ Never commit your `.env` file. It is listed in [.gitignore](.gitignore). The qui
 | `npm run dev` | `tsx watch src/index.ts` | Runs the service from TypeScript source and restarts on file changes. Use this while developing. |
 | `npm run format` | `biome format --write src` | Formats application source files. |
 | `npm run lint` | `biome lint src` | Lints application source files. |
-| `npm run test` | `vitest run` | Runs the test suite once. |
 | `npm run typecheck` | `tsc` | Checks types without emitting files. |
+| `npm test` | `vitest run` | Runs automated tests in `tests/`. Browser tests in `e2e/` are not included. |
 | `npm run build` | `tsc` then `esbuild` | Type-checks, then bundles the service into `dist/index.js` for production. |
 | `npm start` | `node dist/index.js` | Runs the built output. Requires `npm run build` first. |
 Before pushing, run `npm run format`, `npm run lint`, `npm run typecheck`, and `npm run build`.

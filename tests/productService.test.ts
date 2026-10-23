@@ -5,7 +5,7 @@ import {
   getProducts,
   getProductsWithPrices,
   getProductWithPrice,
-} from './products'
+} from '../src/services/products'
 
 const backendProduct = {
   productID: 'p1',
