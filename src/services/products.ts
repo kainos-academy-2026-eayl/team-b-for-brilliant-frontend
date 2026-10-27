@@ -35,7 +35,7 @@ function withProxiedImages(product: Product, baseUrl: string): Product {
         const imageUrl = toProxiedImageUrl(image.imageUrl, baseUrl);
         return imageUrl === null ? [] : [{ ...image, imageUrl }];
       })
-      .sort((a, b) => a.imageOrder - b.imageOrder),
+      .sort((productA, productB) => productA.imageOrder - productB.imageOrder),
   };
 }
 
