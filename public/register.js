@@ -28,6 +28,9 @@ function validate(email, password, confirm) {
     if (password.length < 8) {
         setError(passwordInput, 'Password must be at least 8 characters');
         valid = false;
+    } else if (password.length > 1024) {
+        setError(passwordInput, 'Password must be no more than 1024 characters');
+        valid = false;
     } else {
         setError(passwordInput, '');
     }
@@ -46,7 +49,7 @@ form.addEventListener('submit', async (event) => {
     event.preventDefault();
     formError.textContent = '';
 
-    const email = emailInput.value.trim();
+    const email = emailInput.value.trim().toLowerCase();
     const password = passwordInput.value;
     const confirm = confirmInput.value;
 

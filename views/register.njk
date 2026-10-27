@@ -7,7 +7,7 @@
     <h1>Create an account</h1>
 
     <div id="form-error" class="alert" role="alert"></div>
-    <div id="success-message" class="alert alert-success" role="status" hidden>Check your email to confirm your account</div>
+    <div id="success-message" class="alert alert-success" role="status" hidden>Registration request processed. You can now <a href="/login">sign in</a>.</div>
 
     <form id="register-form" method="post" data-api-base-url="{{ apiBaseUrl }}" novalidate>
       <div class="form-field">
@@ -34,5 +34,5 @@
 {% endblock %}
 
 {% block scripts %}
-  <script src="/register.js"></script>
+  <script src="/static/register.js"></script>
 {% endblock %}

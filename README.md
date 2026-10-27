@@ -45,6 +45,20 @@ curl http://localhost:3000/health
 
 Use `npm ci` rather than `npm install`. It installs the exact versions recorded in `package-lock.json`, so everyone on the team runs identical dependencies. Use `npm install` only when you are deliberately adding or upgrading a package.
 
+## Registration and sign-in
+
+The registration page submits email and password directly to
+`API_BASE_URL/api/v1/auth/register`. Configure `API_BASE_URL` to point to the
+backend and allow the frontend origin in the backend CORS configuration.
+Registration requires no email verification. HTTP 202 shows a neutral
+confirmation with a sign-in link, including for existing email addresses.
+The browser script is served at `/static/register.js`.
+
+Sign-in calls `CUSTOMER_ACCOUNT_SERVICE_URL/auth/verify` and uses the returned
+`customerId` to start the session. It no longer reads `mfaEnabled` or calls an
+MFA endpoint. Email-verification and MFA pages have been removed. Login
+throttling, CSRF protection and session regeneration remain in place.
+
 ## Making it your own
 
 After clicking **Use this template** on GitHub and creating your own repository:
