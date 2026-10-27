@@ -83,7 +83,10 @@ describe('GET /home', () => {
     expect(first.text).toContain('href="/home" aria-current="page">Home</a>');
     expect(first.text).toContain('src="/static/menu.js"');
     expect(first.text).toContain('href="/static/home.css"');
-    expect(first.text).toContain('<main class="home-main">');
+    expect(first.text).toContain('<a class="skip-link" href="#main">Skip to content</a>');
+    expect(first.text).toContain('<main id="main" class="home-main">');
+    expect(first.text.match(/id="main"/g)).toHaveLength(1);
+    expect(first.text.indexOf('class="skip-link"')).toBeLessThan(first.text.indexOf('<header'));
     expect(first.headers['cache-control']).toBe('no-store');
     expect(names(first.text)).toEqual(['Product 5', 'Product 4', 'Product 3']);
     expect(names(second.text)).toEqual(names(first.text));
