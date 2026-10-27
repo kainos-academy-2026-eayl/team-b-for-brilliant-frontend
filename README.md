@@ -69,7 +69,7 @@ Never commit your `.env` file. It is listed in [.gitignore](.gitignore). The qui
 | `npm run format` | `biome format --write src` | Formats application source files. |
 | `npm run lint` | `biome lint src` | Lints application source files. |
 | `npm run typecheck` | `tsc` | Checks types without emitting files. |
-| `npm test` | `vitest run` | Runs automated tests under `tests/`, organised to mirror source modules. Browser tests in `e2e/` are not included. |
+| `npm test` | `vitest run` | Runs automated tests in `src/tests/`, grouped by controllers, services and utilities. Browser tests in `e2e/` are not included. |
 | `npm run build` | `tsc` then `esbuild` | Type-checks, then bundles the service into `dist/index.js` for production. |
 | `npm start` | `node dist/index.js` | Runs the built output. Requires `npm run build` first. |
 Before pushing, run `npm run format`, `npm run lint`, `npm run typecheck`, and `npm run build`.
@@ -86,6 +86,7 @@ Before pushing, run `npm run format`, `npm run lint`, `npm run typecheck`, and `
 │   ├── models/           # TypeScript interfaces describing the backend's JSON responses
 │   └── schemas/          # Zod schemas that check backend responses match the models
 ├── views/                # Nunjucks templates (.njk) rendered by the controllers
+│   └── main.njk          # base template: header, burger menu and page blocks; every view extends it
 ├── .env                  # your local secrets and config (not committed)
 ├── .env.example          # template listing required env variables
 ├── .github/              # GitHub configuration
@@ -102,6 +103,16 @@ Generated folders — `node_modules/` and `dist/` — are ignored by git and saf
 ### Why `app.ts` and `index.ts` are separate
 
 [src/app.ts](src/app.ts) creates and configures the Express app but never starts listening. [src/index.ts](src/index.ts) reads configuration and starts the server. Keeping those responsibilities separate makes route registration independent from server startup.
+
+Navigation is visible in normal document flow by default, including the signed-in
+logout form. After the menu script initializes successfully, it enables the
+slide-out drawer and reveals its open/close controls. Navigation remains usable
+if JavaScript is disabled or the menu script cannot load.
+
+The shared drawer makes the header and main content inert while open, keeping
+background controls out of keyboard and assistive-technology navigation.
+Closing it by its close button, the overlay or Escape restores the regions'
+previous inert state before returning focus to the menu toggle.
 
 ## Adding a new route
 
@@ -238,11 +249,9 @@ Missing, fractional, or negative orders fail response validation rather than
 silently displaying an incorrect image order.
 
 The browser never contacts the backend directly, so `API_BASE_URL` can be an internal-only address. Backend image URLs such as `/images/product-1.svg` are rewritten to the same path on this frontend, and `GET /images/:fileName` fetches the image from the backend on the server and returns it. Only single, plain file names under the backend's `/images/` path are proxied; anything else (other hosts, nested paths, `..`) is dropped from the page or returns `404`. Responses must have an `image/*` content type and be at most 5 MB, otherwise the route returns `502`.
-Run the automated test suites with `npm test`. These tests mock
-backend calls and do not require a running backend or a local `.env` file.
-Controller tests live in `tests/controllers/`, service tests in `tests/services/`,
-and utility tests in `tests/utils/`. The `products.categories.test.ts` suites
-retain the category-specific coverage alongside the general product suites.
+Run the automated tests with `npm test`. They live under `src/tests/controllers`,
+`src/tests/services` and `src/tests/utils`, and use Supertest and Vitest without
+requiring a running backend or a local `.env` file.
 
 The server binds to `0.0.0.0` so it is reachable from outside a container. Add any new environment variables to your local `.env` and document them in this section.
 
