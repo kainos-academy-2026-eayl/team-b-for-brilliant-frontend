@@ -17,6 +17,8 @@ const backendProduct = {
   visible: true,
   weight: 1.5,
   deletedAt: null,
+  categories: [],
+  departments: [],
   productImages: [
     {
       imageID: 'i1',
