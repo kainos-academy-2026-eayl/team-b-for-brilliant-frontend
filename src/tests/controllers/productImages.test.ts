@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { describe, expect, it, vi } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { createApp } from '../../app';
 
 
