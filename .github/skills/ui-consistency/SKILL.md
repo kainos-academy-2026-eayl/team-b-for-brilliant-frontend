@@ -1,6 +1,6 @@
 ---
 name: ui-consistency
-description: "Create or update Nunjucks (.njk) pages using the shared main.njk header and menu, and review HTML forms and CSS for consistent application-wide UI. Use when creating or styling Nunjucks pages, matching a form to CSS, checking shared styles, comparing form colours or wording, checking keyboard navigation or visible focus, reviewing accessibility, or formatting HTML form markup."
+description: "Create or update Nunjucks (.njk) pages using the shared main.njk header, menu and light/dark theme, and review HTML forms and CSS for consistent application-wide UI. Use when creating or styling Nunjucks pages, changing light or dark mode, matching a form to CSS, checking shared styles, comparing form colours or wording, checking keyboard navigation or visible focus, reviewing accessibility, or formatting HTML form markup."
 argument-hint: "form HTML path and related CSS path(s), or paste the markup"
 ---
 
@@ -28,7 +28,7 @@ If no relevant stylesheet, sibling form or design/copy guide exists, say that th
 
 ## B-Brilliant brand guidance
 
-The company name is **B-Brilliant**. When the brand is relevant to the page or form, use a white background with these accent colours:
+The company name is **B-Brilliant**. Light mode uses a white background. Dark mode uses a `#2B2B38` background and white text instead of black/dark text. Both modes retain these accent colours:
 
 - Primary accent: `#52dfdd`
 - Secondary accent: `#028aa4`
@@ -36,6 +36,15 @@ The company name is **B-Brilliant**. When the brand is relevant to the page or f
 Prefer existing shared tokens or components for these colours. Do not add one-off colour values if the application already provides an equivalent token, and check contrast rather than assuming either accent is suitable for every text/background pairing.
 
 When applicable, the page may show the slogan **“Never Settle for less”**, preferably near the top-left. This is a preference, not a requirement; do not force it into forms or pages where it would be out of place.
+
+### Light and dark mode
+
+- Keep the labelled **Dark mode** slider switch in the shared burger menu, using a native button with `role="switch"` and an accurate `aria-checked` state. Support Enter, Space, visible focus, drawer focus trapping and Escape to close the menu.
+- Apply the theme through `data-theme="light"` or `data-theme="dark"` on the document root. Use the shared tokens in `public/styles.css`; product-page `--colour-*` aliases must resolve to those theme-aware tokens.
+- Default to light mode. `public/theme.js` restores the `b-brilliant-theme` local storage preference before styles load and saves changes across navigation and reloads. If storage is unavailable, keep the current-page switch functional and log the persistence failure.
+- Preserve `#52dfdd` and `#028aa4` as accents in both themes. Use dark surfaces with white text and accent borders for dark-mode actions rather than white text on bright turquoise. Check contrast for each text/background pairing.
+- Cover page backgrounds, header, menu, cards, form controls, hints, errors, success messages, product lists and product details. Do not recolour product image contents.
+- Verify both directions of the switch, persistence after navigation/reload, and keyboard-only operation. Keep navigation usable without JavaScript and hide the nonfunctional theme switch until it initializes.
 
 ## Shared Nunjucks layout
 
