@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 360" role="img" aria-labelledby="title">
-  <title id="title">Luxury Makeup Brush Set with five brushes</title>
-  <rect width="400" height="360" rx="20" fill="#faf6ed"/>
-  <ellipse cx="200" cy="315" rx="125" ry="12" fill="#e5ded0"/>
-  <g fill="#1f2933"><rect x="80" y="140" width="20" height="170" rx="7"/><rect x="135" y="155" width="20" height="155" rx="7"/><rect x="190" y="125" width="20" height="185" rx="7"/><rect x="245" y="160" width="20" height="150" rx="7"/><rect x="300" y="145" width="20" height="165" rx="7"/></g>
-  <g fill="#b89b65"><rect x="78" y="115" width="24" height="45" rx="4"/><rect x="133" y="130" width="24" height="45" rx="4"/><rect x="188" y="100" width="24" height="45" rx="4"/><rect x="243" y="135" width="24" height="45" rx="4"/><rect x="298" y="120" width="24" height="45" rx="4"/></g>
-  <g fill="#74645f"><path d="M78 120Q45 55 90 50q45 5 12 70Z"/><path d="M133 135q-18-60 12-65 30 5 12 65Z"/><path d="M188 105q-25-65 12-70 37 5 12 70Z"/><path d="M243 140v-45l24-12v57Z"/><path d="M298 125q-10-60 12-65 22 5 12 65Z"/></g>
-</svg>
