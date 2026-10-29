@@ -14,6 +14,11 @@ export type LoginResult =
   | { status: 'locked'; }
   | { status: 'error'; };
 
+export type UniqueEmailResult =
+  | { status: 'success' }
+  | { status: 'not_unique' }
+  | { status: 'error' };
+
 export type MfaResult =
   | { status: 'success'; }
   | { status: 'invalid'; }
@@ -23,6 +28,7 @@ export type MfaResult =
 export interface AuthService {
   login(email: string, password: string, ipAddress: string): Promise<LoginResult>;
   completeMfa(customerId: string, code: string, ipAddress: string): Promise<MfaResult>;
+  uniqueEmail(email: string): Promise<UniqueEmailResult>;
 }
 
 interface AuthServiceOptions {
@@ -89,5 +95,19 @@ export function createAuthService(
         return { status: 'error' };
       }
     },
+
+    async uniqueEmail(email) {
+      try {
+        const result = await accountClient.uniqueEmail(email);
+        if (result.status === 'unique') {
+          return { status: 'success' };
+        } else {
+          return { status: 'not_unique' };
+        }
+      } catch (error) {
+        console.error('Account service call failed', (error as Error).message);
+        return { status: 'error' };
+      }
+    } 
   };
 }

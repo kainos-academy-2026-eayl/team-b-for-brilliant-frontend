@@ -9,7 +9,7 @@ import {
 import { createAuthRouter } from './controllers/auth-controllers';
 import { createImagesRouter } from './controllers/images';
 import { createProductsRouter } from './controllers/products';
-import { registerRouter } from './controllers/register';
+import { createAccountRouter } from './controllers/register';
 import { verifyEmailRouter } from './controllers/verifyEmail';
 import { csrfProtection } from './middleware/csrf';
 import {
@@ -26,6 +26,7 @@ import {
   getProductsWithPrices,
   getProductWithPrice,
 } from './services/products';
+import { createRegisterService } from './services/registerService';
 
 interface AppOptions {
   accountClient?: AccountClient;
@@ -88,7 +89,7 @@ export function createApp(options: AppOptions = {}): Express {
     requireAuth,
     createHomeRouter(options.fetchProducts ?? getProductsWithPrices),
   );
-  app.use('/register', registerRouter);
+
   app.use('/verify-email', verifyEmailRouter);
 
   app.get('/', (_req: Request, res: Response) => {
@@ -119,9 +120,12 @@ export function createApp(options: AppOptions = {}): Express {
   );
 
   app.use(createAuthRouter(authService));
+  //app.use(createAccountRouter(accountClient));
 
   app.get('/forgot-password', (_req, res) => res.render('forgot-password'));
   app.get('/account', requireAuth, (_req, res) => res.render('account'));
+  const registerService = createRegisterService(accountClient);
+  app.use(createAccountRouter(authService, registerService));
 
   return app;
 }
