@@ -50,7 +50,8 @@ describe('optional registration details', () => {
     }
     expect(page.text.match(/<header\b/g)).toHaveLength(1);
     expect(page.text.match(/id="site-menu"/g)).toHaveLength(1);
-    expect(page.text).toContain('href="/home">Skip for now');
+    expect(page.text).toContain('action="/register/details/skip"');
+    expect(page.text).toContain('class="button button-link">Skip for now');
     expect(page.text).not.toContain('private-token');
     expect(page.text).not.toContain('name="roleID"');
     expect(page.text).not.toContain('name="securityAnswer"');
@@ -70,7 +71,9 @@ describe('optional registration details', () => {
   });
 
   it('allows skipping without any save request and keeps the customer signed in', async () => {
-    const { agent, save } = await signedIn();
+    const { agent, save, csrf } = await signedIn();
+    await agent.post('/register/details/skip').type('form')
+      .send({ _csrf: csrf }).expect(303).expect('Location', '/home');
     await agent.get('/home').expect(200);
     expect(save).not.toHaveBeenCalled();
     await agent.get('/account').expect(200);
@@ -85,7 +88,7 @@ describe('optional registration details', () => {
     });
   });
 
-  it('can save details after a normal sign-in as well as immediately after registration', async () => {
+  it('blocks both viewing and saving after ordinary sign-in, even with a forged onboarding flag', async () => {
     const save = vi.fn<typeof saveRegistrationDetails>().mockResolvedValue();
     const agent = request.agent(createApp({
       accountClient: client, saveRegistrationDetails: save,
@@ -94,11 +97,13 @@ describe('optional registration details', () => {
     await agent.post('/login').type('form').send({
       _csrf: token(login.text), email: 'user@example.com', password: 'password123',
     }).expect(302);
-    const page = await agent.get('/register/details').expect(200);
+    await agent.get('/register/details?registrationDetailsPending=true')
+      .expect(302).expect('Location', '/home');
+    const page = await agent.get('/account').expect(200);
     await agent.post('/register/details').type('form').send({
-      _csrf: token(page.text), firstname: 'Jane',
-    }).expect(303);
-    expect(save).toHaveBeenCalledWith('private-token', expect.objectContaining({ firstname: 'Jane' }));
+      _csrf: token(page.text), firstname: 'Jane', registrationDetailsPending: true,
+    }).expect(302).expect('Location', '/home');
+    expect(save).not.toHaveBeenCalled();
   });
 
   it('rejects invalid details and preserves values with field errors', async () => {
@@ -127,5 +132,55 @@ describe('optional registration details', () => {
     expect(response.text).toContain('value="Jane"');
     expect(response.text).toContain(status === 401 ? 'sign-in has expired' : 'We could not save');
     expect(response.text).toContain('Skip for now');
+  });
+
+  it.each(['save', 'skip'] as const)('blocks revisiting and replaying the form after %s', async (action) => {
+    const { agent, save, csrf } = await signedIn();
+    const body = { _csrf: csrf, firstname: 'Jane' };
+    await agent.post(action === 'save' ? '/register/details' : '/register/details/skip')
+      .type('form').send(body).expect(303).expect('Location', '/home');
+
+    await agent.get('/register/details').expect(302).expect('Location', '/home');
+    await agent.post('/register/details').type('form')
+      .send({ _csrf: csrf, firstname: '', surname: '' })
+      .expect(302).expect('Location', '/home');
+    await agent.post('/register/details/skip').type('form')
+      .send({ _csrf: csrf }).expect(302).expect('Location', '/home');
+    expect(save).toHaveBeenCalledTimes(action === 'save' ? 1 : 0);
+    await agent.get('/account').expect(200);
+  });
+
+  it('keeps onboarding available after validation fails', async () => {
+    const { agent, save, csrf } = await signedIn();
+    await agent.post('/register/details').type('form')
+      .send({ _csrf: csrf, firstname: 'x'.repeat(101) }).expect(400);
+    await agent.get('/register/details').expect(200);
+    expect(save).not.toHaveBeenCalled();
+    await agent.post('/register/details').type('form')
+      .send({ _csrf: csrf, firstname: 'Jane' }).expect(303);
+    expect(save).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps onboarding available after a save failure, then consumes it on successful retry', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const save = vi.fn<typeof saveRegistrationDetails>()
+      .mockRejectedValueOnce(new RegistrationDetailsError(500))
+      .mockResolvedValue();
+    const { agent, csrf } = await signedIn(save);
+    const body = { _csrf: csrf, firstname: 'Jane' };
+    await agent.post('/register/details').type('form').send(body).expect(503);
+    await agent.get('/register/details').expect(200);
+    await agent.post('/register/details').type('form').send(body).expect(303);
+    await agent.get('/register/details').expect(302).expect('Location', '/home');
+    expect(save).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects skipping without CSRF and leaves onboarding available', async () => {
+    const { agent, save, csrf } = await signedIn();
+    await agent.post('/register/details/skip').type('form').send({}).expect(403);
+    await agent.get('/register/details').expect(200);
+    await agent.post('/register/details/skip').type('form')
+      .send({ _csrf: csrf }).expect(303);
+    expect(save).not.toHaveBeenCalled();
   });
 });

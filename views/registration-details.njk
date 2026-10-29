@@ -47,6 +47,9 @@
       <button type="submit" class="button">Save and continue</button>
     </form>
 
-    <p class="card-footer"><a href="/home">Skip for now</a></p>
+    <form class="card-footer" method="post" action="/register/details/skip">
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+      <button type="submit" class="button button-link">Skip for now</button>
+    </form>
   </section>
 {% endblock %}

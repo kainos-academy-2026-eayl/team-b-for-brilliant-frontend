@@ -73,6 +73,7 @@ export function createAccountRouter(authService: AuthService, registerService: R
           req.session.regenerate((error) => {
             if (error) return next(error)
             req.session.customerId = loginResult.customerId
+            req.session.registrationDetailsPending = true
             if (loginResult.accessToken) req.session.accountToken = loginResult.accessToken
             req.session.save((saveError) => {
               if (saveError) return next(saveError)
