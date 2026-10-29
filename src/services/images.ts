@@ -1,3 +1,6 @@
+
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 // Image URLs exposed by the frontend use this route prefix.
 export const IMAGE_ROUTE_PREFIX = '/images/';
 // Limit each downloaded image to 5 MiB.
@@ -135,5 +138,4 @@ export async function fetchImage(
       response.headers.get('cache-control') ?? 'public, max-age=3600',
   };
 }
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
+
