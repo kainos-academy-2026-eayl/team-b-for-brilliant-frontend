@@ -39,6 +39,18 @@
     </div>
     <div class="product-detail__body">
       <h1>{{ product.name }}</h1>
+      {% if product.departments.length and not product.categories.length %}
+        <dl class="product-detail__classification">
+          <dt>Departments</dt>
+          <dd>
+            <ul>
+              {% for department in product.departments %}
+                <li>{{ department.name }}</li>
+              {% endfor %}
+            </ul>
+          </dd>
+        </dl>
+      {% endif %}
       {% if product.quantity > 0 %}
         <span class="stock stock--in">In stock</span>
       {% else %}
@@ -68,6 +80,27 @@
       {% if product.description %}
         <h2>Description</h2>
         <p class="product-detail__description">{{ product.description }}</p>
+      {% endif %}
+      {% if product.categories.length %}
+        <h2>Categories</h2>
+        <dl class="product-detail__classification">
+          {% for departmentID, categories in product.categories | groupby('departmentID') %}
+            {% set departmentName = 'Other categories' %}
+            {% for department in product.departments %}
+              {% if department.departmentID == departmentID %}
+                {% set departmentName = department.name %}
+              {% endif %}
+            {% endfor %}
+            <dt>{{ departmentName }}</dt>
+            <dd>
+              <ul>
+                {% for category in categories %}
+                  <li>{{ category.name }}</li>
+                {% endfor %}
+              </ul>
+            </dd>
+          {% endfor %}
+        </dl>
       {% endif %}
     </div>
   </article>
