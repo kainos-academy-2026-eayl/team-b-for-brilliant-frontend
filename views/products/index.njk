@@ -11,6 +11,16 @@
 {% block content %}
   <h1>Products</h1>
 
+  {# UI-only name search; keep the existing category filter independent. #}
+  <div class="products-search products-name-search" role="search" aria-label="Search products by name">
+    <div class="form-field">
+      <label for="product-name-search">Search products</label>
+      <input type="search" id="product-name-search" placeholder="Enter a product name" aria-describedby="product-name-search-hint">
+      <p id="product-name-search-hint" class="products-search__hint">Product name search is not yet connected.</p>
+    </div>
+    <button type="button" class="button" disabled aria-describedby="product-name-search-hint">Search</button>
+  </div>
+
   <form class="products-search" role="search" aria-label="Search products by category" method="get" action="/products">
     <div class="form-field">
       <label for="category-search">Category</label>

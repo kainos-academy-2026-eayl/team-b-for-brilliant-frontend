@@ -130,3 +130,14 @@ export async function getProductsWithPrices(
     withCurrentPrice(product, baseUrl, fetchFn),
   );
 }
+
+export async function getProductsByName(
+  baseUrl: string = getApiBaseUrl(),
+  fetchFn: typeof fetch = fetch,
+  name: string,
+): Promise<Product[]> {
+  const products = await getProducts(baseUrl, fetchFn);
+  return products.filter((product) =>
+    product.name.toLowerCase().includes(name.toLowerCase()),
+  );
+}
