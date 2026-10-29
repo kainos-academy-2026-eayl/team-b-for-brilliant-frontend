@@ -216,10 +216,19 @@ their labels include the full category ID, for example `Accessories (ID: c0)`,
 including in the selected-category summary. Unique names remain unchanged.
 Select a category and press "Filter products" to submit its ID to
 `GET /products?category=<categoryID>`. The selection is retained, and all category
-options remain available after filtering. "All categories" or "Clear search"
-shows all products. A link to a category that is no longer available shows an
-explicit message. Filtering uses the categories already returned by the backend,
-so no additional API is needed.
+options remain available after filtering. "All categories" removes the category
+filter while keeping any product-name search; "Clear search" removes both.
+A link to a category that is no longer available shows an explicit message.
+
+The frontend forwards nonempty, trimmed `q` (product name) and `category`
+(category ID) query parameters to the backend's `GET /products` endpoint.
+The backend must implement case-insensitive partial-name matching and combine
+both filters when supplied, returning the existing `{ products: [...] }` shape.
+This backend filtering contract must be implemented separately: the frontend
+does not fall back to local matching if the API ignores the parameters.
+For an active search or category filter, a separate unfiltered `GET /products`
+request provides all category dropdown options without fetching prices for
+that unfiltered catalogue. Prices are fetched only for the search results.
 
 Between the price and description, detail pages show a quantity dropdown from
 1 to the available stock (capped at 10) and an "Add to basket" button underneath. Out-of-stock

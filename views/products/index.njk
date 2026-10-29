@@ -11,7 +11,26 @@
 {% block content %}
   <h1>Products</h1>
 
+  {# Preserve the category when submitting a product-name search. #}
+  <form class="products-search products-name-search" role="search" aria-label="Search products by name" method="get" action="/products">
+    {% if categoryFilter %}
+      <input type="hidden" name="category" value="{{ categoryFilter }}">
+    {% endif %}
+    <div class="form-field">
+      <label for="product-name-search">Search products</label>
+      <input type="search" id="product-name-search" name="q" value="{{ searchQuery }}" placeholder="Enter a product name" aria-describedby="product-name-search-hint">
+      <p id="product-name-search-hint" class="products-search__hint">Enter all or part of a product name.</p>
+    </div>
+    <button type="submit" class="button">Search</button>
+    {% if searchQuery and not categoryFilter %}
+      <a class="products-search__clear" href="/products">Clear search</a>
+    {% endif %}
+  </form>
+
   <form class="products-search" role="search" aria-label="Search products by category" method="get" action="/products">
+    {% if searchQuery %}
+      <input type="hidden" name="q" value="{{ searchQuery }}">
+    {% endif %}
     <div class="form-field">
       <label for="category-search">Category</label>
       <select id="category-search" name="category" aria-describedby="category-search-hint">
@@ -30,9 +49,14 @@
       <a class="products-search__clear" href="/products">Clear search</a>
     {% endif %}
   </form>
+  {% if searchQuery %}
+    <p class="products-search__results">{{ products.length }} product{{ 's' if products.length != 1 }} found for &ldquo;{{ searchQuery }}&rdquo;{% if selectedCategory %} in &ldquo;{{ selectedCategory.label }}&rdquo;{% endif %}.</p>
+  {% endif %}
   {% if categoryFilter %}
     {% if selectedCategory %}
+      {% if not searchQuery %}
       <p class="products-search__results">{{ products.length }} product{{ 's' if products.length != 1 }} found in &ldquo;{{ selectedCategory.label }}&rdquo;.</p>
+      {% endif %}
     {% else %}
       <p class="products-search__results">This category is no longer available. Choose another category or clear your search.</p>
     {% endif %}
@@ -69,6 +93,10 @@
       {% endfor %}
     </ul>
   {% else %}
-    <p class="empty-state">{{ 'No products match this category. Choose another category or clear your search.' if categoryFilter else 'No products available.' }}</p>
+    {% if searchQuery %}
+      <p class="empty-state">No products match your search{% if categoryFilter %} in this category{% endif %}. Try another product name or clear your search.</p>
+    {% else %}
+      <p class="empty-state">{{ 'No products match this category. Choose another category or clear your search.' if categoryFilter else 'No products available.' }}</p>
+    {% endif %}
   {% endif %}
 {% endblock %}

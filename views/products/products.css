@@ -91,6 +91,13 @@ h1::after {
   margin: 0;
 }
 
+/* Match the name search to the category control and shared form styles. */
+.products-name-search input {
+  min-height: 48px;
+  color: var(--colour-text);
+  background: var(--colour-surface);
+}
+
 .products-search select {
   width: 100%;
   min-height: 48px;

@@ -2,7 +2,7 @@ import { once } from 'node:events';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app';
 import type { ProductWithPrice } from '../../models/product';
-import { getProductsWithPrices, getProductWithPrice } from '../../services/products';
+import { getProductsWithPrices, getProductWithPrice, type ProductFilters } from '../../services/products';
 
 const product: ProductWithPrice = {
   productID: 'p1',
@@ -28,7 +28,7 @@ const product: ProductWithPrice = {
 };
 
 async function getPage(
-  fetchProducts: () => Promise<ProductWithPrice[]>,
+  fetchProducts: (filters?: ProductFilters) => Promise<ProductWithPrice[]>,
   path = '/products',
   fetchProduct?: (productID: string) => Promise<ProductWithPrice | null>,
 ) {
@@ -59,6 +59,119 @@ async function getPage(
 describe('GET /products', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('passes trimmed search text to the service and renders its results', async () => {
+    const fetchProducts = vi.fn(async (_filters?: ProductFilters) => [product]);
+    const { status, html } = await getPage(
+      fetchProducts,
+      '/products?q=%20WiDg%20',
+    );
+
+    expect(status).toBe(200);
+    expect(fetchProducts).toHaveBeenNthCalledWith(1, { q: 'WiDg' });
+    expect(fetchProducts).toHaveBeenNthCalledWith(2);
+    expect(html).toContain('href="/products/p1"');
+    expect(html).not.toContain('href="/products/p2"');
+    expect(html).toContain('name="q" value="WiDg"');
+    expect(html).toContain('1 product found for &ldquo;WiDg&rdquo;.');
+    expect(html).toContain('<button type="submit" class="button">Search</button>');
+    expect(html).toContain('href="/products">Clear search</a>');
+  });
+
+  it.each(['/products?q=', '/products?q=%20%20'])(
+    'shows all products for an empty search: %s',
+    async (path) => {
+      const { html } = await getPage(async () => [product], path);
+      expect(html).toContain('href="/products/p1"');
+      expect(html).not.toContain('product found for');
+    },
+  );
+
+  it('combines name and category filters while keeping the full category dropdown', async () => {
+    const category = {
+      categoryID: 'c1',
+      name: 'Tools',
+      description: null,
+      departmentID: 'd1',
+    };
+    const fetchProducts = vi.fn<(filters?: ProductFilters) => Promise<ProductWithPrice[]>>()
+      .mockResolvedValueOnce([{ ...product, categories: [category] }])
+      .mockResolvedValueOnce([
+        { ...product, categories: [category] },
+        { ...product, productID: 'p2', name: 'Different item', categories: [category] },
+        {
+          ...product,
+          productID: 'p3',
+          categories: [{ ...category, categoryID: 'c2', name: 'Other category' }],
+        },
+      ]);
+    const { html } = await getPage(
+      fetchProducts,
+      '/products?q=widget&category=c1',
+    );
+
+    expect(fetchProducts).toHaveBeenNthCalledWith(1, { q: 'widget', category: 'c1' });
+    expect(fetchProducts).toHaveBeenNthCalledWith(2);
+    expect(html).toContain('href="/products/p1"');
+    expect(html).not.toContain('href="/products/p2"');
+    expect(html).not.toContain('href="/products/p3"');
+    expect(html).toContain('value="c2">Other category</option>');
+    expect(html).toContain('type="hidden" name="category" value="c1"');
+    expect(html).toContain('type="hidden" name="q" value="widget"');
+    expect(html).toContain('1 product found for &ldquo;widget&rdquo; in &ldquo;Tools&rdquo;.');
+  });
+
+  it('shows a useful empty state when no names match', async () => {
+    const { html } = await getPage(async () => [], '/products?q=missing');
+    expect(html).toContain('0 products found for &ldquo;missing&rdquo;.');
+    expect(html).toContain('No products match your search.');
+    expect(html).not.toContain('href="/products/p1"');
+  });
+
+  it('escapes the displayed query and passes special characters unchanged to the service', async () => {
+    const query = '<script>alert("x")</script>.*';
+    const fetchProducts = vi.fn(async (_filters?: ProductFilters) => []);
+    const { html } = await getPage(
+      fetchProducts,
+      `/products?q=${encodeURIComponent(query)}`,
+    );
+    expect(fetchProducts).toHaveBeenNthCalledWith(1, { q: query });
+    expect(html).toContain('&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;.*');
+    expect(html).not.toContain(query);
+    expect(html).not.toContain('href="/products/p1"');
+  });
+
+  it('does not re-filter backend results locally', async () => {
+    const { html } = await getPage(async () => [product], '/products?q=backend-match');
+    expect(html).toContain('href="/products/p1"');
+  });
+
+  it('passes an empty filter object and avoids a second catalogue request without filters', async () => {
+    const fetchProducts = vi.fn(async (_filters?: ProductFilters) => [product]);
+    await getPage(fetchProducts);
+    expect(fetchProducts).toHaveBeenCalledExactlyOnceWith({});
+  });
+
+  it('shows an error when the unfiltered category catalogue cannot be loaded', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const fetchProducts = vi.fn<() => Promise<ProductWithPrice[]>>()
+      .mockResolvedValueOnce([product])
+      .mockRejectedValueOnce(new Error('Category catalogue unavailable'));
+    const { status, html } = await getPage(fetchProducts, '/products?q=widget');
+    expect(status).toBe(502);
+    expect(html).toContain('We could not load products right now.');
+    expect(html).not.toContain('Category catalogue unavailable');
+  });
+
+  it.each([
+    '/products?q=one&q=two',
+    '/products?category=one&category=two',
+  ])('rejects invalid filter shapes before fetching products: %s', async (path) => {
+    const fetchProducts = vi.fn(async () => [product]);
+    const { status } = await getPage(fetchProducts, path);
+    expect(status).toBe(400);
+    expect(fetchProducts).not.toHaveBeenCalled();
   });
 
   it('renders products and their current price instead of the description', async () => {

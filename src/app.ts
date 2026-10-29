@@ -23,14 +23,16 @@ import { createAuthService } from './services/authService';
 import { fetchImage, type ProxiedImage } from './services/images';
 import {
   getApiBaseUrl,
+  getProducts,
   getProductsWithPrices,
   getProductWithPrice,
+  type ProductFilters,
 } from './services/products';
 
 interface AppOptions {
   accountClient?: AccountClient;
   throttle?: LoginThrottle;
-  fetchProducts?: () => Promise<ProductWithPrice[]>;
+  fetchProducts?: (filters?: ProductFilters) => Promise<ProductWithPrice[]>;
   fetchProduct?: (productID: string) => Promise<ProductWithPrice | null>;
   fetchProxiedImage?: (fileName: string) => Promise<ProxiedImage | null>;
 }
@@ -98,8 +100,10 @@ export function createApp(options: AppOptions = {}): Express {
   app.use(
     '/products',
     createProductsRouter(
-      options.fetchProducts ?? getProductsWithPrices,
+      options.fetchProducts ?? ((filters) =>
+        getProductsWithPrices(undefined, undefined, undefined, filters)),
       options.fetchProduct ?? getProductWithPrice,
+      options.fetchProducts ?? getProducts,
     ),
   );
   app.use(
