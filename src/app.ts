@@ -10,6 +10,7 @@ import { createAuthRouter } from './controllers/auth-controllers';
 import { createImagesRouter } from './controllers/images';
 import { createProductsRouter } from './controllers/products';
 import { createAccountRouter } from './controllers/register';
+import { createRegistrationDetailsRouter } from './controllers/registrationDetails';
 import { verifyEmailRouter } from './controllers/verifyEmail';
 import { csrfProtection } from './middleware/csrf';
 import {
@@ -29,8 +30,10 @@ import {
   type ProductFilters,
 } from './services/products';
 import { createRegisterService } from './services/registerService';
+import type { saveRegistrationDetails } from './services/registrationDetails';
 
 interface AppOptions {
+  saveRegistrationDetails?: typeof saveRegistrationDetails;
   accountClient?: AccountClient;
   throttle?: LoginThrottle;
   fetchProducts?: (filters?: ProductFilters) => Promise<ProductWithPrice[]>;
@@ -130,6 +133,7 @@ export function createApp(options: AppOptions = {}): Express {
   app.get('/account', requireAuth, (_req, res) => res.render('account'));
   const registerService = createRegisterService(accountClient);
   app.use(createAccountRouter(authService, registerService));
+  app.use('/register/details', createRegistrationDetailsRouter(options.saveRegistrationDetails));
 
   return app;
 }

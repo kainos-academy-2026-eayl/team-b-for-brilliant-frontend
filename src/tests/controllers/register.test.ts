@@ -6,7 +6,9 @@ import type { AccountClient } from '../../clients/accountClient';
 function registrationClient() {
   return {
     verifyCredentials: vi.fn<AccountClient['verifyCredentials']>()
-      .mockRejectedValue(new Error('Login should not run during registration')),
+      .mockResolvedValue({
+        status: 'valid', customerId: 'new-customer', mfaEnabled: false, accessToken: 'account-token',
+      }),
     verifyMfa: vi.fn<AccountClient['verifyMfa']>()
       .mockRejectedValue(new Error('MFA should not run during registration')),
     uniqueEmail: vi.fn<AccountClient['uniqueEmail']>()
@@ -45,22 +47,22 @@ describe('registration flow', () => {
     expect(page.text).not.toContain('Check your email');
   });
 
-  it('redirects successful registrations to a confirmation GET without creating a session login', async () => {
+  it('signs the customer in and redirects successful registrations to optional details', async () => {
     const client = registrationClient();
     const { agent, body } = await registrationForm(client);
     const response = await agent.post('/register').type('form').send(body).expect(303);
     const location = response.headers.location;
     if (!location) throw new Error('Registration confirmation redirect not found');
-    expect(location).toBe('/register?registered=1');
+    expect(location).toBe('/register/details');
     expect(client.register).toHaveBeenCalledExactlyOnceWith(body.email, body.password);
 
     const confirmation = await agent.get(location).expect(200);
-    expect(confirmation.text).toContain('Registration request processed.');
-    expect(confirmation.text).toContain('href="/login"');
+    expect(confirmation.text).toContain('Add your details');
+    expect(confirmation.text).toContain('Skip for now');
     expect(confirmation.text).not.toContain('id="register-form"');
     await agent.get(location).expect(200);
     expect(client.register).toHaveBeenCalledTimes(1);
-    await agent.get('/account').expect(302);
+    await agent.get('/account').expect(200);
   });
 
   it('renders an existing-email error without attempting account creation', async () => {

@@ -81,8 +81,16 @@ checks `POST {CUSTOMER_ACCOUNT_SERVICE_URL}/auth/unique-email`, reading the
 `unique` boolean from its HTTP 200 response, then sends `{ email, password }` to
 `POST {CUSTOMER_ACCOUNT_SERVICE_URL}/api/v1/auth/register`.
 The backend accepts registration with HTTP 202 and a message, not a customer ID.
-Success redirects to a GET confirmation page; it does not sign the visitor in
-or promise a verification email. Errors are rendered in the registration form.
+Success signs the visitor in and redirects to `/register/details`. This optional
+step collects first name, surname, two address lines and postcode. "Save and
+continue" saves the details and redirects to `/home`; "Skip for now" goes to
+`/home` without saving anything. All five fields are optional.
+
+The backend access token returned by credential verification stays in the
+server-side session and authenticates `PUT /account/details`. Profile updates
+never trust a customer ID submitted by the browser. The form includes a CSRF
+token and displays validation or service errors without discarding entered
+values. Registration does not promise a verification email.
 
 ## Project structure
 

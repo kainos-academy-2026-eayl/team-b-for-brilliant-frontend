@@ -1,0 +1,52 @@
+{% extends "main.njk" %}
+
+{% block title %}Your details{% endblock %}
+
+{% block content %}
+  <section class="card">
+    <h1>Add your details</h1>
+    <p class="card-subtitle">Your account is ready and you are signed in. All details below are optional.</p>
+
+    {% if error %}
+      <p class="alert" role="alert">{{ error }}</p>
+    {% endif %}
+
+    <form method="post" action="/register/details" novalidate>
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+      <div class="form-field">
+        <label for="firstname">First name</label>
+        <input id="firstname" name="firstname" type="text" autocomplete="given-name" maxlength="100" value="{{ values.firstname }}" aria-describedby="firstname-error"{% if errors.firstname %} aria-invalid="true"{% endif %}>
+        <p id="firstname-error" class="field-error" role="alert">{{ errors.firstname[0] }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="surname">Surname</label>
+        <input id="surname" name="surname" type="text" autocomplete="family-name" maxlength="100" value="{{ values.surname }}" aria-describedby="surname-error"{% if errors.surname %} aria-invalid="true"{% endif %}>
+        <p id="surname-error" class="field-error" role="alert">{{ errors.surname[0] }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="addressLine1">Address line 1</label>
+        <input id="addressLine1" name="addressLine1" type="text" autocomplete="address-line1" maxlength="255" value="{{ values.addressLine1 }}" aria-describedby="addressLine1-error"{% if errors.addressLine1 %} aria-invalid="true"{% endif %}>
+        <p id="addressLine1-error" class="field-error" role="alert">{{ errors.addressLine1[0] }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="addressLine2">Address line 2</label>
+        <input id="addressLine2" name="addressLine2" type="text" autocomplete="address-line2" maxlength="255" value="{{ values.addressLine2 }}" aria-describedby="addressLine2-error"{% if errors.addressLine2 %} aria-invalid="true"{% endif %}>
+        <p id="addressLine2-error" class="field-error" role="alert">{{ errors.addressLine2[0] }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="postcode">Postcode</label>
+        <input id="postcode" name="postcode" type="text" autocomplete="postal-code" maxlength="20" value="{{ values.postcode }}" aria-describedby="postcode-error"{% if errors.postcode %} aria-invalid="true"{% endif %}>
+        <p id="postcode-error" class="field-error" role="alert">{{ errors.postcode[0] }}</p>
+      </div>
+
+      <button type="submit" class="button">Save and continue</button>
+    </form>
+
+    <p class="card-footer"><a href="/home">Skip for now</a></p>
+  </section>
+{% endblock %}

@@ -19,10 +19,12 @@ export function createAuthRouter(authService: AuthService): Router {
     next: NextFunction,
     customerId: string,
     returnTo: string,
+    accountToken?: string,
   ) =>
     req.session.regenerate((error) => {
       if (error) return next(error)
       req.session.customerId = customerId
+      if (accountToken) req.session.accountToken = accountToken
       req.session.save((saveError) => {
         if (saveError) return next(saveError)
         res.redirect(returnTo)
@@ -74,7 +76,10 @@ export function createAuthRouter(authService: AuthService): Router {
 
       const { customerId } = result
 
-      startSession(req, res, next, customerId, returnTo)
+      startSession(
+        req, res, next, customerId, returnTo,
+        result.status === 'success' ? result.accessToken : undefined,
+      )
     },
   )
 

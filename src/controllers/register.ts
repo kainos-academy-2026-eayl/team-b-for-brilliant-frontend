@@ -1,4 +1,4 @@
-import { type Request, type Response, Router } from 'express';
+import { type NextFunction, type Request, type Response, Router } from 'express';
 import { safeRedirect } from '../utils/safeRedirect';
 import type { AuthService } from '../services/authService';
 import type { RegisterService } from '../services/registerService';
@@ -26,7 +26,7 @@ export function createAccountRouter(authService: AuthService, registerService: R
 
     router.post(
         '/register',
-        async (req: Request, res: Response) => {
+        async (req: Request, res: Response, next: NextFunction) => {
           const body = req.body ?? {}
           const email = String(body.email ?? '').trim()
           const password = String(body.password ?? '')
@@ -57,7 +57,28 @@ export function createAccountRouter(authService: AuthService, registerService: R
 
           if (registerResult.status === 'error') return renderError(503, UNAVAILABLE_ERROR)
 
-          res.redirect(303, '/register?registered=1')
+          const loginResult = await authService.login(email, password, req.ip ?? 'unknown')
+
+          if (loginResult.status !== 'success') {
+            const status = loginResult.status === 'locked' ? 429
+              : loginResult.status === 'error' ? 503 : 401
+            const error = loginResult.status === 'mfa_required'
+              ? 'Registration was processed. Please sign in to complete multi-factor authentication.'
+              : loginResult.status === 'locked'
+                ? 'Registration was processed, but sign-in is temporarily locked. Please try signing in later.'
+                : 'Registration was processed, but automatic sign-in failed. Please sign in.'
+            return res.status(status).render('register', { registered: true, error })
+          }
+
+          req.session.regenerate((error) => {
+            if (error) return next(error)
+            req.session.customerId = loginResult.customerId
+            if (loginResult.accessToken) req.session.accountToken = loginResult.accessToken
+            req.session.save((saveError) => {
+              if (saveError) return next(saveError)
+              res.redirect(303, '/register/details')
+            })
+          })
         },
       )
 
