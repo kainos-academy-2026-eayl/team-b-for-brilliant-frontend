@@ -9,6 +9,7 @@ import {
 import { createAuthRouter } from './controllers/auth-controllers';
 import { createImagesRouter } from './controllers/images';
 import { createProductsRouter } from './controllers/products';
+import { createProfileRouter } from './controllers/profile';
 import { registerRouter } from './controllers/register';
 import { verifyEmailRouter } from './controllers/verifyEmail';
 import { csrfProtection } from './middleware/csrf';
@@ -26,9 +27,14 @@ import {
   getProductsWithPrices,
   getProductWithPrice,
 } from './services/products';
+import {
+  createProfileService,
+  type ProfileService,
+} from './services/profileService';
 
 interface AppOptions {
   accountClient?: AccountClient;
+  profileService?: ProfileService;
   throttle?: LoginThrottle;
   fetchProducts?: () => Promise<ProductWithPrice[]>;
   fetchProduct?: (productID: string) => Promise<ProductWithPrice | null>;
@@ -121,7 +127,11 @@ export function createApp(options: AppOptions = {}): Express {
   app.use(createAuthRouter(authService));
 
   app.get('/forgot-password', (_req, res) => res.render('forgot-password'));
-  app.get('/account', requireAuth, (_req, res) => res.render('account'));
+  app.use(
+    '/account',
+    requireAuth,
+    createProfileRouter(options.profileService ?? createProfileService()),
+  );
 
   return app;
 }
