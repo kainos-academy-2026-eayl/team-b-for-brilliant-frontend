@@ -4,6 +4,12 @@ import { createApp } from '../../app';
 import type { AccountClient } from '../../clients/accountClient';
 
 const accountClient: AccountClient = {
+  async uniqueEmail() {
+    throw new Error('Email uniqueness should not be checked during login');
+  },
+  async register() {
+    throw new Error('Registration should not run during login');
+  },
   async verifyCredentials(email, password,) {
     return email === 'jane@example.com' && password === 'correct'
       ? { status: 'valid', customerId: 'c1', mfaEnabled: false }

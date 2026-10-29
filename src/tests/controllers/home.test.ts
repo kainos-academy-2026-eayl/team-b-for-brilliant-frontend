@@ -5,6 +5,12 @@ import type { AccountClient } from '../../clients/accountClient';
 import type { ProductWithPrice } from '../../models/product';
 
 const accountClient: AccountClient = {
+  async uniqueEmail() {
+    throw new Error('Email uniqueness should not be checked on the home page');
+  },
+  async register() {
+    throw new Error('Registration should not run on the home page');
+  },
   async verifyCredentials() {
     return { status: 'valid', customerId: 'c1', mfaEnabled: false };
   },

@@ -74,6 +74,16 @@ Never commit your `.env` file. It is listed in [.gitignore](.gitignore). The qui
 | `npm start` | `node dist/index.js` | Runs the built output. Requires `npm run build` first. |
 Before pushing, run `npm run format`, `npm run lint`, `npm run typecheck`, and `npm run build`.
 
+## Registration integration
+
+The server-handled `/register` form includes the session CSRF token. The frontend
+checks `POST {CUSTOMER_ACCOUNT_SERVICE_URL}/auth/unique-email`, reading the
+`unique` boolean from its HTTP 200 response, then sends `{ email, password }` to
+`POST {CUSTOMER_ACCOUNT_SERVICE_URL}/api/v1/auth/register`.
+The backend accepts registration with HTTP 202 and a message, not a customer ID.
+Success redirects to a GET confirmation page; it does not sign the visitor in
+or promise a verification email. Errors are rendered in the registration form.
+
 ## Project structure
 
 ```
