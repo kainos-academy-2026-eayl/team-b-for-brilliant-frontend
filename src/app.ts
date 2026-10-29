@@ -7,6 +7,9 @@ import {
   createAccountClient,
 } from './clients/accountClient';
 import { createAuthRouter } from './controllers/auth-controllers';
+import { adminAccountRouter } from './controllers/adminAccount';
+import { adminLoginRouter } from './controllers/adminLogin';
+import { createBasketRouter } from './controllers/basket';
 import { createImagesRouter } from './controllers/images';
 import { createProductsRouter } from './controllers/products';
 import { createProfileRouter } from './controllers/profile';
@@ -17,10 +20,12 @@ import {
   createLoginThrottle,
   type LoginThrottle,
 } from './middleware/loginThrottle';
+import { requireAdmin } from './middleware/requireAdmin';
 import { requireAuth } from './middleware/requireAuth';
 import type { ProductWithPrice } from './models/product';
 import { createHomeRouter } from './routes/home';
 import { createAuthService } from './services/authService';
+import { type BasketService, createMockBasketService } from './services/basket';
 import { fetchImage, type ProxiedImage } from './services/images';
 import {
   getApiBaseUrl,
@@ -35,6 +40,7 @@ import {
 interface AppOptions {
   accountClient?: AccountClient;
   profileService?: ProfileService;
+  basketService?: BasketService;
   throttle?: LoginThrottle;
   fetchProducts?: () => Promise<ProductWithPrice[]>;
   fetchProduct?: (productID: string) => Promise<ProductWithPrice | null>;
@@ -132,6 +138,13 @@ export function createApp(options: AppOptions = {}): Express {
     requireAuth,
     createProfileRouter(options.profileService ?? createProfileService()),
   );
+  app.use(
+    '/basket',
+    requireAuth,
+    createBasketRouter(options.basketService ?? createMockBasketService()),
+  );
+  app.use('/admin/login', adminLoginRouter);
+  app.use('/admin/account', requireAdmin, adminAccountRouter);
 
   return app;
 }

@@ -9,7 +9,7 @@
     "format": "biome format --write src",
     "lint": "biome lint src",
     "build": "npm run typecheck && esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/index.js --sourcemap",
-    "typecheck": "tsc",
+    "typecheck": "tsc && tsc -p src/client/tsconfig.json",
     "test": "vitest run",
     "start": "node dist/index.js"
   },

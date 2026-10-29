@@ -6,7 +6,7 @@
   var passwordInput = document.getElementById("password");
   var submitButton = document.getElementById("submit-button");
   var formError = document.getElementById("form-error");
-  var COMPANY_DOMAIN = "@bebrilliant.com";
+  var COMPANY_DOMAIN = "@b-brilliant.com";
   function setError(input, message) {
     const errorElement = document.getElementById(`${input.id}-error`);
     if (errorElement) errorElement.textContent = message;

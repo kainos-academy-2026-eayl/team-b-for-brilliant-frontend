@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { getCurrentPrice } from './productPrices'
+import { getCurrentPrice } from '../../services/productPrices'
 
 const baseUrl = 'http://localhost:3001'
 

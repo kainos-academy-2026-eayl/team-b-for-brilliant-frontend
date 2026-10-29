@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fetchImage, MAX_IMAGE_BYTES, toProxiedImageUrl } from './images'
+import { fetchImage, MAX_IMAGE_BYTES, toProxiedImageUrl } from '../../services/images'
 
 const baseUrl = 'http://backend.internal:3001'
 

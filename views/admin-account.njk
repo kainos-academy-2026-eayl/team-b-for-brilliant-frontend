@@ -5,10 +5,7 @@
 {% block content %}
   <h1>Your account</h1>
   <p>You are signed in.</p>
-{% endblock %}
-
-{% block admin_actions %}
-  <button type="button" id="logout-button">Log out</button>
+  <button type="button" id="logout-button" data-api-base-url="{{ apiBaseUrl }}">Log out</button>
 {% endblock %}
 
 {% block scripts %}

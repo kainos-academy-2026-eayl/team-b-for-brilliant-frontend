@@ -1,11 +1,11 @@
 import { once } from 'node:events'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createApp } from '../app'
-import type { ProxiedImage } from '../services/images'
+import { createApp } from '../../app'
+import type { ProxiedImage } from '../../services/images'
 
 async function getImage(
   fetchImage: (fileName: string) => Promise<ProxiedImage | null>,
-  path = '/images/product-1.svg',
+  path = '/images/backend-only.svg',
 ) {
   const server = createApp({
     fetchProducts: async () => [],
@@ -40,7 +40,7 @@ describe('GET /images/:fileName', () => {
 
     const response = await getImage(fetchImage)
 
-    expect(fetchImage).toHaveBeenCalledWith('product-1.svg')
+    expect(fetchImage).toHaveBeenCalledWith('backend-only.svg')
     expect(response.status).toBe(200)
     expect(response.headers.get('content-type')).toBe('image/svg+xml')
     expect(response.headers.get('cache-control')).toBe('public, max-age=60')

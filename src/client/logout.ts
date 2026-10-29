@@ -1,7 +1,7 @@
 export {};
 
 const logoutButton = document.getElementById('logout-button') as HTMLButtonElement;
-const apiBase = document.body.dataset.apiBaseUrl ?? '';
+const apiBase = logoutButton.dataset.apiBaseUrl ?? '';
 
 logoutButton.addEventListener('click', async () => {
     try {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createLoginThrottle } from './loginThrottle'
+import { createLoginThrottle } from '../../middleware/loginThrottle'
 
 describe('loginThrottle', () => {
   it('locks after 5 failures and unlocks after the window', () => {

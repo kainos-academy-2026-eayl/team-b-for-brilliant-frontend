@@ -2,7 +2,7 @@
 (() => {
   // src/client/logout.ts
   var logoutButton = document.getElementById("logout-button");
-  var apiBase = document.body.dataset.apiBaseUrl ?? "";
+  var apiBase = logoutButton.dataset.apiBaseUrl ?? "";
   logoutButton.addEventListener("click", async () => {
     try {
       const response = await fetch(`${apiBase}/api/v1/auth/admin/logout`, {

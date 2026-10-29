@@ -1,6 +1,6 @@
 import { once } from 'node:events'
 import { describe, expect, it } from 'vitest'
-import { createApp } from './app'
+import { createApp } from '../app'
 
 describe('GET /health', () => {
   it('returns the service status and uptime', async () => {
