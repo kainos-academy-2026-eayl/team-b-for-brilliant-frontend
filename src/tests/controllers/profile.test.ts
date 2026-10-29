@@ -58,6 +58,32 @@ function createFakeService(overrides: Partial<ProfileService> = {}) {
         ],
       }
     },
+    async getOrders(token) {
+      calls.push({ method: 'getOrders', token })
+      return [
+        {
+          orderID: 'order-abc',
+          placedAt: '2026-10-20T09:30:00.000Z',
+          total: '21.99',
+          items: [
+            {
+              productID: 'p1',
+              productName: 'Face Cream',
+              quantity: 1,
+              unitPrice: '12.99',
+              lineTotal: '12.99',
+            },
+            {
+              productID: 'p2',
+              productName: 'Hand Balm',
+              quantity: 2,
+              unitPrice: '4.50',
+              lineTotal: '9.00',
+            },
+          ],
+        },
+      ]
+    },
     ...overrides,
   }
   return { service, calls }
@@ -108,6 +134,7 @@ describe('profile page', () => {
 
     expect(res.status).toBe(200)
     expect(res.text).toContain('Hello Jane!')
+    expect(res.text).not.toContain('<h2>Your details</h2>')
     expect(res.text).toContain('value="jane@example.com" readonly')
     expect(res.text.indexOf('id="surname"')).toBeLessThan(
       res.text.indexOf('id="email"'),
@@ -122,6 +149,59 @@ describe('profile page', () => {
     expect(res.text).toMatch(/name="_csrf" value="[^"]+"/)
     expect(res.headers['cache-control']).toBe('no-store')
     expect(calls.every((call) => call.token === 'api-token')).toBe(true)
+  })
+
+  it('lists past orders with date, reference, products and total', async () => {
+    const { service, calls } = createFakeService()
+    const agent = await signIn(service)
+
+    const res = await agent.get('/account')
+
+    expect(res.text).toContain('Your orders')
+    expect(res.text).toContain('Order placed 20 October 2026')
+    expect(res.text).toContain('Order reference: order-abc')
+    expect(res.text).toContain('Face Cream, quantity 1 at £12.99 each (£12.99)')
+    expect(res.text).toContain('Hand Balm, quantity 2 at £4.50 each (£9.00)')
+    expect(res.text).toContain('Total: £21.99')
+    expect(calls).toContainEqual({ method: 'getOrders', token: 'api-token' })
+  })
+
+  it('shows a message when there are no orders', async () => {
+    const { service } = createFakeService({ getOrders: async () => [] })
+    const agent = await signIn(service)
+
+    expect((await agent.get('/account')).text).toContain(
+      'You have not placed any orders yet',
+    )
+  })
+
+  it('still shows the profile when orders cannot be loaded', async () => {
+    const { service } = createFakeService({
+      getOrders: async () => {
+        throw new ProfileError(500, 'Backend responded 500')
+      },
+    })
+    const agent = await signIn(service)
+
+    const res = await agent.get('/account')
+
+    expect(res.status).toBe(200)
+    expect(res.text).toContain('Hello Jane!')
+    expect(res.text).toContain('We could not load your orders right now')
+  })
+
+  it('sends the customer to sign in again when the orders call is unauthorised', async () => {
+    const { service } = createFakeService({
+      getOrders: async () => {
+        throw new ProfileError(401, 'Backend responded 401')
+      },
+    })
+    const agent = await signIn(service)
+
+    const res = await agent.get('/account')
+
+    expect(res.status).toBe(302)
+    expect(res.headers.location).toContain('/login')
   })
 
   it('serves the default profile picture locally', async () => {

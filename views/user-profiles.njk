@@ -15,10 +15,15 @@
   main { max-width: 64rem; }
   .profile-layout { display: grid; grid-template-columns: 1fr; gap: 1.5rem; align-items: start; }
   @media (min-width: 48rem) {
-    .profile-layout { grid-template-columns: 3fr 2fr; }
+    .profile-layout { grid-template-columns: 1fr 1fr; }
   }
   .profile-avatar { display: block; width: 7rem; height: 7rem; margin: 0 0 1rem; border-radius: 50%; object-fit: cover; }
   #basket-heading { margin-top: 0; }
+  .profile-side { display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
+  #orders-heading { margin-top: 0; }
+  .order { padding: 1rem 0; border-top: 1px solid #d8dee4; }
+  .order h3 { margin: 0 0 0.25rem; }
+  .order-reference { margin: 0 0 0.5rem; font-size: 0.875rem; overflow-wrap: anywhere; }
 </style>
 {% endblock %}
 
@@ -36,8 +41,6 @@
     <p class="alert" role="alert">We could not save your details. Please check the highlighted fields.</p>
   {% endif %}
 
-  <h2>Your details</h2>
-
   <form method="post" action="/account" novalidate>
     <input type="hidden" name="_csrf" value="{{ csrfToken }}">
     {{ textField('firstname', 'First name', values.firstname, errors.firstname, 'given-name') }}
@@ -53,6 +56,7 @@
   </form>
 </section>
 
+<div class="profile-side">
 <section class="card" aria-labelledby="basket-heading">
   <h2 id="basket-heading">Your basket</h2>
   {% if basket.items.length == 0 %}
@@ -72,6 +76,29 @@
     </ul>
   {% endif %}
 </section>
+
+<section class="card profile-orders" aria-labelledby="orders-heading">
+  <h2 id="orders-heading">Your orders</h2>
+  {% if ordersFailed %}
+    <p role="alert">We could not load your orders right now. Please try again later.</p>
+  {% elif orders.length == 0 %}
+    <p>You have not placed any orders yet. <a href="/products">Browse products</a>.</p>
+  {% else %}
+    {% for order in orders %}
+      <article class="order" aria-labelledby="order-{{ loop.index }}-heading">
+        <h3 id="order-{{ loop.index }}-heading">Order placed {{ order.placedOn }}</h3>
+        <p class="order-reference">Order reference: {{ order.orderID }}</p>
+        <ul>
+          {% for item in order.items %}
+            <li>{{ item.productName }}, quantity {{ item.quantity }} at £{{ item.unitPrice }} each (£{{ item.lineTotal }})</li>
+          {% endfor %}
+        </ul>
+        <p><strong>Total: £{{ order.total }}</strong></p>
+      </article>
+    {% endfor %}
+  {% endif %}
+</section>
+</div>
 </div>
 {% endblock %}
 

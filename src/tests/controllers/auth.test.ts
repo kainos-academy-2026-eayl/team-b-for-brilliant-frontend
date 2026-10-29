@@ -32,6 +32,9 @@ const profileService: ProfileService = {
   async getBasket() {
     return { items: [] };
   },
+  async getOrders() {
+    return [];
+  },
 };
 
 type Agent = ReturnType<typeof request.agent>;

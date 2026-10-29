@@ -1,4 +1,5 @@
 import { type Request, type Response, Router } from 'express'
+import type { Order } from '../models/order'
 import type { ProfileInput } from '../models/profile'
 import { ProfileError, type ProfileService } from '../services/profileService'
 
@@ -36,6 +37,22 @@ function toFieldErrors(fieldErrors: Record<string, string[]>): FieldErrors {
   return errors
 }
 
+const dateFormat = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'Europe/London',
+})
+
+function toOrderView(order: Order) {
+  return {
+    orderID: order.orderID,
+    placedOn: dateFormat.format(new Date(order.placedAt)),
+    total: order.total,
+    items: order.items,
+  }
+}
+
 // The backend token is missing or no longer valid, so the customer must sign in again
 function signInAgain(req: Request, res: Response) {
   req.session.destroy(() => {
@@ -56,6 +73,17 @@ export function createProfileRouter(service: ProfileService): Router {
     res.status(502).render('error', { message: LOAD_ERROR })
   }
 
+  // Orders are secondary, so a failure shows a message instead of hiding the whole page
+  async function loadOrders(token: string): Promise<Order[] | null> {
+    try {
+      return await service.getOrders(token)
+    } catch (error) {
+      if (error instanceof ProfileError && error.status === 401) throw error
+      console.error('Orders failed to load', (error as Error).message)
+      return null
+    }
+  }
+
   async function renderPage(
     res: Response,
     token: string,
@@ -63,15 +91,18 @@ export function createProfileRouter(service: ProfileService): Router {
     form?: { values: ProfileInput; errors: FieldErrors },
     saved = false,
   ) {
-    const [profile, basket] = await Promise.all([
+    const [profile, basket, orders] = await Promise.all([
       service.getProfile(token),
       service.getBasket(token),
+      loadOrders(token),
     ])
 
     res.set('Cache-Control', 'no-store')
     res.status(status).render('user-profiles', {
       profile,
       basket,
+      orders: orders?.map(toOrderView) ?? [],
+      ordersFailed: orders === null,
       saved,
       values: form?.values ?? {
         firstname: profile.firstname ?? '',

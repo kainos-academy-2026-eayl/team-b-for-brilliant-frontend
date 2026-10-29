@@ -1,4 +1,5 @@
 import type { Basket } from '../models/basket'
+import type { Order } from '../models/order'
 import type { Profile, ProfileInput } from '../models/profile'
 import { getApiBaseUrl } from './products'
 
@@ -22,6 +23,7 @@ export interface ProfileService {
   getProfile(token: string): Promise<Profile>
   updateProfile(token: string, input: ProfileInput): Promise<Profile>
   getBasket(token: string): Promise<Basket>
+  getOrders(token: string): Promise<Order[]>
 }
 
 export function createProfileService(
@@ -75,5 +77,7 @@ export function createProfileService(
     updateProfile: (token, input) =>
       callBackend<Profile>('/profile', token, 'PUT', input),
     getBasket: (token) => callBackend<Basket>('/basket', token),
+    getOrders: async (token) =>
+      (await callBackend<{ orders: Order[] }>('/orders', token)).orders,
   }
 }
