@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { mapWithConcurrency } from '../../utils/concurrency'
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds))
 }
 
 describe('mapWithConcurrency', () => {
@@ -25,9 +25,9 @@ describe('mapWithConcurrency', () => {
   })
 
   it('keeps results in input order even when mappers finish out of order', async () => {
-    const results = await mapWithConcurrency([30, 10, 20, 0], 2, async (ms) => {
-      await delay(ms)
-      return ms
+    const results = await mapWithConcurrency([30, 10, 20, 0], 2, async (milliseconds) => {
+      await delay(milliseconds)
+      return milliseconds
     })
 
     expect(results).toEqual([30, 10, 20, 0])

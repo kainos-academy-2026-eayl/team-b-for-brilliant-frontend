@@ -74,6 +74,16 @@ Never commit your `.env` file. It is listed in [.gitignore](.gitignore). The qui
 | `npm start` | `node dist/index.js` | Runs the built output. Requires `npm run build` first. |
 Before pushing, run `npm run format`, `npm run lint`, `npm run typecheck`, and `npm run build`.
 
+## Registration integration
+
+The server-handled `/register` form includes the session CSRF token. The frontend
+checks `POST {CUSTOMER_ACCOUNT_SERVICE_URL}/auth/unique-email`, reading the
+`unique` boolean from its HTTP 200 response, then sends `{ email, password }` to
+`POST {CUSTOMER_ACCOUNT_SERVICE_URL}/api/v1/auth/register`.
+The backend accepts registration with HTTP 202 and a message, not a customer ID.
+Success redirects to a GET confirmation page; it does not sign the visitor in
+or promise a verification email. Errors are rendered in the registration form.
+
 ## Project structure
 
 ```
@@ -113,6 +123,9 @@ The shared drawer makes the header and main content inert while open, keeping
 background controls out of keyboard and assistive-technology navigation.
 Closing it by its close button, the overlay or Escape restores the regions'
 previous inert state before returning focus to the menu toggle.
+Tab and Shift+Tab wrap within the open drawer, and the existing slide transitions
+respect reduced-motion preferences. "Shop all products" is a single navigation
+label without subtitle text.
 
 ## Adding a new route
 
@@ -197,6 +210,35 @@ appears at the top, is selected initially, and is used as the catalogue thumbnai
 If there is no image with order 0, the image with the lowest order is used instead.
 Products with one image show it without thumbnails, and products with
 no images show "No image available".
+
+Product responses include `categories` (category ID, name, nullable description,
+and department ID) and `departments` (department ID, name, nullable description).
+Both arrays are validated and retained for catalogue and detail responses.
+Detail pages list categories after the description, grouped by `departmentID`
+with each department name shown once as a heading. Categories without a matching
+department remain visible under "Other categories". When there are no categories,
+any departments are shown below the product title. Empty sections are hidden.
+
+The products page includes a category dropdown populated from the products'
+categories, deduplicated by category ID and sorted alphabetically by name.
+When different IDs have the same name (ignoring case and surrounding whitespace),
+their labels include the full category ID, for example `Accessories (ID: c0)`,
+including in the selected-category summary. Unique names remain unchanged.
+Select a category and press "Filter products" to submit its ID to
+`GET /products?category=<categoryID>`. The selection is retained, and all category
+options remain available after filtering. "All categories" removes the category
+filter while keeping any product-name search; "Clear search" removes both.
+A link to a category that is no longer available shows an explicit message.
+
+The frontend forwards nonempty, trimmed `q` (product name) and `category`
+(category ID) query parameters to the backend's `GET /products` endpoint.
+The backend must implement case-insensitive partial-name matching and combine
+both filters when supplied, returning the existing `{ products: [...] }` shape.
+This backend filtering contract must be implemented separately: the frontend
+does not fall back to local matching if the API ignores the parameters.
+For an active search or category filter, a separate unfiltered `GET /products`
+request provides all category dropdown options without fetching prices for
+that unfiltered catalogue. Prices are fetched only for the search results.
 
 Between the price and description, detail pages show a quantity dropdown from
 1 to the available stock (capped at 10) and an "Add to basket" button underneath. Out-of-stock

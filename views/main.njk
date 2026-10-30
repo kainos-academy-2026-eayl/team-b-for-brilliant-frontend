@@ -8,6 +8,7 @@
   {% block head %}{% endblock %}
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
     <div class="brand">
       <a href="/" class="logo">
@@ -50,7 +51,8 @@
       </button>
     </div>
     <ul class="site-menu__list">
-      <li><a href="/products"{% if currentPath == '/products' %} aria-current="page"{% elif currentPath and currentPath.startsWith('/products/') %} aria-current="location"{% endif %}>Shop all products<span class="site-menu__hint">Find your next favourite</span></a></li>
+      <li><a href="/home"{% if currentPath == '/home' %} aria-current="page"{% endif %}>Home</a></li>
+      <li><a href="/products"{% if currentPath == '/products' %} aria-current="page"{% elif currentPath and currentPath.startsWith('/products/') %} aria-current="location"{% endif %}>Shop all products</a></li>
       {% if isSignedIn %}
         <li><a href="/account"{% if currentPath == '/account' %} aria-current="page"{% endif %}>My account</a></li>
         <li>
@@ -74,7 +76,7 @@
     </div>
   </nav>
 
-  <main>{% block content %}{% endblock %}</main>
+  <main id="main" class="{% block main_class %}{% endblock %}">{% block content %}{% endblock %}</main>
   <script src="/static/menu.js" defer></script>
   {% block scripts %}{% endblock %}
 </body>

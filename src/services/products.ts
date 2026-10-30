@@ -10,6 +10,11 @@ import { getCurrentPrice } from './productPrices';
 export const DEFAULT_API_BASE_URL = 'http://localhost:3001';
 export const DEFAULT_PRICE_FETCH_CONCURRENCY = 5;
 
+export interface ProductFilters {
+  q?: string;
+  category?: string;
+}
+
 export function getApiBaseUrl(): string {
   return process.env.API_BASE_URL || DEFAULT_API_BASE_URL;
 }
@@ -35,7 +40,7 @@ function withProxiedImages(product: Product, baseUrl: string): Product {
         const imageUrl = toProxiedImageUrl(image.imageUrl, baseUrl);
         return imageUrl === null ? [] : [{ ...image, imageUrl }];
       })
-      .sort((a, b) => a.imageOrder - b.imageOrder),
+      .sort((productA, productB) => productA.imageOrder - productB.imageOrder),
   };
 }
 
@@ -96,8 +101,13 @@ export async function getProductWithPrice(
 export async function getProducts(
   baseUrl: string = getApiBaseUrl(),
   fetchFn: typeof fetch = fetch,
+  filters: ProductFilters = {},
 ): Promise<Product[]> {
-  const response = await fetchFn(new URL('/products', baseUrl), {
+  // The backend owns matching; URLSearchParams safely encodes user-entered text.
+  const url = new URL('/products', baseUrl);
+  if (filters.q) url.searchParams.set('q', filters.q);
+  if (filters.category) url.searchParams.set('category', filters.category);
+  const response = await fetchFn(url, {
     headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(5000),
   });
@@ -123,10 +133,20 @@ export async function getProductsWithPrices(
   baseUrl: string = getApiBaseUrl(),
   fetchFn: typeof fetch = fetch,
   concurrency: number = getPriceFetchConcurrency(),
+  filters: ProductFilters = {},
 ): Promise<ProductWithPrice[]> {
-  const products = await getProducts(baseUrl, fetchFn);
+  // Attach prices only to the products returned by the backend search.
+  const products = await getProducts(baseUrl, fetchFn, filters);
 
   return mapWithConcurrency(products, concurrency, (product) =>
     withCurrentPrice(product, baseUrl, fetchFn),
   );
+}
+
+export async function getProductsByName(
+  baseUrl: string = getApiBaseUrl(),
+  fetchFn: typeof fetch = fetch,
+  name: string,
+): Promise<Product[]> {
+  return getProducts(baseUrl, fetchFn, { q: name.trim() });
 }

@@ -5,6 +5,7 @@ import {
   getProducts,
   getProductsWithPrices,
   getProductWithPrice,
+  getProductsByName,
 } from '../../services/products';
 
 const backendProduct = {
@@ -17,6 +18,8 @@ const backendProduct = {
   visible: true,
   weight: 1.5,
   deletedAt: null,
+  categories: [],
+  departments: [],
   productImages: [
     {
       imageID: 'i1',
@@ -33,6 +36,60 @@ function jsonResponse(body: object, status = 200): Response {
     headers: { 'Content-Type': 'application/json' },
   });
 }
+
+describe('backend product filtering', () => {
+  it('encodes both filters and fetches prices only for backend results', async () => {
+    const fetchFn = vi.fn<typeof fetch>(async (input) =>
+      new URL(String(input)).pathname.endsWith('/prices/current')
+        ? jsonResponse({ price: null })
+        : jsonResponse({ products: [backendProduct] }),
+    );
+    const filters = { q: 'Serum & cream/+?', category: 'c/1 & 2' };
+    const products = await getProductsWithPrices(
+      'http://localhost:3001', fetchFn, 5, filters,
+    );
+    const url = new URL(String(fetchFn.mock.calls[0]?.[0]));
+    expect(url.pathname).toBe('/products');
+    expect(url.searchParams.get('q')).toBe(filters.q);
+    expect(url.searchParams.get('category')).toBe(filters.category);
+    expect(products[0]?.name).toBe('Widget');
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+    expect(String(fetchFn.mock.calls[1]?.[0])).toBe(
+      'http://localhost:3001/products/p1/prices/current',
+    );
+  });
+
+  it('omits empty filters from the backend request', async () => {
+    const fetchFn = vi.fn<typeof fetch>(async () => jsonResponse({ products: [] }));
+    await getProducts('http://localhost:3001', fetchFn, { q: '', category: '' });
+    expect(String(fetchFn.mock.calls[0]?.[0])).toBe('http://localhost:3001/products');
+  });
+
+  it('does not request prices when the backend returns no matches', async () => {
+    const fetchFn = vi.fn<typeof fetch>(async () => jsonResponse({ products: [] }));
+    expect(await getProductsWithPrices(
+      'http://localhost:3001', fetchFn, 5, { q: 'missing' },
+    )).toEqual([]);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('delegates the name-search helper to the backend without local matching', async () => {
+    const fetchFn = vi.fn<typeof fetch>(async () =>
+      jsonResponse({ products: [backendProduct] }),
+    );
+    const products = await getProductsByName('http://localhost:3001', fetchFn, ' Serum ');
+    expect(new URL(String(fetchFn.mock.calls[0]?.[0])).searchParams.get('q')).toBe('Serum');
+    expect(products[0]?.name).toBe('Widget');
+  });
+
+  it('surfaces backend search failures instead of falling back to unfiltered products', async () => {
+    const fetchFn = vi.fn<typeof fetch>(async () => jsonResponse({}, 500));
+    await expect(getProductsWithPrices(
+      'http://localhost:3001', fetchFn, 5, { q: 'serum' },
+    )).rejects.toThrow('Failed to fetch products: HTTP 500');
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe('product sales totals', () => {
   it('preserves salesNo from the backend when attaching current prices', async () => {

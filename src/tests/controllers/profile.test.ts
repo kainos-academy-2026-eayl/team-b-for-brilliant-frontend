@@ -9,6 +9,12 @@ import {
 } from '../../services/profileService'
 
 const accountClient: AccountClient = {
+  async uniqueEmail() {
+    throw new Error('Email uniqueness should not be checked')
+  },
+  async register() {
+    throw new Error('Registration should not run')
+  },
   async verifyCredentials() {
     return {
       status: 'valid',
