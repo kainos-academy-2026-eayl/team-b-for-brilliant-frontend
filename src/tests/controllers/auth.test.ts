@@ -13,7 +13,7 @@ const accountClient: AccountClient = {
   },
   async verifyCredentials(email, password,) {
     return email === 'jane@example.com' && password === 'correct'
-      ? { status: 'valid', customerId: 'c1', mfaEnabled: false, token: 'test-token' }
+      ? { status: 'valid', customerId: 'c1', mfaEnabled: false, accessToken: 'test-token' }
       : { status: 'invalid' };
   },
   async verifyMfa() {

@@ -2,6 +2,7 @@ import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app';
 import type { AccountClient } from '../../clients/accountClient';
+import { stubProfileService } from '../helpers/stubProfileService';
 
 function csrf(html: string): string {
   const token = /name="_csrf" value="([^"]+)"/.exec(html)?.[1];
@@ -25,6 +26,7 @@ async function failedAutomaticSignIn() {
   const agent = request.agent(createApp({
     accountClient: client, saveRegistrationDetails: save, fetchProducts: async () => [],
     getSecurityQuestions: async () => [],
+    profileService: stubProfileService,
   }));
   const page = await agent.get('/register').expect(200);
   const response = await agent.post('/register').type('form').send({

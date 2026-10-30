@@ -20,7 +20,7 @@ const accountClient: AccountClient = {
       status: 'valid',
       customerId: 'c1',
       mfaEnabled: false,
-      token: 'api-token',
+      accessToken: 'api-token',
     }
   },
   async verifyMfa() {

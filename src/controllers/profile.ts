@@ -117,7 +117,7 @@ export function createProfileRouter(service: ProfileService): Router {
   }
 
   router.get('/', async (req, res) => {
-    const token = req.session.apiToken
+    const token = req.session.accountToken
     if (!token) {
       signInAgain(req, res)
       return
@@ -131,7 +131,7 @@ export function createProfileRouter(service: ProfileService): Router {
   })
 
   router.post('/', async (req, res) => {
-    const token = req.session.apiToken
+    const token = req.session.accountToken
     if (!token) {
       signInAgain(req, res)
       return

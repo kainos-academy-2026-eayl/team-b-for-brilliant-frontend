@@ -46,17 +46,11 @@ export function createAccountClient(baseUrl: string): AccountClient {
         throw new Error(`Account service responded ${response.status}`);
       }
 
-      const body = (await response.json()) as {
-        customerId: string;
-        mfaEnabled?: boolean;
-        token?: string;
-      };
       const body = verifyResponseSchema.parse(await response.json());
       return {
         status: 'valid',
         customerId: body.customerId,
         mfaEnabled: body.mfaEnabled === true,
-        token: body.token,
         ...(body.accessToken ? { accessToken: body.accessToken } : {}),
       };
     },
