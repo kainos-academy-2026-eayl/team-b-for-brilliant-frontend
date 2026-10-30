@@ -15,6 +15,7 @@ import {
 import { createAuthRouter } from './controllers/auth-controllers';
 import { adminAccountRouter } from './controllers/adminAccount';
 import { createBasketRouter } from './controllers/basket';
+import { createDiscountsRouter } from './controllers/discounts';
 import { createImagesRouter } from './controllers/images';
 import { createProductsRouter } from './controllers/products';
 import { createProfileRouter } from './controllers/profile';
@@ -28,10 +29,12 @@ import {
 } from './middleware/loginThrottle';
 import { requireAdmin } from './middleware/requireAdmin';
 import { requireAuth } from './middleware/requireAuth';
+import type { Discount } from './models/discount';
 import type { ProductWithPrice } from './models/product';
 import { createHomeRouter } from './routes/home';
 import { createAuthService } from './services/authService';
 import { type BasketService, createMockBasketService } from './services/basket';
+import { getDiscounts } from './services/discounts';
 import { fetchImage, type ProxiedImage } from './services/images';
 import {
   getApiBaseUrl,
@@ -58,6 +61,7 @@ interface AppOptions {
   fetchProducts?: (filters?: ProductFilters) => Promise<ProductWithPrice[]>;
   fetchProduct?: (productID: string) => Promise<ProductWithPrice | null>;
   fetchProxiedImage?: (fileName: string) => Promise<ProxiedImage | null>;
+  fetchDiscounts?: (token?: string) => Promise<Discount[]>;
 }
 
 export function createApp(options: AppOptions = {}): Express {
@@ -130,6 +134,10 @@ export function createApp(options: AppOptions = {}): Express {
     ),
   );
   app.use(
+    '/discounts',
+    createDiscountsRouter(options.fetchDiscounts ?? getDiscounts),
+  );
+  app.use(
     '/images',
     createImagesRouter(
       options.fetchProxiedImage ??
@@ -139,7 +147,7 @@ export function createApp(options: AppOptions = {}): Express {
 
   const accountClient =
     options.accountClient ??
-    createAccountClient(process.env.CUSTOMER_ACCOUNT_SERVICE_URL ?? '');
+    createAccountClient(getApiBaseUrl());
   const authService = createAuthService(
     accountClient,
     options.throttle ?? createLoginThrottle(),
