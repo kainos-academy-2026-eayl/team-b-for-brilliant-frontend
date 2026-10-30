@@ -1,0 +1,104 @@
+{% extends "main.njk" %}
+
+{% macro textField(id, label, value, error, autocomplete) %}
+  <div class="form-field">
+    <label for="{{ id }}">{{ label }}</label>
+    <input id="{{ id }}" name="{{ id }}" type="text" autocomplete="{{ autocomplete }}" value="{{ value }}"{% if error %} aria-invalid="true" aria-describedby="{{ id }}-error"{% endif %}>
+    {% if error %}<p id="{{ id }}-error" class="field-error">{{ error }}</p>{% endif %}
+  </div>
+{% endmacro %}
+
+{% block title %}Your profile | B-Brilliant{% endblock %}
+
+{% block head %}
+<style>
+  main { max-width: 64rem; }
+  .profile-layout { display: grid; grid-template-columns: 1fr; gap: 1.5rem; align-items: start; }
+  @media (min-width: 48rem) {
+    .profile-layout { grid-template-columns: 1fr 1fr; }
+  }
+  .profile-avatar { display: block; width: 7rem; height: 7rem; margin: 0 0 1rem; border-radius: 50%; object-fit: cover; }
+  #basket-heading { margin-top: 0; }
+  .profile-side { display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
+  #orders-heading { margin-top: 0; }
+  .order { padding: 1rem 0; border-top: 1px solid #d8dee4; }
+  .order h3 { margin: 0 0 0.25rem; }
+  .order-reference { margin: 0 0 0.5rem; font-size: 0.875rem; overflow-wrap: anywhere; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-layout">
+<section class="card" aria-labelledby="profile-heading">
+  <h1 id="profile-heading">Hello {{ profile.firstname }}!</h1>
+
+  <img class="profile-avatar" src="{{ profile.pictureUrl or '/static/images/default-profile.svg' }}" alt="Your profile picture" width="112" height="112">
+
+  {% if saved %}
+    <p class="alert alert-success" role="status">Your details have been saved.</p>
+  {% endif %}
+  {% if hasErrors %}
+    <p class="alert" role="alert">We could not save your details. Please check the highlighted fields.</p>
+  {% endif %}
+
+  <form method="post" action="/account" novalidate>
+    <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+    {{ textField('firstname', 'First name', values.firstname, errors.firstname, 'given-name') }}
+    {{ textField('surname', 'Surname', values.surname, errors.surname, 'family-name') }}
+    <div class="form-field">
+      <label for="email">Email</label>
+      <input id="email" type="email" value="{{ profile.email }}" readonly>
+    </div>
+    {{ textField('addressLine1', 'Address line 1', values.addressLine1, errors.addressLine1, 'address-line1') }}
+    {{ textField('addressLine2', 'Address line 2 (optional)', values.addressLine2, errors.addressLine2, 'address-line2') }}
+    {{ textField('postcode', 'Postcode', values.postcode, errors.postcode, 'postal-code') }}
+    <button type="submit" class="button">Save details</button>
+  </form>
+</section>
+
+<div class="profile-side">
+<section class="card" aria-labelledby="basket-heading">
+  <h2 id="basket-heading">Your basket</h2>
+  {% if basket.items.length == 0 %}
+    <p>Your basket is empty. <a href="/products">Browse products</a>.</p>
+  {% else %}
+    <ul>
+      {% for item in basket.items %}
+        <li>
+          {{ item.productName }}, quantity {{ item.quantityInBasket }}
+          {% if not item.isQuantityAvailable %}
+            <span class="field-error">(only {{ item.stockAvailable }} in stock)</span>
+          {% elif item.lowStock %}
+            <span>(only {{ item.stockAvailable }} left)</span>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</section>
+
+<section class="card profile-orders" aria-labelledby="orders-heading">
+  <h2 id="orders-heading">Your orders</h2>
+  {% if ordersFailed %}
+    <p role="alert">We could not load your orders right now. Please try again later.</p>
+  {% elif orders.length == 0 %}
+    <p>You have not placed any orders yet. <a href="/products">Browse products</a>.</p>
+  {% else %}
+    {% for order in orders %}
+      <article class="order" aria-labelledby="order-{{ loop.index }}-heading">
+        <h3 id="order-{{ loop.index }}-heading">Order placed {{ order.placedOn }}</h3>
+        <p class="order-reference">Order reference: {{ order.orderID }}</p>
+        <ul>
+          {% for item in order.items %}
+            <li>{{ item.productName }}, quantity {{ item.quantity }} at £{{ item.unitPrice }} each (£{{ item.lineTotal }})</li>
+          {% endfor %}
+        </ul>
+        <p><strong>Total: £{{ order.total }}</strong></p>
+      </article>
+    {% endfor %}
+  {% endif %}
+</section>
+</div>
+</div>
+{% endblock %}
+

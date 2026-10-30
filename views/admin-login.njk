@@ -1,0 +1,30 @@
+{% extends "layout.njk" %}
+
+{% block title %}Admin sign in{% endblock %}
+
+{% block content %}
+  <h1>Admin sign in</h1>
+
+  {% if errors.form %}
+    <div id="form-error" role="alert">{{ errors.form }}</div>
+  {% endif %}
+
+  <form method="post" action="/admin/login" novalidate>
+    <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+    <input type="hidden" name="next" value="{{ next }}">
+
+    <div>
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="username" value="{{ email }}" aria-describedby="email-error">
+      {% if errors.email %}<p id="email-error" role="alert">{{ errors.email }}</p>{% endif %}
+    </div>
+
+    <div>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" aria-describedby="password-error">
+      {% if errors.password %}<p id="password-error" role="alert">{{ errors.password }}</p>{% endif %}
+    </div>
+
+    <button type="submit">Sign in</button>
+  </form>
+{% endblock %}

@@ -7,6 +7,7 @@ declare module 'express-session' {
     registrationDetailsPending?: boolean
     pendingRegistrationEmail?: string
     csrfToken?: string
+    isAdmin?: boolean
     pendingMfa?: { customerId: string; returnTo: string; expiresAt: number }
   }
 }

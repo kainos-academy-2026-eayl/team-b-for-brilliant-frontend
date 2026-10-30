@@ -1,6 +1,4 @@
-import {
-  type AccountClient,
-} from '../clients/accountClient';
+import type { AccountClient } from '../clients/accountClient';
 
 export type RegisterResult =
   | { status: 'success' }

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app';
 import type { AccountClient } from '../../clients/accountClient';
 import { RegistrationDetailsError, type saveRegistrationDetails } from '../../services/registrationDetails';
+import { stubProfileService } from '../helpers/stubProfileService';
 
 const client: AccountClient = {
   verifyCredentials: async () => ({
@@ -23,6 +24,7 @@ async function signedIn(save = vi.fn<typeof saveRegistrationDetails>().mockResol
   const agent = request.agent(createApp({
     accountClient: client, saveRegistrationDetails: save, fetchProducts: async () => [],
     getSecurityQuestions: async () => [{ questionID: 'q1', question: 'What is your favourite colour?' }],
+    profileService: stubProfileService,
   }));
   const register = await agent.get('/register').expect(200);
   await agent.post('/register').type('form').send({
@@ -94,6 +96,7 @@ describe('optional registration details', () => {
     const save = vi.fn<typeof saveRegistrationDetails>().mockResolvedValue();
     const agent = request.agent(createApp({
       accountClient: client, saveRegistrationDetails: save,
+      profileService: stubProfileService,
     }));
     const login = await agent.get('/login').expect(200);
     await agent.post('/login').type('form').send({

@@ -1,0 +1,54 @@
+{% extends "main.njk" %}
+
+{% block title %}Your basket | B-Brilliant{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h1>Your basket</h1>
+
+  {% if error %}
+    <p class="alert" role="alert">{{ error }}</p>
+  {% endif %}
+
+  {% set lowStockItems = items | selectattr('lowStock') | list %}
+  {% if lowStockItems.length %}
+    <div class="alert" role="status">
+      <p>Some items in your basket are running low:</p>
+      <ul>
+        {% for item in lowStockItems %}
+          <li>{{ item.productName }}: only {{ item.stockAvailable }} left</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  {% if items.length == 0 %}
+    <p>Your basket is empty. <a href="/products">Browse products</a>.</p>
+  {% else %}
+    <ul>
+      {% for item in items %}
+        <li>
+          <h2>{{ item.productName }}</h2>
+          {% if not item.isQuantityAvailable %}
+            <p class="alert">Only {{ item.stockAvailable }} available. Reduce the quantity to continue.</p>
+          {% endif %}
+
+          <form method="post" action="/basket/items/{{ item.productID | urlencode }}/update" novalidate>
+            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+            <div class="form-field">
+              <label for="quantity-{{ item.productID }}">Quantity of {{ item.productName }}</label>
+              <input id="quantity-{{ item.productID }}" name="quantity" type="number" min="0" inputmode="numeric" value="{{ item.quantityInBasket }}">
+            </div>
+            <button type="submit" class="button">Update quantity</button>
+          </form>
+
+          <form method="post" action="/basket/items/{{ item.productID | urlencode }}/remove">
+            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+            <button type="submit" class="button-link" aria-label="Remove {{ item.productName }} from basket">Remove</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</section>
+{% endblock %}

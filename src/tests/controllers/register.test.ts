@@ -2,6 +2,7 @@ import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app';
 import type { AccountClient } from '../../clients/accountClient';
+import { stubProfileService } from '../helpers/stubProfileService';
 
 function registrationClient() {
   return {
@@ -21,6 +22,7 @@ function registrationClient() {
 async function registrationForm(accountClient: AccountClient) {
   const agent = request.agent(createApp({
     accountClient, getSecurityQuestions: async () => [],
+    profileService: stubProfileService,
   }));
   const page = await agent.get('/register').expect(200);
   const token = /name="_csrf" value="([^"]+)"/.exec(page.text)?.[1];

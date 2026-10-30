@@ -6,10 +6,19 @@ import {
   type AccountClient,
   createAccountClient,
 } from './clients/accountClient';
+import { createAdminClient } from './clients/adminClient';
+import { createAdminLoginRouter } from './controllers/adminLogin';
+import {
+  type AdminAuthService,
+  createAdminAuthService,
+} from './services/adminAuthService';
 import { createAuthRouter } from './controllers/auth-controllers';
+import { adminAccountRouter } from './controllers/adminAccount';
+import { createBasketRouter } from './controllers/basket';
 import { createDiscountsRouter } from './controllers/discounts';
 import { createImagesRouter } from './controllers/images';
 import { createProductsRouter } from './controllers/products';
+import { createProfileRouter } from './controllers/profile';
 import { createAccountRouter } from './controllers/register';
 import { createRegistrationDetailsRouter } from './controllers/registrationDetails';
 import { verifyEmailRouter } from './controllers/verifyEmail';
@@ -18,11 +27,13 @@ import {
   createLoginThrottle,
   type LoginThrottle,
 } from './middleware/loginThrottle';
+import { requireAdmin } from './middleware/requireAdmin';
 import { requireAuth } from './middleware/requireAuth';
 import type { Discount } from './models/discount';
 import type { ProductWithPrice } from './models/product';
 import { createHomeRouter } from './routes/home';
 import { createAuthService } from './services/authService';
+import { type BasketService, createMockBasketService } from './services/basket';
 import { getDiscounts } from './services/discounts';
 import { fetchImage, type ProxiedImage } from './services/images';
 import {
@@ -32,6 +43,10 @@ import {
   getProductWithPrice,
   type ProductFilters,
 } from './services/products';
+import {
+  createProfileService,
+  type ProfileService,
+} from './services/profileService';
 import { createRegisterService } from './services/registerService';
 import type { getSecurityQuestions, saveRegistrationDetails } from './services/registrationDetails';
 
@@ -39,7 +54,10 @@ interface AppOptions {
   saveRegistrationDetails?: typeof saveRegistrationDetails;
   getSecurityQuestions?: typeof getSecurityQuestions;
   accountClient?: AccountClient;
+  profileService?: ProfileService;
+  basketService?: BasketService;
   throttle?: LoginThrottle;
+  adminAuthService?: AdminAuthService;
   fetchProducts?: (filters?: ProductFilters) => Promise<ProductWithPrice[]>;
   fetchProduct?: (productID: string) => Promise<ProductWithPrice | null>;
   fetchProxiedImage?: (fileName: string) => Promise<ProxiedImage | null>;
@@ -139,7 +157,26 @@ export function createApp(options: AppOptions = {}): Express {
   //app.use(createAccountRouter(accountClient));
 
   app.get('/forgot-password', (_req, res) => res.render('forgot-password'));
-  app.get('/account', requireAuth, (_req, res) => res.render('account'));
+  app.use(
+    '/account',
+    requireAuth,
+    createProfileRouter(options.profileService ?? createProfileService()),
+  );
+  app.use(
+    '/basket',
+    requireAuth,
+    createBasketRouter(options.basketService ?? createMockBasketService()),
+  );
+  app.use(
+    '/admin/login',
+    createAdminLoginRouter(
+      options.adminAuthService ??
+      createAdminAuthService(
+        createAdminClient(process.env.API_BASE_URL ?? ''),
+      ),
+    ),
+  );
+  app.use('/admin/account', requireAdmin, adminAccountRouter);
   const registerService = createRegisterService(accountClient);
   app.use(createAccountRouter(authService, registerService));
   app.use('/register/details', createRegistrationDetailsRouter(
