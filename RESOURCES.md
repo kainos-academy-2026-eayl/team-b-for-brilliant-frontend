@@ -47,6 +47,16 @@ The linked repository source is the source of truth for this application's
 specific behavior. External documentation explains the tools, not a promise
 that every possible route in this app follows the same path.
 
+- [OWASP: Authentication Cheat Sheet, Login Throttling](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html#login-throttling)
+  Primary reading for lesson 3. Explains failed-login thresholds, lock duration
+  and the risk of preventing legitimate users from accessing their accounts.
+- [OWASP: Denial of Service Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html)
+  Use for why repeated requests and side effects can exhaust resources.
+  Grounds the registration-limiting recommendation, not a specific quota.
+- [MDN: 429 Too Many Requests](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/429)
+  Explains rate-limit responses and the optional Retry-After header.
+  Distinguish displaying this response from enforcing a server-side quota.
+
 ## Wisdom (Communities)
 
 No community has been selected yet. The immediate goal is understanding the

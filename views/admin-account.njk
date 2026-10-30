@@ -1,0 +1,12 @@
+{% extends "layout.njk" %}
+
+{% block title %}Account{% endblock %}
+
+{% block content %}
+  <h1>Your account</h1>
+  <p>You are signed in.</p>
+  <form method="post" action="/admin/account/logout">
+    <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+    <button type="submit">Log out</button>
+  </form>
+{% endblock %}

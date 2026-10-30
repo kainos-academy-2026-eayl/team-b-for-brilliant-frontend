@@ -2,15 +2,44 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../../app';
 import type { AccountClient } from '../../clients/accountClient';
+import type { ProfileService } from '../../services/profileService';
 
 const accountClient: AccountClient = {
+  async uniqueEmail() {
+    throw new Error('Email uniqueness should not be checked during login');
+  },
+  async register() {
+    throw new Error('Registration should not run during login');
+  },
   async verifyCredentials(email, password,) {
     return email === 'jane@example.com' && password === 'correct'
-      ? { status: 'valid', customerId: 'c1', mfaEnabled: false }
+      ? { status: 'valid', customerId: 'c1', mfaEnabled: false, accessToken: 'test-token' }
       : { status: 'invalid' };
   },
   async verifyMfa() {
     throw new Error('MFA verification should not run when MFA is disabled');
+  },
+};
+
+const profileService: ProfileService = {
+  async getProfile() {
+    return {
+      email: 'jane@example.com',
+      firstname: 'Jane',
+      surname: 'Doe',
+      addressLine1: '1 High Street',
+      addressLine2: null,
+      postcode: 'BT7 1NT',
+    };
+  },
+  async updateProfile() {
+    throw new Error('not used in login tests');
+  },
+  async getBasket() {
+    return { items: [] };
+  },
+  async getOrders() {
+    return [];
   },
 };
 
@@ -28,7 +57,7 @@ async function csrf(agent: Agent, path = '/login') {
 
 describe('login flow', () => {
   it('signs in and lands on the home page', async () => {
-    const agent = request.agent(createApp({ accountClient }));
+    const agent = request.agent(createApp({ accountClient, profileService }));
     const token = await csrf(agent);
 
     const res = await agent
@@ -89,7 +118,7 @@ describe('login flow', () => {
   });
 
   it('logs out and ends the session', async () => {
-    const agent = request.agent(createApp({ accountClient }));
+    const agent = request.agent(createApp({ accountClient, profileService }));
     const loginToken = await csrf(agent);
     await agent.post('/login').type('form').send({
       _csrf: loginToken,

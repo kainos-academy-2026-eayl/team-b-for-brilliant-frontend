@@ -70,6 +70,7 @@ describe('fetchImage', () => {
       headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=60' },
     }));
     const image = await fetchImage('product.png', baseUrl, fetchFn);
+    expect(String(fetchFn.mock.calls[0]?.[0])).toBe(`${baseUrl}/images/product.png`);
     expect(image?.body.toString()).toBe('image bytes');
     expect(image?.cacheControl).toBe('public, max-age=60');
     expect(console.warn).not.toHaveBeenCalled();

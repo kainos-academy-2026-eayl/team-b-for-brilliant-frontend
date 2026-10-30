@@ -74,6 +74,48 @@ Never commit your `.env` file. It is listed in [.gitignore](.gitignore). The qui
 | `npm start` | `node dist/index.js` | Runs the built output. Requires `npm run build` first. |
 Before pushing, run `npm run format`, `npm run lint`, `npm run typecheck`, and `npm run build`.
 
+## Registration integration
+
+The server-handled `/register` form includes the session CSRF token. The frontend
+checks `POST {CUSTOMER_ACCOUNT_SERVICE_URL}/auth/unique-email`, reading the
+`unique` boolean from its HTTP 200 response, then sends `{ email, password }` to
+`POST {CUSTOMER_ACCOUNT_SERVICE_URL}/api/v1/auth/register`.
+The backend accepts registration with HTTP 202 and a message, not a customer ID.
+Success signs the visitor in and redirects to `/register/details`. This optional
+step collects first name, surname, two address lines and postcode. "Save and
+continue" saves the details and redirects to `/home`; "Skip for now" goes to
+`/home` without saving anything. All five fields are optional.
+
+The details page also reads the existing security questions from
+`GET /account/security-questions` into an optional dropdown. An optional answer
+requires a selected question. Blank or whitespace-only answers omit both
+security fields from the update, even if a question was selected. Nonblank
+answers are trimmed and stored as Argon2 hashes by the backend, alongside the
+selected question ID. Question text stays in the existing question table.
+Answers are masked, never prefilled after an error, and must be re-entered.
+Question-loading failures are displayed explicitly while skipping remains
+available.
+
+The details page is a one-time registration step, not a profile editor. A
+server-side session flag is set only after registration and automatic sign-in.
+Both viewing and submitting the form require that flag. Successful saving or
+the CSRF-protected skip submission clears it before redirecting home. Ordinary
+sign-in does not enable onboarding, and completed/skipped sessions cannot replay
+an old form to overwrite saved details. Validation and service failures keep the
+step available for retry or skip.
+
+If automatic sign-in fails after registration, the same browser session keeps
+the newly registered email. A later successful sign-in to that same email
+resumes the details step. Signing in to a different account does not enable
+onboarding, and session regeneration removes the recovery marker. Already
+completed or skipped onboarding is not reopened by ordinary sign-in.
+
+The backend access token returned by credential verification stays in the
+server-side session and authenticates `PUT /account/details`. Profile updates
+never trust a customer ID submitted by the browser. The form includes a CSRF
+token and displays validation or service errors without discarding entered
+values. Registration does not promise a verification email.
+
 ## Project structure
 
 ```
@@ -116,6 +158,13 @@ previous inert state before returning focus to the menu toggle.
 Tab and Shift+Tab wrap within the open drawer, and the existing slide transitions
 respect reduced-motion preferences. "Shop all products" is a single navigation
 label without subtitle text.
+
+The burger menu also contains a keyboard-accessible **Dark mode** slider.
+Light mode is the default; dark mode uses a `#2B2B38` background and white text,
+retaining the `#52dfdd` and `#028aa4` brand accents. The choice is saved in browser
+local storage and restored before styles load on each page. If storage is
+unavailable, switching still works on the current page and a console warning
+explains that the preference could not be saved.
 
 ## Adding a new route
 
@@ -161,7 +210,7 @@ Environment variables are loaded from `.env` by [dotenv](https://github.com/motd
 | --- | --- | --- |
 | `PORT` | yes | Port the service listens on. The service exits at startup if it is missing or invalid. |
 | `SESSION_SECRET` | yes in production | Secret used to sign the session cookie. |
-| `CUSTOMER_ACCOUNT_SERVICE_URL` | yes | Base URL of the customer account service. Login calls `POST {url}/auth/verify`. |
+| `API_BASE_URL` | yes | Base URL of the backend API (products, discounts, images and the customer account service). Login calls `POST {url}/auth/verify`. Defaults to `http://localhost:3001`. |
 
 ## Login
 
@@ -216,10 +265,19 @@ their labels include the full category ID, for example `Accessories (ID: c0)`,
 including in the selected-category summary. Unique names remain unchanged.
 Select a category and press "Filter products" to submit its ID to
 `GET /products?category=<categoryID>`. The selection is retained, and all category
-options remain available after filtering. "All categories" or "Clear search"
-shows all products. A link to a category that is no longer available shows an
-explicit message. Filtering uses the categories already returned by the backend,
-so no additional API is needed.
+options remain available after filtering. "All categories" removes the category
+filter while keeping any product-name search; "Clear search" removes both.
+A link to a category that is no longer available shows an explicit message.
+
+The frontend forwards nonempty, trimmed `q` (product name) and `category`
+(category ID) query parameters to the backend's `GET /products` endpoint.
+The backend must implement case-insensitive partial-name matching and combine
+both filters when supplied, returning the existing `{ products: [...] }` shape.
+This backend filtering contract must be implemented separately: the frontend
+does not fall back to local matching if the API ignores the parameters.
+For an active search or category filter, a separate unfiltered `GET /products`
+request provides all category dropdown options without fetching prices for
+that unfiltered catalogue. Prices are fetched only for the search results.
 
 Between the price and description, detail pages show a quantity dropdown from
 1 to the available stock (capped at 10) and an "Add to basket" button underneath. Out-of-stock
