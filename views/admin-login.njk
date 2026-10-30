@@ -5,25 +5,26 @@
 {% block content %}
   <h1>Admin sign in</h1>
 
-  <div id="form-error" role="alert"></div>
+  {% if errors.form %}
+    <div id="form-error" role="alert">{{ errors.form }}</div>
+  {% endif %}
 
-  <form id="login-form" method="post" data-api-base-url="{{ apiBaseUrl }}" novalidate>
+  <form method="post" action="/admin/login" novalidate>
+    <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+    <input type="hidden" name="next" value="{{ next }}">
+
     <div>
       <label for="email">Email</label>
-      <input id="email" name="email" type="email" autocomplete="username" aria-describedby="email-error">
-      <p id="email-error" role="alert"></p>
+      <input id="email" name="email" type="email" autocomplete="username" value="{{ email }}" aria-describedby="email-error">
+      {% if errors.email %}<p id="email-error" role="alert">{{ errors.email }}</p>{% endif %}
     </div>
 
     <div>
       <label for="password">Password</label>
       <input id="password" name="password" type="password" autocomplete="current-password" aria-describedby="password-error">
-      <p id="password-error" role="alert"></p>
+      {% if errors.password %}<p id="password-error" role="alert">{{ errors.password }}</p>{% endif %}
     </div>
 
-    <button type="submit" id="submit-button">Sign in</button>
+    <button type="submit">Sign in</button>
   </form>
-{% endblock %}
-
-{% block scripts %}
-  <script src="/static/admin-login.js"></script>
 {% endblock %}

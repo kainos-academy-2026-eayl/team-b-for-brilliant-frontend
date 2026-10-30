@@ -6,6 +6,7 @@ declare module 'express-session' {
     // TEMPORARY (KAN-98): backend API token, replace when login is reworked
     apiToken?: string | undefined
     csrfToken?: string
+    isAdmin?: boolean
     pendingMfa?: { customerId: string; returnTo: string; expiresAt: number }
   }
 }

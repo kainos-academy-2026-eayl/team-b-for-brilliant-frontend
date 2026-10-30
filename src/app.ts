@@ -6,9 +6,14 @@ import {
   type AccountClient,
   createAccountClient,
 } from './clients/accountClient';
+import { createAdminClient } from './clients/adminClient';
+import { createAdminLoginRouter } from './controllers/adminLogin';
+import {
+  type AdminAuthService,
+  createAdminAuthService,
+} from './services/adminAuthService';
 import { createAuthRouter } from './controllers/auth-controllers';
 import { adminAccountRouter } from './controllers/adminAccount';
-import { adminLoginRouter } from './controllers/adminLogin';
 import { createBasketRouter } from './controllers/basket';
 import { createImagesRouter } from './controllers/images';
 import { createProductsRouter } from './controllers/products';
@@ -42,6 +47,7 @@ interface AppOptions {
   profileService?: ProfileService;
   basketService?: BasketService;
   throttle?: LoginThrottle;
+  adminAuthService?: AdminAuthService;
   fetchProducts?: () => Promise<ProductWithPrice[]>;
   fetchProduct?: (productID: string) => Promise<ProductWithPrice | null>;
   fetchProxiedImage?: (fileName: string) => Promise<ProxiedImage | null>;
@@ -143,7 +149,15 @@ export function createApp(options: AppOptions = {}): Express {
     requireAuth,
     createBasketRouter(options.basketService ?? createMockBasketService()),
   );
-  app.use('/admin/login', adminLoginRouter);
+  app.use(
+    '/admin/login',
+    createAdminLoginRouter(
+      options.adminAuthService ??
+      createAdminAuthService(
+        createAdminClient(process.env.API_BASE_URL ?? ''),
+      ),
+    ),
+  );
   app.use('/admin/account', requireAdmin, adminAccountRouter);
 
   return app;
