@@ -53,6 +53,7 @@
     <ul class="site-menu__list">
       <li><a href="/home"{% if currentPath == '/home' %} aria-current="page"{% endif %}>Home</a></li>
       <li><a href="/products"{% if currentPath == '/products' %} aria-current="page"{% elif currentPath and currentPath.startsWith('/products/') %} aria-current="location"{% endif %}>Shop all products</a></li>
+      <li><a href="/discounts"{% if currentPath == '/discounts' %} aria-current="page"{% elif currentPath and currentPath.startsWith('/discounts/') %} aria-current="location"{% endif %}>Discounts</a></li>
       {% if isSignedIn %}
         <li><a href="/account"{% if currentPath == '/account' %} aria-current="page"{% endif %}>My account</a></li>
         <li>

@@ -161,7 +161,7 @@ Environment variables are loaded from `.env` by [dotenv](https://github.com/motd
 | --- | --- | --- |
 | `PORT` | yes | Port the service listens on. The service exits at startup if it is missing or invalid. |
 | `SESSION_SECRET` | yes in production | Secret used to sign the session cookie. |
-| `CUSTOMER_ACCOUNT_SERVICE_URL` | yes | Base URL of the customer account service. Login calls `POST {url}/auth/verify`. |
+| `API_BASE_URL` | yes | Base URL of the backend API (products, discounts, images and the customer account service). Login calls `POST {url}/auth/verify`. Defaults to `http://localhost:3001`. |
 
 ## Login
 

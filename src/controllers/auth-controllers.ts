@@ -25,10 +25,12 @@ export function createAuthRouter(authService: AuthService): Router {
     next: NextFunction,
     customerId: string,
     returnTo: string,
+    apiToken?: string | undefined,
   ) =>
     req.session.regenerate((error) => {
       if (error) return next(error)
       req.session.customerId = customerId
+      req.session.apiToken = apiToken
       req.session.save((saveError) => {
         if (saveError) return next(saveError)
         res.redirect(returnTo)
@@ -78,13 +80,14 @@ export function createAuthRouter(authService: AuthService): Router {
       }
       if (result.status === 'invalid') return renderError(401, GENERIC_ERROR)
 
-      const { customerId } = result
+      const { customerId, apiToken } = result
 
       if (result.status === 'mfa_required') {
         req.session.regenerate((error) => {
           if (error) return next(error)
           req.session.pendingMfa = {
             customerId,
+            apiToken,
             returnTo,
             expiresAt: Date.now() + MFA_WINDOW_MS,
           }
@@ -96,7 +99,7 @@ export function createAuthRouter(authService: AuthService): Router {
         return
       }
 
-      startSession(req, res, next, customerId, returnTo)
+      startSession(req, res, next, customerId, returnTo, apiToken)
     },
   )
 
@@ -145,7 +148,14 @@ export function createAuthRouter(authService: AuthService): Router {
         return renderError(503, MFA_UNAVAILABLE_ERROR, true)
       }
 
-      startSession(req, res, next, pending.customerId, pending.returnTo)
+      startSession(
+        req,
+        res,
+        next,
+        pending.customerId,
+        pending.returnTo,
+        pending.apiToken,
+      )
     },
   )
 

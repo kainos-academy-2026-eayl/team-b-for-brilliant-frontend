@@ -1,5 +1,5 @@
 export type VerifyResult =
-  | { status: 'valid'; customerId: string; mfaEnabled: boolean; }
+  | { status: 'valid'; customerId: string; mfaEnabled: boolean; apiToken?: string | undefined; }
   | { status: 'invalid'; }
   | { status: 'not_found'; };
 
@@ -32,11 +32,13 @@ export function createAccountClient(baseUrl: string): AccountClient {
       const body = (await response.json()) as {
         customerId: string;
         mfaEnabled?: boolean;
+        token?: string;
       };
       return {
         status: 'valid',
         customerId: body.customerId,
         mfaEnabled: body.mfaEnabled === true,
+        apiToken: body.token,
       };
     },
 

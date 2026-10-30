@@ -1,0 +1,46 @@
+{% extends "main.njk" %}
+
+{% block title %}Discounts | B-Brilliant{% endblock %}
+
+{% block head %}
+  <style>
+    {% include "discounts/discounts.css" %}
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="discounts__header">
+    <h1>Discounts</h1>
+    <a class="button discounts__add" href="/discounts/add">Add Discount</a>
+  </div>
+
+  {% if discounts.length %}
+    <table class="discounts__table">
+      <thead>
+        <tr>
+          <th scope="col">Code</th>
+          <th scope="col">Type</th>
+          <th scope="col">Value</th>
+          <th scope="col">Expires</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for discount in discounts %}
+          <tr>
+            <td>{{ discount.code }}</td>
+            <td>{{ discount.type }}</td>
+            <td>{{ discount.value }}</td>
+            <td>{{ discount.expiryDate }}</td>
+            <td class="discounts__actions">
+              <button type="button" class="button button-link" aria-label="Edit discount {{ discount.code }}">Edit</button>
+              <button type="button" class="button button-link" aria-label="Delete discount {{ discount.code }}">Delete</button>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="empty-state">No discounts available.</p>
+  {% endif %}
+{% endblock %}
