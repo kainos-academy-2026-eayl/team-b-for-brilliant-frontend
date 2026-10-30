@@ -7,12 +7,12 @@ import type { LoginThrottle } from '../middleware/loginThrottle';
 const MFA_MAX_RETRIES = 4; // 1 attempt + 4 retries = 5 calls
 
 export type LoginResult =
-  | { status: 'success'; customerId: string; token?: string | undefined }
-  | { status: 'mfa_required'; customerId: string }
-  | { status: 'not_found' }
-  | { status: 'invalid' }
-  | { status: 'locked' }
-  | { status: 'error' }
+  | { status: 'success'; customerId: string; accessToken?: string; }
+  | { status: 'mfa_required'; customerId: string; }
+  | { status: 'not_found'; }
+  | { status: 'invalid'; }
+  | { status: 'locked'; }
+  | { status: 'error'; };
 
 export type UniqueEmailResult =
   | { status: 'success' }
@@ -68,10 +68,10 @@ export function createAuthService(
           return result.mfaEnabled
             ? { status: 'mfa_required', customerId: result.customerId }
             : {
-                status: 'success',
-                customerId: result.customerId,
-                token: result.token,
-              }
+              status: 'success',
+              customerId: result.customerId,
+              ...(result.accessToken ? { accessToken: result.accessToken } : {}),
+            };
         }
         throttle.recordFailure(keys);
         return { status: result.status };

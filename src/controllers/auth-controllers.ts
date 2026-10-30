@@ -20,11 +20,15 @@ export function createAuthRouter(authService: AuthService): Router {
     customerId: string,
     returnTo: string,
     apiToken?: string,
+    accountToken?: string,
+    registrationDetailsPending = false,
   ) =>
     req.session.regenerate((error) => {
       if (error) return next(error)
       req.session.customerId = customerId
       req.session.apiToken = apiToken
+      if (accountToken) req.session.accountToken = accountToken
+      if (registrationDetailsPending) req.session.registrationDetailsPending = true
       req.session.save((saveError) => {
         if (saveError) return next(saveError)
         res.redirect(returnTo)
@@ -78,6 +82,14 @@ export function createAuthRouter(authService: AuthService): Router {
       const token = result.status === 'success' ? result.token : undefined
 
       startSession(req, res, next, customerId, returnTo, token)
+      const resumeRegistration = result.status === 'success'
+        && req.session.pendingRegistrationEmail === email.toLowerCase()
+
+      startSession(
+        req, res, next, customerId, resumeRegistration ? '/register/details' : returnTo,
+        result.status === 'success' ? result.accessToken : undefined,
+        resumeRegistration,
+      )
     },
   )
 

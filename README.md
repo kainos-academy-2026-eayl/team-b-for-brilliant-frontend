@@ -81,8 +81,40 @@ checks `POST {CUSTOMER_ACCOUNT_SERVICE_URL}/auth/unique-email`, reading the
 `unique` boolean from its HTTP 200 response, then sends `{ email, password }` to
 `POST {CUSTOMER_ACCOUNT_SERVICE_URL}/api/v1/auth/register`.
 The backend accepts registration with HTTP 202 and a message, not a customer ID.
-Success redirects to a GET confirmation page; it does not sign the visitor in
-or promise a verification email. Errors are rendered in the registration form.
+Success signs the visitor in and redirects to `/register/details`. This optional
+step collects first name, surname, two address lines and postcode. "Save and
+continue" saves the details and redirects to `/home`; "Skip for now" goes to
+`/home` without saving anything. All five fields are optional.
+
+The details page also reads the existing security questions from
+`GET /account/security-questions` into an optional dropdown. An optional answer
+requires a selected question. Blank or whitespace-only answers omit both
+security fields from the update, even if a question was selected. Nonblank
+answers are trimmed and stored as Argon2 hashes by the backend, alongside the
+selected question ID. Question text stays in the existing question table.
+Answers are masked, never prefilled after an error, and must be re-entered.
+Question-loading failures are displayed explicitly while skipping remains
+available.
+
+The details page is a one-time registration step, not a profile editor. A
+server-side session flag is set only after registration and automatic sign-in.
+Both viewing and submitting the form require that flag. Successful saving or
+the CSRF-protected skip submission clears it before redirecting home. Ordinary
+sign-in does not enable onboarding, and completed/skipped sessions cannot replay
+an old form to overwrite saved details. Validation and service failures keep the
+step available for retry or skip.
+
+If automatic sign-in fails after registration, the same browser session keeps
+the newly registered email. A later successful sign-in to that same email
+resumes the details step. Signing in to a different account does not enable
+onboarding, and session regeneration removes the recovery marker. Already
+completed or skipped onboarding is not reopened by ordinary sign-in.
+
+The backend access token returned by credential verification stays in the
+server-side session and authenticates `PUT /account/details`. Profile updates
+never trust a customer ID submitted by the browser. The form includes a CSRF
+token and displays validation or service errors without discarding entered
+values. Registration does not promise a verification email.
 
 ## Project structure
 

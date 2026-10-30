@@ -19,6 +19,7 @@ import { createImagesRouter } from './controllers/images';
 import { createProductsRouter } from './controllers/products';
 import { createProfileRouter } from './controllers/profile';
 import { createAccountRouter } from './controllers/register';
+import { createRegistrationDetailsRouter } from './controllers/registrationDetails';
 import { verifyEmailRouter } from './controllers/verifyEmail';
 import { csrfProtection } from './middleware/csrf';
 import {
@@ -44,8 +45,11 @@ import {
   type ProfileService,
 } from './services/profileService';
 import { createRegisterService } from './services/registerService';
+import type { getSecurityQuestions, saveRegistrationDetails } from './services/registrationDetails';
 
 interface AppOptions {
+  saveRegistrationDetails?: typeof saveRegistrationDetails;
+  getSecurityQuestions?: typeof getSecurityQuestions;
   accountClient?: AccountClient;
   profileService?: ProfileService;
   basketService?: BasketService;
@@ -167,6 +171,9 @@ export function createApp(options: AppOptions = {}): Express {
   app.use('/admin/account', requireAdmin, adminAccountRouter);
   const registerService = createRegisterService(accountClient);
   app.use(createAccountRouter(authService, registerService));
+  app.use('/register/details', createRegistrationDetailsRouter(
+    options.saveRegistrationDetails, options.getSecurityQuestions,
+  ));
 
   return app;
 }

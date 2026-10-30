@@ -5,6 +5,16 @@ const baseUrl = 'http://account-service.test';
 
 afterEach(() => vi.unstubAllGlobals());
 
+it('preserves the backend access token after verifying credentials', async () => {
+  vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(
+    Response.json({ customerId: 'customer-1', accessToken: 'server-side-token' }),
+  ));
+  await expect(createAccountClient(baseUrl).verifyCredentials('user@example.com', 'password123'))
+    .resolves.toEqual({
+      status: 'valid', customerId: 'customer-1', mfaEnabled: false, accessToken: 'server-side-token',
+    });
+});
+
 describe('registration API contract', () => {
   it.each([
     [true, 'unique'],

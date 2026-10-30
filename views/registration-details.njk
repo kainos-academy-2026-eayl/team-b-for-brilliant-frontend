@@ -1,0 +1,78 @@
+{% extends "main.njk" %}
+
+{% block title %}Your details{% endblock %}
+
+{% block content %}
+  <section class="card">
+    <h1>Add your details</h1>
+    <p class="card-subtitle">Your account is ready and you are signed in. All details below are optional.</p>
+
+    {% if error %}
+      <p class="alert" role="alert">{{ error }}</p>
+    {% endif %}
+
+    {% if questionsUnavailable %}
+      <p><a href="/register/details">Try loading the questions again</a></p>
+    {% else %}
+    <form method="post" action="/register/details" novalidate>
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+      <div class="form-field">
+        <label for="firstname">First name</label>
+        <input id="firstname" name="firstname" type="text" autocomplete="given-name" maxlength="100" value="{{ values.firstname }}" aria-describedby="firstname-error"{% if errors.firstname %} aria-invalid="true"{% endif %}>
+        <p id="firstname-error" class="field-error" role="alert">{{ errors.firstname[0] }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="surname">Surname</label>
+        <input id="surname" name="surname" type="text" autocomplete="family-name" maxlength="100" value="{{ values.surname }}" aria-describedby="surname-error"{% if errors.surname %} aria-invalid="true"{% endif %}>
+        <p id="surname-error" class="field-error" role="alert">{{ errors.surname[0] }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="addressLine1">Address line 1</label>
+        <input id="addressLine1" name="addressLine1" type="text" autocomplete="address-line1" maxlength="255" value="{{ values.addressLine1 }}" aria-describedby="addressLine1-error"{% if errors.addressLine1 %} aria-invalid="true"{% endif %}>
+        <p id="addressLine1-error" class="field-error" role="alert">{{ errors.addressLine1[0] }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="addressLine2">Address line 2</label>
+        <input id="addressLine2" name="addressLine2" type="text" autocomplete="address-line2" maxlength="255" value="{{ values.addressLine2 }}" aria-describedby="addressLine2-error"{% if errors.addressLine2 %} aria-invalid="true"{% endif %}>
+        <p id="addressLine2-error" class="field-error" role="alert">{{ errors.addressLine2[0] }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="postcode">Postcode</label>
+        <input id="postcode" name="postcode" type="text" autocomplete="postal-code" maxlength="20" value="{{ values.postcode }}" aria-describedby="postcode-error"{% if errors.postcode %} aria-invalid="true"{% endif %}>
+        <p id="postcode-error" class="field-error" role="alert">{{ errors.postcode[0] }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="securityQuestionID">Security question</label>
+        <select id="securityQuestionID" name="securityQuestionID" aria-describedby="security-question-hint securityQuestionID-error"{% if not questions.length %} disabled{% endif %}{% if errors.securityQuestionID %} aria-invalid="true"{% endif %}>
+          <option value="">Select a question (optional)</option>
+          {% for item in questions %}
+            <option value="{{ item.questionID }}"{% if values.securityQuestionID == item.questionID %} selected{% endif %}>{{ item.question }}</option>
+          {% endfor %}
+        </select>
+        <p id="security-question-hint" class="form-message">{% if questions.length %}Choose a question only if you want to provide an answer.{% else %}No security questions are available. You can continue without one.{% endif %}</p>
+        <p id="securityQuestionID-error" class="field-error" role="alert">{{ errors.securityQuestionID[0] }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="securityAnswer">Security answer</label>
+        <input id="securityAnswer" name="securityAnswer" type="password" autocomplete="off" maxlength="1024" aria-describedby="security-answer-hint securityAnswer-error"{% if not questions.length %} disabled{% endif %}{% if errors.securityAnswer %} aria-invalid="true"{% endif %}>
+        <p id="security-answer-hint" class="form-message">Leave blank to save neither the question nor an answer. After an error, re-enter your answer.</p>
+        <p id="securityAnswer-error" class="field-error" role="alert">{{ errors.securityAnswer[0] }}</p>
+      </div>
+
+      <button type="submit" class="button">Save and continue</button>
+    </form>
+    {% endif %}
+
+    <form class="card-footer" method="post" action="/register/details/skip">
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+      <button type="submit" class="button button-link">Skip for now</button>
+    </form>
+  </section>
+{% endblock %}

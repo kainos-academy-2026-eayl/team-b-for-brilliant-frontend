@@ -1,9 +1,14 @@
 import { z } from 'zod';
 
 const uniqueEmailResponseSchema = z.object({ unique: z.boolean() });
+const verifyResponseSchema = z.object({
+  customerId: z.string().min(1),
+  mfaEnabled: z.boolean().optional(),
+  accessToken: z.string().min(1).optional(),
+});
 
 export type VerifyResult =
-  | { status: 'valid'; customerId: string; mfaEnabled: boolean; token?: string | undefined; }
+  | { status: 'valid'; customerId: string; mfaEnabled: boolean; accessToken?: string; }
   | { status: 'invalid'; }
   | { status: 'not_found'; };
 
@@ -46,11 +51,13 @@ export function createAccountClient(baseUrl: string): AccountClient {
         mfaEnabled?: boolean;
         token?: string;
       };
+      const body = verifyResponseSchema.parse(await response.json());
       return {
         status: 'valid',
         customerId: body.customerId,
         mfaEnabled: body.mfaEnabled === true,
         token: body.token,
+        ...(body.accessToken ? { accessToken: body.accessToken } : {}),
       };
     },
     async verifyMfa(customerId, code) {
