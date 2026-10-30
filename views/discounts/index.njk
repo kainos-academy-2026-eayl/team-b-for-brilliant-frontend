@@ -8,6 +8,8 @@
   </style>
 {% endblock %}
 
+{% block main_class %}discounts-main{% endblock %}
+
 {% block content %}
   <div class="discounts__header">
     <h1>Discounts</h1>
@@ -27,11 +29,12 @@
       </thead>
       <tbody>
         {% for discount in discounts %}
+          {% set expiry = discount.expiryDate.slice(0, 10).split('-') %}
           <tr>
             <td>{{ discount.code }}</td>
-            <td>{{ discount.type }}</td>
+            <td>{{ discount.type | replace('_', ' ') | capitalize }}</td>
             <td>{{ discount.value }}</td>
-            <td>{{ discount.expiryDate }}</td>
+            <td>{{ expiry[2] }}/{{ expiry[1] }}/{{ expiry[0] }}</td>
             <td class="discounts__actions">
               <button type="button" class="button button-link" aria-label="Edit discount {{ discount.code }}">Edit</button>
               <button type="button" class="button button-link" aria-label="Delete discount {{ discount.code }}">Delete</button>
