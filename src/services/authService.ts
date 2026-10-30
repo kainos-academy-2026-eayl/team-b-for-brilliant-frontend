@@ -7,12 +7,17 @@ import type { LoginThrottle } from '../middleware/loginThrottle';
 const MFA_MAX_RETRIES = 4; // 1 attempt + 4 retries = 5 calls
 
 export type LoginResult =
-  | { status: 'success'; customerId: string; apiToken?: string | undefined; }
-  | { status: 'mfa_required'; customerId: string; apiToken?: string | undefined; }
+  | { status: 'success'; customerId: string; accessToken?: string; }
+  | { status: 'mfa_required'; customerId: string; }
   | { status: 'not_found'; }
   | { status: 'invalid'; }
   | { status: 'locked'; }
   | { status: 'error'; };
+
+export type UniqueEmailResult =
+  | { status: 'success' }
+  | { status: 'not_unique' }
+  | { status: 'error' };
 
 export type MfaResult =
   | { status: 'success'; }
@@ -23,6 +28,7 @@ export type MfaResult =
 export interface AuthService {
   login(email: string, password: string, ipAddress: string): Promise<LoginResult>;
   completeMfa(customerId: string, code: string, ipAddress: string): Promise<MfaResult>;
+  uniqueEmail(email: string): Promise<UniqueEmailResult>;
 }
 
 interface AuthServiceOptions {
@@ -97,5 +103,19 @@ export function createAuthService(
         return { status: 'error' };
       }
     },
+
+    async uniqueEmail(email) {
+      try {
+        const result = await accountClient.uniqueEmail(email);
+        if (result.status === 'unique') {
+          return { status: 'success' };
+        } else {
+          return { status: 'not_unique' };
+        }
+      } catch (error) {
+        console.error('Account service call failed', (error as Error).message);
+        return { status: 'error' };
+      }
+    } 
   };
 }

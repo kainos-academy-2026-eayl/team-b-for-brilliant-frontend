@@ -3,7 +3,9 @@ import 'express-session'
 declare module 'express-session' {
   interface SessionData {
     customerId?: string
-    apiToken?: string | undefined
+    accountToken?: string
+    registrationDetailsPending?: boolean
+    pendingRegistrationEmail?: string
     csrfToken?: string
     pendingMfa?: { customerId: string; apiToken?: string | undefined; returnTo: string; expiresAt: number }
   }

@@ -8,13 +8,7 @@ const NOT_FOUND_ERROR =
 const LOCKED_ERROR = 'Too many failed attempts. Please try again later.'
 const UNAVAILABLE_ERROR =
   'We could not sign you in right now. Please try again later.'
-const MFA_FAILED_ERROR =
-  'Multifactor authentication was not completed. Please check your code and retry.'
-const MFA_UNAVAILABLE_ERROR =
-  'Multifactor authentication is unavailable right now. Please sign in manually.'
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const MFA_CODE_PATTERN = /^\d{6}$/
-const MFA_WINDOW_MS = 5 * 60 * 1000
 
 export function createAuthRouter(authService: AuthService): Router {
   const router = Router()
@@ -26,11 +20,15 @@ export function createAuthRouter(authService: AuthService): Router {
     customerId: string,
     returnTo: string,
     apiToken?: string | undefined,
+    accountToken?: string,
+    registrationDetailsPending = false,
   ) =>
     req.session.regenerate((error) => {
       if (error) return next(error)
       req.session.customerId = customerId
       req.session.apiToken = apiToken
+      if (accountToken) req.session.accountToken = accountToken
+      if (registrationDetailsPending) req.session.registrationDetailsPending = true
       req.session.save((saveError) => {
         if (saveError) return next(saveError)
         res.redirect(returnTo)
@@ -155,6 +153,15 @@ export function createAuthRouter(authService: AuthService): Router {
         pending.customerId,
         pending.returnTo,
         pending.apiToken,
+      )
+      const { customerId } = result
+      const resumeRegistration = result.status === 'success'
+        && req.session.pendingRegistrationEmail === email.toLowerCase()
+
+      startSession(
+        req, res, next, customerId, resumeRegistration ? '/register/details' : returnTo,
+        result.status === 'success' ? result.accessToken : undefined,
+        resumeRegistration,
       )
     },
   )

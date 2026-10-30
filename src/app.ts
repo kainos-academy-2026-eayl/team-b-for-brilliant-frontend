@@ -10,7 +10,8 @@ import { createAuthRouter } from './controllers/auth-controllers';
 import { createDiscountsRouter } from './controllers/discounts';
 import { createImagesRouter } from './controllers/images';
 import { createProductsRouter } from './controllers/products';
-import { registerRouter } from './controllers/register';
+import { createAccountRouter } from './controllers/register';
+import { createRegistrationDetailsRouter } from './controllers/registrationDetails';
 import { verifyEmailRouter } from './controllers/verifyEmail';
 import { csrfProtection } from './middleware/csrf';
 import {
@@ -26,14 +27,20 @@ import { getDiscounts } from './services/discounts';
 import { fetchImage, type ProxiedImage } from './services/images';
 import {
   getApiBaseUrl,
+  getProducts,
   getProductsWithPrices,
   getProductWithPrice,
+  type ProductFilters,
 } from './services/products';
+import { createRegisterService } from './services/registerService';
+import type { getSecurityQuestions, saveRegistrationDetails } from './services/registrationDetails';
 
 interface AppOptions {
+  saveRegistrationDetails?: typeof saveRegistrationDetails;
+  getSecurityQuestions?: typeof getSecurityQuestions;
   accountClient?: AccountClient;
   throttle?: LoginThrottle;
-  fetchProducts?: () => Promise<ProductWithPrice[]>;
+  fetchProducts?: (filters?: ProductFilters) => Promise<ProductWithPrice[]>;
   fetchProduct?: (productID: string) => Promise<ProductWithPrice | null>;
   fetchProxiedImage?: (fileName: string) => Promise<ProxiedImage | null>;
   fetchDiscounts?: (token?: string) => Promise<Discount[]>;
@@ -92,7 +99,7 @@ export function createApp(options: AppOptions = {}): Express {
     requireAuth,
     createHomeRouter(options.fetchProducts ?? getProductsWithPrices),
   );
-  app.use('/register', registerRouter);
+
   app.use('/verify-email', verifyEmailRouter);
 
   app.get('/', (_req: Request, res: Response) => {
@@ -102,8 +109,10 @@ export function createApp(options: AppOptions = {}): Express {
   app.use(
     '/products',
     createProductsRouter(
-      options.fetchProducts ?? getProductsWithPrices,
+      options.fetchProducts ?? ((filters) =>
+        getProductsWithPrices(undefined, undefined, undefined, filters)),
       options.fetchProduct ?? getProductWithPrice,
+      options.fetchProducts ?? getProducts,
     ),
   );
   app.use(
@@ -127,9 +136,15 @@ export function createApp(options: AppOptions = {}): Express {
   );
 
   app.use(createAuthRouter(authService));
+  //app.use(createAccountRouter(accountClient));
 
   app.get('/forgot-password', (_req, res) => res.render('forgot-password'));
   app.get('/account', requireAuth, (_req, res) => res.render('account'));
+  const registerService = createRegisterService(accountClient);
+  app.use(createAccountRouter(authService, registerService));
+  app.use('/register/details', createRegistrationDetailsRouter(
+    options.saveRegistrationDetails, options.getSecurityQuestions,
+  ));
 
   return app;
 }

@@ -6,13 +6,19 @@
   <section class="card">
     <h1>Create an account</h1>
 
-    <div id="form-error" class="alert" role="alert"></div>
-    <div id="success-message" class="alert alert-success" role="status" hidden>Check your email to confirm your account</div>
+    <div id="form-error" class="alert" role="alert">{{ error }}</div>
 
-    <form id="register-form" method="post" data-api-base-url="{{ apiBaseUrl }}" novalidate>
+    {% if registered %}
+      {% if not error %}
+      <div id="success-message" class="alert alert-success" role="status">Registration request processed.</div>
+      {% endif %}
+      <p><a href="/login">Sign in</a></p>
+    {% else %}
+    <form id="register-form" method="post" action="/register" novalidate>
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
       <div class="form-field">
         <label for="email">Email</label>
-        <input id="email" name="email" type="email" autocomplete="email" aria-describedby="email-error">
+        <input id="email" name="email" type="email" autocomplete="email" aria-describedby="email-error" value="{{ email }}">
         <p id="email-error" class="field-error" role="alert"></p>
       </div>
 
@@ -30,9 +36,6 @@
 
       <button type="submit" id="submit-button" class="button">Register</button>
     </form>
+    {% endif %}
   </section>
-{% endblock %}
-
-{% block scripts %}
-  <script src="/register.js"></script>
 {% endblock %}
