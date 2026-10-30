@@ -11,6 +11,9 @@
       <p class="alert" role="alert">{{ error }}</p>
     {% endif %}
 
+    {% if questionsUnavailable %}
+      <p><a href="/register/details">Try loading the questions again</a></p>
+    {% else %}
     <form method="post" action="/register/details" novalidate>
       <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
@@ -44,8 +47,28 @@
         <p id="postcode-error" class="field-error" role="alert">{{ errors.postcode[0] }}</p>
       </div>
 
+      <div class="form-field">
+        <label for="securityQuestionID">Security question</label>
+        <select id="securityQuestionID" name="securityQuestionID" aria-describedby="security-question-hint securityQuestionID-error"{% if not questions.length %} disabled{% endif %}{% if errors.securityQuestionID %} aria-invalid="true"{% endif %}>
+          <option value="">Select a question (optional)</option>
+          {% for item in questions %}
+            <option value="{{ item.questionID }}"{% if values.securityQuestionID == item.questionID %} selected{% endif %}>{{ item.question }}</option>
+          {% endfor %}
+        </select>
+        <p id="security-question-hint" class="form-message">{% if questions.length %}Choose a question only if you want to provide an answer.{% else %}No security questions are available. You can continue without one.{% endif %}</p>
+        <p id="securityQuestionID-error" class="field-error" role="alert">{{ errors.securityQuestionID[0] }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="securityAnswer">Security answer</label>
+        <input id="securityAnswer" name="securityAnswer" type="password" autocomplete="off" maxlength="1024" aria-describedby="security-answer-hint securityAnswer-error"{% if not questions.length %} disabled{% endif %}{% if errors.securityAnswer %} aria-invalid="true"{% endif %}>
+        <p id="security-answer-hint" class="form-message">Leave blank to save neither the question nor an answer. After an error, re-enter your answer.</p>
+        <p id="securityAnswer-error" class="field-error" role="alert">{{ errors.securityAnswer[0] }}</p>
+      </div>
+
       <button type="submit" class="button">Save and continue</button>
     </form>
+    {% endif %}
 
     <form class="card-footer" method="post" action="/register/details/skip">
       <input type="hidden" name="_csrf" value="{{ csrfToken }}">

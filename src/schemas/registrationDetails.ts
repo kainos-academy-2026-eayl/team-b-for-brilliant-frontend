@@ -6,6 +6,16 @@ export const registrationDetailsSchema = z.object({
   addressLine1: z.string().trim().max(255, 'Address line 1 must be 255 characters or fewer.').default(''),
   addressLine2: z.string().trim().max(255, 'Address line 2 must be 255 characters or fewer.').default(''),
   postcode: z.string().trim().max(20, 'Postcode must be 20 characters or fewer.').default(''),
+  securityQuestionID: z.string().trim().max(100).optional(),
+  securityAnswer: z.string().trim().max(1024, 'Security answer must be 1024 characters or fewer.').optional(),
+}).superRefine((details, context) => {
+  if (details.securityAnswer && !details.securityQuestionID) {
+    context.addIssue({
+      code: 'custom',
+      path: ['securityQuestionID'],
+      message: 'Select a security question when providing an answer.',
+    });
+  }
 });
 
 export type RegistrationDetails = z.infer<typeof registrationDetailsSchema>;

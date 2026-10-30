@@ -19,7 +19,9 @@ function registrationClient() {
 }
 
 async function registrationForm(accountClient: AccountClient) {
-  const agent = request.agent(createApp({ accountClient }));
+  const agent = request.agent(createApp({
+    accountClient, getSecurityQuestions: async () => [],
+  }));
   const page = await agent.get('/register').expect(200);
   const token = /name="_csrf" value="([^"]+)"/.exec(page.text)?.[1];
   if (!token) throw new Error('Registration CSRF token not found');

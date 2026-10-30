@@ -3,10 +3,14 @@ import { requireAuth } from '../middleware/requireAuth';
 import { registrationDetailsSchema } from '../schemas/registrationDetails';
 import {
   RegistrationDetailsError,
+  getSecurityQuestions,
   saveRegistrationDetails,
 } from '../services/registrationDetails';
 
-export function createRegistrationDetailsRouter(save = saveRegistrationDetails): Router {
+export function createRegistrationDetailsRouter(
+  save = saveRegistrationDetails,
+  loadQuestions = getSecurityQuestions,
+): Router {
   const router = Router();
   router.use(requireAuth);
   router.use((req, res, next) => {
@@ -25,8 +29,38 @@ export function createRegistrationDetailsRouter(save = saveRegistrationDetails):
     });
   };
 
-  router.get('/', (_req, res) => {
-    res.render('registration-details', { values: {} });
+  const renderDetails = async (
+    req: Request,
+    res: Response,
+    status: number,
+    context: Record<string, unknown>,
+  ) => {
+    if (!req.session.accountToken) {
+      res.status(401).render('registration-details', {
+        ...context,
+        questionsUnavailable: true,
+        error: 'Please sign out and sign in again before entering your details.',
+      });
+      return;
+    }
+    try {
+      const questions = await loadQuestions(req.session.accountToken);
+      res.status(status).render('registration-details', { ...context, questions });
+    } catch (error) {
+      console.error('Loading security questions failed', error);
+      const expired = error instanceof RegistrationDetailsError && error.status === 401;
+      res.status(expired ? 401 : 503).render('registration-details', {
+        ...context,
+        questionsUnavailable: true,
+        error: expired
+          ? 'Your sign-in has expired. Please sign out and sign in again.'
+          : 'We could not load the security questions. Please try again or skip for now.',
+      });
+    }
+  };
+
+  router.get('/', async (req, res) => {
+    await renderDetails(req, res, 200, { values: {} });
   });
 
   router.post('/skip', finishOnboarding);
@@ -34,7 +68,7 @@ export function createRegistrationDetailsRouter(save = saveRegistrationDetails):
   router.post('/', async (req, res, next) => {
     const input = registrationDetailsSchema.safeParse(req.body);
     if (!input.success) {
-      res.status(400).render('registration-details', {
+      await renderDetails(req, res, 400, {
         values: req.body,
         error: 'Check the details below and try again.',
         errors: input.error.flatten().fieldErrors,
@@ -42,7 +76,7 @@ export function createRegistrationDetailsRouter(save = saveRegistrationDetails):
       return;
     }
     if (!req.session.accountToken) {
-      res.status(401).render('registration-details', {
+      await renderDetails(req, res, 401, {
         values: input.data,
         error: 'Please sign out and sign in again before saving your details.',
       });
@@ -50,16 +84,23 @@ export function createRegistrationDetailsRouter(save = saveRegistrationDetails):
     }
 
     try {
-      await save(req.session.accountToken, input.data);
+      const { securityQuestionID, securityAnswer, ...profile } = input.data;
+      const details = securityQuestionID && securityAnswer
+        ? { ...profile, securityQuestionID, securityAnswer }
+        : profile;
+      await save(req.session.accountToken, details);
       finishOnboarding(req, res, next);
     } catch (error) {
       console.error('Saving registration details failed', error);
       const expired = error instanceof RegistrationDetailsError && error.status === 401;
-      res.status(expired ? 401 : 503).render('registration-details', {
+      const invalid = error instanceof RegistrationDetailsError && error.status === 400;
+      await renderDetails(req, res, expired ? 401 : invalid ? 400 : 503, {
         values: input.data,
         error: expired
           ? 'Your sign-in has expired. Please sign out and sign in again before saving your details.'
-          : 'We could not save your details. Please try again or skip for now.',
+          : invalid
+            ? 'Check your security question and re-enter your answer, then try again.'
+            : 'We could not save your details. Please try again or skip for now.',
       });
     }
   });

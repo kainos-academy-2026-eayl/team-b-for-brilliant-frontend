@@ -9,7 +9,9 @@
     <div id="form-error" class="alert" role="alert">{{ error }}</div>
 
     {% if registered %}
+      {% if not error %}
       <div id="success-message" class="alert alert-success" role="status">Registration request processed.</div>
+      {% endif %}
       <p><a href="/login">Sign in</a></p>
     {% else %}
     <form id="register-form" method="post" action="/register" novalidate>

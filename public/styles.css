@@ -54,7 +54,8 @@ a {
 
 a:focus-visible,
 .button:focus-visible,
-.form-field input:focus-visible {
+.form-field input:focus-visible,
+.form-field select:focus-visible {
     outline: var(--focus-ring);
     outline-offset: 2px;
 }
@@ -357,7 +358,8 @@ main {
     font-weight: 600;
 }
 
-.form-field input {
+.form-field input,
+.form-field select {
     width: 100%;
     padding: 0.6rem 0.75rem;
     font: inherit;
@@ -367,7 +369,8 @@ main {
     border-radius: 0.25rem;
 }
 
-.form-field input[aria-invalid='true'] {
+.form-field input[aria-invalid='true'],
+.form-field select[aria-invalid='true'] {
     border-color: var(--color-error-text);
 }
 

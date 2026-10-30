@@ -22,6 +22,7 @@ function token(html: string): string {
 async function signedIn(save = vi.fn<typeof saveRegistrationDetails>().mockResolvedValue()) {
   const agent = request.agent(createApp({
     accountClient: client, saveRegistrationDetails: save, fetchProducts: async () => [],
+    getSecurityQuestions: async () => [{ questionID: 'q1', question: 'What is your favourite colour?' }],
   }));
   const register = await agent.get('/register').expect(200);
   await agent.post('/register').type('form').send({
@@ -54,7 +55,8 @@ describe('optional registration details', () => {
     expect(page.text).toContain('class="button button-link">Skip for now');
     expect(page.text).not.toContain('private-token');
     expect(page.text).not.toContain('name="roleID"');
-    expect(page.text).not.toContain('name="securityAnswer"');
+    expect(page.text).toContain('name="securityAnswer"');
+    expect(page.text).toContain('name="securityQuestionID"');
   });
 
   it('saves trimmed details using the server-side token, then redirects home', async () => {

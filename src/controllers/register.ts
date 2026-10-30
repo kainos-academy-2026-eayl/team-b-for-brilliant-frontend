@@ -57,6 +57,7 @@ export function createAccountRouter(authService: AuthService, registerService: R
 
           if (registerResult.status === 'error') return renderError(503, UNAVAILABLE_ERROR)
 
+          req.session.pendingRegistrationEmail = email.toLowerCase()
           const loginResult = await authService.login(email, password, req.ip ?? 'unknown')
 
           if (loginResult.status !== 'success') {
