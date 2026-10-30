@@ -1,0 +1,21 @@
+{% extends "main.njk" %}
+{% block title %}Product Discounts{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Welcome back</h1>
+  <p class="card-subtitle">Add discounts to products.</p>
+
+    <div class="form-field">
+      <label for="discount-type">Discount Type</label>
+      <input id="discount" name="discount" type="discount" autocomplete="discount" placeholder="discount type" required value="{{ dicsount }}">
+    </div>
+
+    <div class="form-field">
+      <label for="discount-amount"></label>
+      <input id="discount-amount" name="discount-amount" type="decimal" autocomplete="0.0" placeholder="0.0" required>
+    </div>
+
+    <button type="submit" class="button">Add Discount/button>
+  </form>
+</section>
+{% endblock %}
