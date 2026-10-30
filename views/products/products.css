@@ -1,17 +1,17 @@
 :root {
-  --colour-bg: #ffffff;
-  --colour-surface: #ffffff;
-  --colour-text: #1f2933;
-  --colour-muted: #616e7c;
-  --colour-border: #e4e7eb;
-  --colour-brand: #028aa4;
-  --colour-brand-ink: #005b6b;
-  --colour-brand-soft: #e9fafa;
-  --colour-accent: #52dfdd;
-  --colour-success: #1e7f4f;
-  --colour-success-bg: #e3f5ec;
-  --colour-danger: #b42318;
-  --colour-danger-bg: #fdecea;
+  --colour-bg: var(--color-bg);
+  --colour-surface: var(--color-bg);
+  --colour-text: var(--color-text);
+  --colour-muted: var(--color-muted);
+  --colour-border: var(--color-border);
+  --colour-brand: var(--color-secondary);
+  --colour-brand-ink: var(--color-product-ink, #005b6b);
+  --colour-brand-soft: var(--color-product-soft, #e9fafa);
+  --colour-accent: var(--color-primary);
+  --colour-success: var(--color-success-text);
+  --colour-success-bg: var(--color-success-bg);
+  --colour-danger: var(--color-error-text);
+  --colour-danger-bg: var(--color-error-bg);
   --radius: 16px;
   --shadow: 0 2px 8px rgba(15, 23, 42, 0.06), 0 10px 24px rgba(15, 23, 42, 0.04);
   --shadow-hover: 0 8px 18px rgba(15, 23, 42, 0.1), 0 18px 36px rgba(15, 23, 42, 0.08);
@@ -437,20 +437,20 @@ h1::after {
 .product-detail__basket .button {
   min-height: 48px;
   padding: 0.875rem 1.25rem;
-  border: 1px solid transparent;
+  border: 1px solid var(--colour-accent);
   border-radius: calc(var(--radius) / 2);
-  color: var(--colour-brand-ink);
-  background: var(--colour-accent);
+  color: var(--color-on-primary);
+  background: var(--color-action-bg);
   line-height: 1.5;
 }
 
 .product-detail__basket .button:hover:not(:disabled) {
-  color: var(--colour-surface);
-  background: var(--colour-brand-ink);
+  color: var(--color-on-primary);
+  background: var(--color-action-hover);
 }
 
 .product-detail__basket .button:active:not(:disabled) {
-  background: var(--colour-text);
+  background: var(--color-action-hover);
 }
 
 .product-detail__basket select:focus-visible,

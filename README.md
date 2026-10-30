@@ -159,6 +159,13 @@ Tab and Shift+Tab wrap within the open drawer, and the existing slide transition
 respect reduced-motion preferences. "Shop all products" is a single navigation
 label without subtitle text.
 
+The burger menu also contains a keyboard-accessible **Dark mode** slider.
+Light mode is the default; dark mode uses a `#2B2B38` background and white text,
+retaining the `#52dfdd` and `#028aa4` brand accents. The choice is saved in browser
+local storage and restored before styles load on each page. If storage is
+unavailable, switching still works on the current page and a console warning
+explains that the preference could not be saved.
+
 ## Adding a new route
 
 Say you want a `GET /bookings` endpoint.
