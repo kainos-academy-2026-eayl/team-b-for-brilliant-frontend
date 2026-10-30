@@ -32,13 +32,14 @@ export function createAccountClient(baseUrl: string): AccountClient {
       const body = (await response.json()) as {
         customerId: string;
         mfaEnabled?: boolean;
+        accessToken?: string;
         token?: string;
       };
       return {
         status: 'valid',
         customerId: body.customerId,
         mfaEnabled: body.mfaEnabled === true,
-        apiToken: body.token,
+        apiToken: body.accessToken ?? body.token,
       };
     },
 
