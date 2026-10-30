@@ -9,7 +9,7 @@ export function createDiscountsRouter(
 
   router.get('/', async (req: Request, res: Response) => {
     res.set('Cache-Control', 'no-store');
-    const token = req.session.apiToken;
+    const token = req.session.accountToken;
     try {
       const discounts = await fetchDiscounts(token);
       res.render('discounts/index.njk', { discounts });

@@ -66,16 +66,12 @@ export function createAuthService(
         if (result.status === 'valid') {
           throttle.reset(keys);
           return result.mfaEnabled
-            ? {
-                status: 'mfa_required',
-                customerId: result.customerId,
-                apiToken: result.apiToken,
-              }
+            ? { status: 'mfa_required', customerId: result.customerId }
             : {
-                status: 'success',
-                customerId: result.customerId,
-                apiToken: result.apiToken,
-              };
+              status: 'success',
+              customerId: result.customerId,
+              ...(result.accessToken ? { accessToken: result.accessToken } : {}),
+            };
         }
         throttle.recordFailure(keys);
         return { status: result.status };

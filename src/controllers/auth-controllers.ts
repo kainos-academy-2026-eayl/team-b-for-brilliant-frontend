@@ -19,14 +19,12 @@ export function createAuthRouter(authService: AuthService): Router {
     next: NextFunction,
     customerId: string,
     returnTo: string,
-    apiToken?: string | undefined,
     accountToken?: string,
     registrationDetailsPending = false,
   ) =>
     req.session.regenerate((error) => {
       if (error) return next(error)
       req.session.customerId = customerId
-      req.session.apiToken = apiToken
       if (accountToken) req.session.accountToken = accountToken
       if (registrationDetailsPending) req.session.registrationDetailsPending = true
       req.session.save((saveError) => {
@@ -78,82 +76,6 @@ export function createAuthRouter(authService: AuthService): Router {
       }
       if (result.status === 'invalid') return renderError(401, GENERIC_ERROR)
 
-      const { customerId, apiToken } = result
-
-      if (result.status === 'mfa_required') {
-        req.session.regenerate((error) => {
-          if (error) return next(error)
-          req.session.pendingMfa = {
-            customerId,
-            apiToken,
-            returnTo,
-            expiresAt: Date.now() + MFA_WINDOW_MS,
-          }
-          req.session.save((saveError) => {
-            if (saveError) return next(saveError)
-            res.redirect('/login/mfa')
-          })
-        })
-        return
-      }
-
-      startSession(req, res, next, customerId, returnTo, apiToken)
-    },
-  )
-
-  router.get('/login/mfa', (req: Request, res: Response) => {
-    const pending = req.session.pendingMfa
-    if (!pending || pending.expiresAt < Date.now()) {
-      delete req.session.pendingMfa
-      res.redirect('/login')
-      return
-    }
-    res.render('login-mfa')
-  })
-
-  router.post(
-    '/login/mfa',
-    async (req: Request, res: Response, next: NextFunction) => {
-      const pending = req.session.pendingMfa
-      if (!pending || pending.expiresAt < Date.now()) {
-        delete req.session.pendingMfa
-        res.redirect('/login')
-        return
-      }
-
-      const code = String(req.body?.code ?? '').trim()
-      const renderError = (
-        status: number,
-        error: string,
-        mfaUnavailable = false,
-      ) => res.status(status).render('login-mfa', { error, mfaUnavailable })
-
-      if (!MFA_CODE_PATTERN.test(code)) {
-        renderError(401, MFA_FAILED_ERROR)
-        return
-      }
-
-      const result = await authService.completeMfa(
-        pending.customerId,
-        code,
-        req.ip ?? 'unknown',
-      )
-
-      if (result.status === 'locked') return renderError(429, LOCKED_ERROR)
-      if (result.status === 'invalid') return renderError(401, MFA_FAILED_ERROR)
-      if (result.status === 'error') {
-        delete req.session.pendingMfa
-        return renderError(503, MFA_UNAVAILABLE_ERROR, true)
-      }
-
-      startSession(
-        req,
-        res,
-        next,
-        pending.customerId,
-        pending.returnTo,
-        pending.apiToken,
-      )
       const { customerId } = result
       const resumeRegistration = result.status === 'success'
         && req.session.pendingRegistrationEmail === email.toLowerCase()
