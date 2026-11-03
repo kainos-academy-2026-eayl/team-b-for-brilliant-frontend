@@ -1,12 +1,12 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { createApp } from '../../app';
+import { createTestApp as createApp } from '../helpers/createTestApp';
 import type { AdminAuthService } from '../../services/adminAuthService';
 
 const adminAuthService: AdminAuthService = {
   async login(_email, password) {
     return password === 'correct'
-      ? { status: 'success' }
+      ? { status: 'success', accessToken: 'admin-token' }
       : { status: 'invalid' };
   },
 };

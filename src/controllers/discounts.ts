@@ -43,7 +43,7 @@ export function createDiscountsRouter(
 
   router.get('/', async (req: Request, res: Response) => {
     res.set('Cache-Control', 'no-store');
-    const token = req.session.accountToken;
+    const token = req.auth?.accessToken;
     try {
       const discounts = await fetchDiscounts(token);
       res.render('discounts/index.njk', { discounts: withStatus(discounts) });

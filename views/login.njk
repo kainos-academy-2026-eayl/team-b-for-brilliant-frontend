@@ -5,6 +5,10 @@
   <h1>Welcome back</h1>
   <p class="card-subtitle">Sign in to access your account, orders and saved details.</p>
 
+    {% if notice %}
+    <p class="alert" role="status">{{ notice }}</p>
+  {% endif %}
+
   {% if error %}
     <p class="alert" role="alert">{{ error }}{% if showRegisterLink %} <a href="/register">Register here</a>.{% endif %}</p>
   {% endif %}

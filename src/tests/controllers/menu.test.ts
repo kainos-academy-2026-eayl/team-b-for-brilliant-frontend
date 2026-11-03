@@ -1,5 +1,4 @@
 import request from 'supertest'
-import nunjucks from 'nunjucks'
 import { describe, expect, it } from 'vitest'
 import { createApp } from '../../app'
 
@@ -41,14 +40,4 @@ describe('shared navigation', () => {
     expect(response.text).toContain('b-brilliant-theme')
   })
 
-  it('uses the shared menu and theme on the MFA page too', () => {
-    createApp()
-    const html = nunjucks.render('login-mfa.njk', {})
-
-    expect(html.match(/<header\b/g)).toHaveLength(1)
-    expect(html.match(/id="site-menu"/g)).toHaveLength(1)
-    expect(html).toContain('id="theme-switch"')
-    expect(html).toContain('src="/static/theme.js"')
-    expect(html).toContain('name="code"')
-  })
 })

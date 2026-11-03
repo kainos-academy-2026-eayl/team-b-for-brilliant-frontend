@@ -2,6 +2,7 @@ import { type Request, type Response, Router } from 'express'
 import type { Order } from '../models/order'
 import type { ProfileInput } from '../models/profile'
 import { ProfileError, type ProfileService } from '../services/profileService'
+import { clearAuthentication } from '../middleware/authentication'
 
 type FieldErrors = Partial<Record<keyof ProfileInput, string>>
 
@@ -55,10 +56,8 @@ function toOrderView(order: Order) {
 
 // The backend token is missing or no longer valid, so the customer must sign in again
 function signInAgain(req: Request, res: Response) {
-  req.session.destroy(() => {
-    res.clearCookie('connect.sid')
-    res.redirect(`/login?returnTo=${encodeURIComponent('/account')}`)
-  })
+  clearAuthentication(req, res)
+  res.redirect(`/login?returnTo=${encodeURIComponent('/account')}`)
 }
 
 export function createProfileRouter(service: ProfileService): Router {
@@ -101,6 +100,8 @@ export function createProfileRouter(service: ProfileService): Router {
     res.status(status).render('user-profiles', {
       profile,
       basket,
+      basketPreview: basket.items.slice(0, 3),
+      basketMoreCount: Math.max(0, basket.items.length - 3),
       orders: orders?.map(toOrderView) ?? [],
       ordersFailed: orders === null,
       saved,
@@ -117,7 +118,7 @@ export function createProfileRouter(service: ProfileService): Router {
   }
 
   router.get('/', async (req, res) => {
-    const token = req.session.accountToken
+    const token = req.auth?.accessToken
     if (!token) {
       signInAgain(req, res)
       return
@@ -131,7 +132,7 @@ export function createProfileRouter(service: ProfileService): Router {
   })
 
   router.post('/', async (req, res) => {
-    const token = req.session.accountToken
+    const token = req.auth?.accessToken
     if (!token) {
       signInAgain(req, res)
       return
