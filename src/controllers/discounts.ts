@@ -27,9 +27,9 @@ function updateErrorMessage(error: unknown): string {
 }
 
 function withStatus(discounts: Discount[]) {
-  return discounts.map((d) => ({
-    ...d,
-    isActive: isDiscountActive(d.expiryDate),
+  return discounts.map((item) => ({
+    ...item,
+    isActive: isDiscountActive(item.expiryDate),
   }));
 }
 
@@ -126,7 +126,7 @@ export function createDiscountsRouter(
     res.set('Cache-Control', 'no-store');
     try {
       const discounts = await fetchDiscounts(req.session.accountToken);
-      const discount = discounts.find((d) => d.discountID === req.params.id);
+      const discount = discounts.find((item) => item.discountID === req.params.id);
       if (!discount) {
         res.redirect(303, '/discounts');
         return;
@@ -150,7 +150,7 @@ export function createDiscountsRouter(
     let discount: Discount | undefined;
     try {
       discount = (await fetchDiscounts(token)).find(
-        (d) => d.discountID === discountID,
+        (item) => item.discountID === discountID,
       );
     } catch (error) {
       console.error(error);
