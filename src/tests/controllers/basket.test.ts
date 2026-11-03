@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { createApp } from '../../app';
+import { createTestApp as createApp } from '../helpers/createTestApp';
 import type { AccountClient } from '../../clients/accountClient';
 import type { BasketItem } from '../../models/basket';
 import { BasketError, type BasketService } from '../../services/basket';
@@ -13,10 +13,7 @@ const accountClient: AccountClient = {
         throw new Error('Registration should not run');
     },
     async verifyCredentials() {
-        return { status: 'valid', customerId: 'c1', mfaEnabled: false };
-    },
-    async verifyMfa() {
-        throw new Error('MFA should not run');
+        return { status: 'valid', customerId: 'c1', accessToken: 'basket-token' };
     },
 };
 

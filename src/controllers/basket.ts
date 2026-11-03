@@ -2,7 +2,8 @@ import { type Request, type Response, Router } from 'express';
 import { BasketError, type BasketService } from '../services/basket';
 
 function getCredential(req: Request): string {
-    return req.session.customerId ?? '';
+    if (!req.auth) throw new Error('Basket requires an authenticated customer');
+    return req.auth.customerId;
 }
 
 function parseQuantity(value: unknown): number | null {

@@ -3,7 +3,7 @@ import type { AdminClient } from '../clients/adminClient'
 export const COMPANY_DOMAIN = '@b-brilliant.com'
 
 export type AdminLoginResult =
-  | { status: 'success' }
+  | { status: 'success'; accessToken: string }
   | { status: 'invalid' }
   | { status: 'locked' }
   | { status: 'error' }
@@ -19,7 +19,7 @@ export function createAdminAuthService(
     async login(email, password) {
       try {
         const result = await adminClient.verifyCredentials(email, password)
-        if (result.status === 'valid') return { status: 'success' }
+        if (result.status === 'valid') return { status: 'success', accessToken: result.accessToken }
         return { status: result.status }
       } catch (error) {
         console.error(error)

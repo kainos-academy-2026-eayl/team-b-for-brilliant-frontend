@@ -1,6 +1,8 @@
-import { type NextFunction, type Request, type Response, Router } from 'express';
-import type { AuthService } from '../services/authService';
-import { safeRedirect } from '../utils/safeRedirect';
+import { type Request, type Response, Router } from 'express'
+import type { AuthService } from '../services/authService'
+import { safeRedirect } from '../utils/safeRedirect'
+import { signIn, signOut } from '../middleware/authentication'
+import { saveBrowserState, tokenHash } from '../middleware/browserState'
 
 const GENERIC_ERROR = 'Email or password is incorrect. Please try again.';
 const LOCKED_ERROR = 'Too many failed attempts. Please try again later.';
@@ -11,41 +13,21 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function createAuthRouter(authService: AuthService): Router {
   const router = Router();
 
-  const startSession = (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-    customerId: string,
-    returnTo: string,
-    accountToken?: string,
-    registrationDetailsPending = false,
-  ) =>
-    req.session.regenerate((error) => {
-      if (error) return next(error);
-      req.session.customerId = customerId;
-      if (accountToken) req.session.accountToken = accountToken;
-      if (registrationDetailsPending) req.session.registrationDetailsPending = true;
-      req.session.save((saveError) => {
-        if (saveError) return next(saveError);
-        res.redirect(returnTo);
-      });
-    });
-
   router.get('/login', (req: Request, res: Response) => {
-    if (req.session.customerId) {
-      res.redirect('/account');
-      return;
+    if (req.auth) {
+      res.redirect('/account')
+      return
     }
     res.render('login', { returnTo: safeRedirect(req.query.returnTo) });
   });
 
   router.post(
     '/login',
-    async (req: Request, res: Response, next: NextFunction) => {
-      const body = req.body ?? {};
-      const email = String(body.email ?? '').trim();
-      const password = String(body.password ?? '');
-      const returnTo = safeRedirect(body.returnTo);
+    async (req: Request, res: Response) => {
+      const body = req.body ?? {}
+      const email = String(body.email ?? '').trim()
+      const password = String(body.password ?? '')
+      const returnTo = safeRedirect(body.returnTo)
 
       const renderError = (
         status: number,
@@ -74,24 +56,33 @@ export function createAuthRouter(authService: AuthService): Router {
       }
       if (result.status === 'invalid') return renderError(401, GENERIC_ERROR);
 
-      const { customerId } = result;
-      const resumeRegistration = result.status === 'success'
-        && req.session.pendingRegistrationEmail === email.toLowerCase();
-
-      startSession(
-        req, res, next, customerId, resumeRegistration ? '/register/details' : returnTo,
-        result.status === 'success' ? result.accessToken : undefined,
-        resumeRegistration,
-      );
+      const resumeRegistration =
+        req.browserState.pendingRegistrationEmail === email.toLowerCase()
+      try {
+        await signIn(req, res, result.accessToken, result.customerId)
+        if (resumeRegistration) {
+          req.browserState.registrationTokenHash = tokenHash(result.accessToken)
+          saveBrowserState(req, res)
+        }
+        res.redirect(resumeRegistration ? '/register/details' : returnTo)
+      } catch (error) {
+        console.error('JWT sign-in failed', error)
+        return renderError(503, UNAVAILABLE_ERROR)
+      }
     },
   );
 
-  router.post('/logout', (req: Request, res: Response) => {
-    req.session.destroy(() => {
-      res.clearCookie('connect.sid');
-      res.redirect('/login');
-    });
-  });
+  router.post('/logout', async (req: Request, res: Response) => {
+    try {
+      await signOut(req, res)
+      res.redirect('/login')
+    } catch (error) {
+      console.error('JWT sign-out failed', error)
+      res.status(503).render('error', {
+        message: 'You have been signed out in this browser, but we could not revoke your token. Please try again later.',
+      })
+    }
+  })
 
   return router;
 }

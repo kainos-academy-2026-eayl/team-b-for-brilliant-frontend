@@ -19,7 +19,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
     "@types/express": "5.0.6",
-    "@types/express-session": "^1.19.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "26.4.1",
     "@types/nunjucks": "^3.2.6",
     "@types/supertest": "^7.2.1",
@@ -32,7 +32,6 @@
   "dependencies": {
     "dotenv": "17.4.2",
     "express": "^5.2.1",
-    "express-session": "^1.19.0",
     "husky": "^9.1.7",
     "jsonwebtoken": "^9.0.3",
     "nunjucks": "^3.2.4",

@@ -1,15 +1,14 @@
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createApp } from '../../app';
+import { createTestApp as createApp } from '../helpers/createTestApp';
 import type { AccountClient } from '../../clients/accountClient';
 import { getSecurityQuestions, RegistrationDetailsError, type saveRegistrationDetails } from '../../services/registrationDetails';
 
 const questions = [{ questionID: 'q1', question: 'What is your favourite colour?' }];
 const accountClient: AccountClient = {
   verifyCredentials: async () => ({
-    status: 'valid', customerId: 'customer-1', mfaEnabled: false, accessToken: 'test-token',
+    status: 'valid', customerId: 'customer-1', accessToken: 'test-token',
   }),
-  verifyMfa: async () => { throw new Error('MFA is not used'); },
   uniqueEmail: async () => ({ status: 'unique' }),
   register: async () => ({ status: 'registered' }),
 };

@@ -6,11 +6,8 @@ import type { AccountClient } from '../../src/clients/accountClient';
 const accountClient: AccountClient = {
   async verifyCredentials(email, password,) {
     return email === 'jane@example.com' && password === 'correct'
-      ? { status: 'valid', customerId: 'c1', mfaEnabled: false }
+      ? { status: 'valid', customerId: 'c1', accessToken: 'test-token' }
       : { status: 'invalid' };
-  },
-  async verifyMfa() {
-    throw new Error('MFA verification should not run when MFA is disabled');
   },
 };
 
