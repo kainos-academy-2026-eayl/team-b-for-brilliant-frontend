@@ -4,24 +4,22 @@ import { safeRedirect } from '../utils/safeRedirect'
 import { signIn, signOut } from '../middleware/authentication'
 import { saveBrowserState, tokenHash } from '../middleware/browserState'
 
-const GENERIC_ERROR = 'Email or password is incorrect. Please try again.'
-const NOT_FOUND_ERROR =
-  'We could not find an account with that email address. Please register to create one.'
-const LOCKED_ERROR = 'Too many failed attempts. Please try again later.'
+const GENERIC_ERROR = 'Email or password is incorrect. Please try again.';
+const LOCKED_ERROR = 'Too many failed attempts. Please try again later.';
 const UNAVAILABLE_ERROR =
-  'We could not sign you in right now. Please try again later.'
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  'We could not sign you in right now. Please try again later.';
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function createAuthRouter(authService: AuthService): Router {
-  const router = Router()
+  const router = Router();
 
   router.get('/login', (req: Request, res: Response) => {
     if (req.auth) {
       res.redirect('/account')
       return
     }
-    res.render('login', { returnTo: safeRedirect(req.query.returnTo) })
-  })
+    res.render('login', { returnTo: safeRedirect(req.query.returnTo) });
+  });
 
   router.post(
     '/login',
@@ -38,25 +36,25 @@ export function createAuthRouter(authService: AuthService): Router {
       ) =>
         res
           .status(status)
-          .render('login', { error, email, returnTo, showRegisterLink })
+          .render('login', { error, email, returnTo, showRegisterLink });
 
       if (!EMAIL_PATTERN.test(email) || password.length === 0) {
-        renderError(401, GENERIC_ERROR)
-        return
+        renderError(401, GENERIC_ERROR);
+        return;
       }
 
       const result = await authService.login(
         email,
         password,
         req.ip ?? 'unknown',
-      )
+      );
 
-      if (result.status === 'locked') return renderError(429, LOCKED_ERROR)
-      if (result.status === 'error') return renderError(503, UNAVAILABLE_ERROR)
+      if (result.status === 'locked') return renderError(429, LOCKED_ERROR);
+      if (result.status === 'error') return renderError(503, UNAVAILABLE_ERROR);
       if (result.status === 'not_found') {
-        return renderError(404, NOT_FOUND_ERROR, true)
+        return renderError(401, GENERIC_ERROR);
       }
-      if (result.status === 'invalid') return renderError(401, GENERIC_ERROR)
+      if (result.status === 'invalid') return renderError(401, GENERIC_ERROR);
 
       const resumeRegistration =
         req.browserState.pendingRegistrationEmail === email.toLowerCase()
@@ -72,7 +70,7 @@ export function createAuthRouter(authService: AuthService): Router {
         return renderError(503, UNAVAILABLE_ERROR)
       }
     },
-  )
+  );
 
   router.post('/logout', async (req: Request, res: Response) => {
     try {
@@ -86,5 +84,5 @@ export function createAuthRouter(authService: AuthService): Router {
     }
   })
 
-  return router
+  return router;
 }

@@ -1,5 +1,7 @@
 # Technologist Academy Node Service Template
 
+David is the best mentor.
+
 A starter repository for building Node.js HTTP services in the Technologist Academy.
 
 It gives you a working Express service with TypeScript and a production build already wired together, so you can start writing features. Out of the box it exposes a single `GET /health` endpoint that reports service status and uptime.
