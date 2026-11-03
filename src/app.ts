@@ -35,7 +35,7 @@ import type { Discount } from './models/discount';
 import type { ProductWithPrice } from './models/product';
 import { createHomeRouter } from './routes/home';
 import { createAuthService } from './services/authService';
-import { type BasketService, createMockBasketService } from './services/basket';
+import { type BasketService, createBasketService } from './services/basket';
 import { getDiscounts } from './services/discounts';
 import { fetchImage, type ProxiedImage } from './services/images';
 import {
@@ -153,7 +153,7 @@ export function createApp(options: AppOptions = {}): Express {
   app.use(
     '/basket',
     requireAuth,
-    createBasketRouter(options.basketService ?? createMockBasketService()),
+    createBasketRouter(options.basketService ?? createBasketService()),
   );
   app.use(
     '/admin/login',

@@ -19,6 +19,8 @@
   }
   .profile-avatar { display: block; width: 7rem; height: 7rem; margin: 0 0 1rem; border-radius: 50%; object-fit: cover; }
   #basket-heading { margin-top: 0; }
+  .basket-actions { margin: 1.5rem 0 1rem; text-align: center; }
+  .basket-actions .button { display: inline-block; width: auto; padding: 0.7rem 2rem; text-decoration: none; }
   .profile-side { display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
   #orders-heading { margin-top: 0; }
   .order { padding: 1rem 0; border-top: 1px solid #d8dee4; }
@@ -63,7 +65,7 @@
     <p>Your basket is empty. <a href="/products">Browse products</a>.</p>
   {% else %}
     <ul>
-      {% for item in basket.items %}
+      {% for item in basketPreview %}
         <li>
           {{ item.productName }}, quantity {{ item.quantityInBasket }}
           {% if not item.isQuantityAvailable %}
@@ -74,7 +76,9 @@
         </li>
       {% endfor %}
     </ul>
+    {% if basketMoreCount > 0 %}<p>and {{ basketMoreCount }} more</p>{% endif %}
   {% endif %}
+  <p class="basket-actions"><a class="button" href="/basket">View full basket</a></p>
 </section>
 
 <section class="card profile-orders" aria-labelledby="orders-heading">

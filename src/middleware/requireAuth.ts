@@ -5,5 +5,6 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     next()
     return
   }
-  res.redirect(`/login?returnTo=${encodeURIComponent(req.originalUrl)}`)
+  const returnTo = req.method === 'GET' ? req.originalUrl : '/products';
+  res.redirect(`/login?returnTo=${encodeURIComponent(returnTo)}`);
 }
