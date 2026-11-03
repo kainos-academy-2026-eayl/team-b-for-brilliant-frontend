@@ -36,7 +36,7 @@ const profileService: ProfileService = {
     throw new Error('not used in login tests');
   },
   async getBasket() {
-    return { items: [] };
+    return { items: [], notices: [] };
   },
   async getOrders() {
     return [];

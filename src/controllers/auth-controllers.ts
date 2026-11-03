@@ -38,7 +38,13 @@ export function createAuthRouter(authService: AuthService): Router {
       res.redirect('/account')
       return
     }
-    res.render('login', { returnTo: safeRedirect(req.query.returnTo) })
+    const notice =
+      req.query.notice === 'expired'
+        ? 'Your session has expired. Please sign in again.'
+        : req.query.returnTo
+          ? 'Please sign in to continue.'
+          : undefined;
+    res.render('login', { returnTo: safeRedirect(req.query.returnTo), notice })
   })
 
   router.post(

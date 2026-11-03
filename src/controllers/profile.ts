@@ -101,6 +101,8 @@ export function createProfileRouter(service: ProfileService): Router {
     res.status(status).render('user-profiles', {
       profile,
       basket,
+      basketPreview: basket.items.slice(0, 3),
+      basketMoreCount: Math.max(0, basket.items.length - 3),
       orders: orders?.map(toOrderView) ?? [],
       ordersFailed: orders === null,
       saved,

@@ -56,13 +56,17 @@ function createFakeService(overrides: Partial<ProfileService> = {}) {
             basketItemID: 'b1',
             productID: 'p1',
             productName: 'Lip Balm',
+            imageUrl: null,
+            unitPrice: null,
+            lineTotal: null,
             quantityInBasket: 2,
             stockAvailable: 4,
             isQuantityAvailable: true,
             lowStock: true,
           },
-        ],
-      }
+       ],
+       notices: [],
+     }
     },
     async getOrders(token) {
       calls.push({ method: 'getOrders', token })
@@ -222,7 +226,7 @@ describe('profile page', () => {
 
   it('shows an empty basket message', async () => {
     const { service } = createFakeService({
-      getBasket: async () => ({ items: [] }),
+      getBasket: async () => ({ items: [], notices: [] }),
     })
     const agent = await signIn(service)
 
