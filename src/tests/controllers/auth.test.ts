@@ -12,6 +12,7 @@ const accountClient: AccountClient = {
     throw new Error('Registration should not run during login');
   },
   async verifyCredentials(email, password,) {
+    if (email !== 'jane@example.com') return { status: 'not_found' };
     return email === 'jane@example.com' && password === 'correct'
       ? { status: 'valid', customerId: 'c1', mfaEnabled: false, accessToken: 'test-token' }
       : { status: 'invalid' };
@@ -87,6 +88,8 @@ describe('login flow', () => {
     expect(badPassword.status).toBe(401);
     expect(badEmail.text).toContain('Email or password is incorrect');
     expect(badPassword.text).toContain('Email or password is incorrect');
+    expect(badEmail.text).not.toContain('Register here');
+    expect(badPassword.text).not.toContain('Register here');
   });
 
   it('rejects a POST without a valid CSRF token', async () => {
