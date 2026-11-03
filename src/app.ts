@@ -34,7 +34,12 @@ import type { ProductWithPrice } from './models/product';
 import { createHomeRouter } from './routes/home';
 import { createAuthService } from './services/authService';
 import { type BasketService, createMockBasketService } from './services/basket';
-import { createDiscount, getDiscounts } from './services/discounts';
+import {
+  activateDiscount,
+  createDiscount,
+  deactivateDiscount,
+  getDiscounts,
+} from './services/discounts';
 import { fetchImage, type ProxiedImage } from './services/images';
 import {
   getApiBaseUrl,
@@ -63,6 +68,8 @@ interface AppOptions {
   fetchProxiedImage?: (fileName: string) => Promise<ProxiedImage | null>;
   fetchDiscounts?: (token?: string) => Promise<Discount[]>;
   saveDiscount?: typeof createDiscount;
+  activateDiscount?: typeof activateDiscount;
+  deactivateDiscount?: typeof deactivateDiscount;
 }
 
 export function createApp(options: AppOptions = {}): Express {
@@ -139,6 +146,8 @@ export function createApp(options: AppOptions = {}): Express {
     createDiscountsRouter(
       options.fetchDiscounts ?? getDiscounts,
       options.saveDiscount ?? createDiscount,
+      options.activateDiscount ?? activateDiscount,
+      options.deactivateDiscount ?? deactivateDiscount,
     ),
   );
   app.use(
