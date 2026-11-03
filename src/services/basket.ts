@@ -1,4 +1,5 @@
-import type { Basket, BasketItem } from '../models/basket';
+import type { Basket } from '../models/basket';
+import { getApiBaseUrl } from './products';
 
 export class BasketError extends Error {
     status: number;
@@ -16,66 +17,50 @@ export interface BasketService {
     removeItem(credential: string, productID: string): Promise<void>;
 }
 
-const LOW_STOCK_THRESHOLD = 10;
+export function createBasketService(
+    baseUrl: string = getApiBaseUrl(),
+    fetchFn: typeof fetch = fetch,
+): BasketService {
+    async function call<T>(
+        path: string,
+        token: string,
+        method: 'GET' | 'POST' | 'PATCH' | 'DELETE' = 'GET',
+        payload?: unknown,
+    ): Promise<T> {
+        const headers: Record<string, string> = {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+        };
+        const init: RequestInit = {
+            method,
+            headers,
+            signal: AbortSignal.timeout(5000),
+            cache: 'no-store',
+        };
+        if (payload !== undefined) {
+            headers['Content-Type'] = 'application/json';
+            init.body = JSON.stringify(payload);
+        }
 
-interface MockRow {
-    productID: string;
-    name: string;
-    quantity: number;
-    stock: number;
-}
+        const response = await fetchFn(new URL(path, baseUrl), init);
+        if (response.ok) {
+            return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
+        }
 
-function toItem(row: MockRow): BasketItem {
+        const body = (await response.json().catch(() => ({}))) as { error?: string; };
+        throw new BasketError(response.status, body.error ?? `Backend responded ${response.status}`);
+    }
+
     return {
-        basketItemID: `item-${row.productID}`,
-        productID: row.productID,
-        productName: row.name,
-        quantityInBasket: row.quantity,
-        stockAvailable: row.stock,
-        isQuantityAvailable: row.quantity <= row.stock,
-        lowStock: row.stock > 0 && row.stock <= LOW_STOCK_THRESHOLD,
-    };
-}
-
-export function createMockBasketService(): BasketService {
-    const rows: MockRow[] = [
-        { productID: 'p1', name: 'Mug', quantity: 2, stock: 25 },
-        { productID: 'p2', name: 'Notebook', quantity: 1, stock: 4 },
-    ];
-
-    const find = (productID: string) => rows.find((row) => row.productID === productID);
-
-    return {
-        async getBasket() {
-            return { items: rows.map(toItem) };
+        getBasket: (token) => call<Basket>('/basket', token),
+        addItem: async (token, productID, quantity) => {
+            await call('/basket/items', token, 'POST', { productID, quantity });
         },
-        async addItem(_credential, productID, quantity) {
-            const row = find(productID);
-            if (row) {
-                if (row.quantity + quantity > row.stock) {
-                    throw new BasketError(409, `Not enough stock. Only ${row.stock} available.`);
-                }
-                row.quantity += quantity;
-                return;
-            }
-            rows.push({ productID, name: `Product ${productID}`, quantity, stock: 5 });
+        setQuantity: async (token, productID, quantity) => {
+            await call(`/basket/items/${encodeURIComponent(productID)}`, token, 'PATCH', { quantity });
         },
-        async setQuantity(_credential, productID, quantity) {
-            const row = find(productID);
-            if (!row) throw new BasketError(404, 'Item not in basket');
-            if (quantity === 0) {
-                rows.splice(rows.indexOf(row), 1);
-                return;
-            }
-            if (quantity > row.stock) {
-                throw new BasketError(409, `Not enough stock. Only ${row.stock} available.`);
-            }
-            row.quantity = quantity;
-        },
-        async removeItem(_credential, productID) {
-            const row = find(productID);
-            if (!row) throw new BasketError(404, 'Item not in basket');
-            rows.splice(rows.indexOf(row), 1);
+        removeItem: async (token, productID) => {
+            await call(`/basket/items/${encodeURIComponent(productID)}`, token, 'DELETE');
         },
     };
 }

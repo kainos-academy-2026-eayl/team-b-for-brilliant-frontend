@@ -1,6 +1,6 @@
 import request from 'supertest'
 import { describe, expect, it } from 'vitest'
-import { createApp } from '../../app'
+import { createTestApp as createApp } from '../helpers/createTestApp'
 import type { AccountClient } from '../../clients/accountClient'
 import type { Profile, ProfileInput } from '../../models/profile'
 import {
@@ -19,12 +19,8 @@ const accountClient: AccountClient = {
     return {
       status: 'valid',
       customerId: 'c1',
-      mfaEnabled: false,
       accessToken: 'api-token',
     }
-  },
-  async verifyMfa() {
-    throw new Error('MFA verification should not run when MFA is disabled')
   },
 }
 
@@ -56,13 +52,17 @@ function createFakeService(overrides: Partial<ProfileService> = {}) {
             basketItemID: 'b1',
             productID: 'p1',
             productName: 'Lip Balm',
+            imageUrl: null,
+            unitPrice: null,
+            lineTotal: null,
             quantityInBasket: 2,
             stockAvailable: 4,
             isQuantityAvailable: true,
             lowStock: true,
           },
-        ],
-      }
+       ],
+       notices: [],
+     }
     },
     async getOrders(token) {
       calls.push({ method: 'getOrders', token })
@@ -132,7 +132,7 @@ describe('profile page', () => {
     expect(res.headers.location).toBe('/login?returnTo=%2Faccount')
   })
 
-  it('shows the saved details and the basket, calling the backend with the session token', async () => {
+  it('shows the saved details and the basket, calling the backend with the JWT', async () => {
     const { service, calls } = createFakeService()
     const agent = await signIn(service)
 
@@ -222,7 +222,7 @@ describe('profile page', () => {
 
   it('shows an empty basket message', async () => {
     const { service } = createFakeService({
-      getBasket: async () => ({ items: [] }),
+      getBasket: async () => ({ items: [], notices: [] }),
     })
     const agent = await signIn(service)
 
