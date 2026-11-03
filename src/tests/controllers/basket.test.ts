@@ -120,6 +120,7 @@ describe('GET /basket', () => {
         expect(res.status).toBe(302);
         expect(res.headers.location).toContain('/login');
         expect(res.headers.location).toContain('notice=expired');
+        expect(String(res.headers['set-cookie'])).toContain('access_token=;');
     });
 
     it('redirects signed-out visitors to login', async () => {
@@ -151,7 +152,7 @@ describe('changing the basket', () => {
 
         expect(res.status).toBe(302);
         expect(res.headers.location).toBe('/basket');
-        expect(calls).toEqual([['token-c1', 'p1', 3]]);
+        expect(calls).toEqual([['basket-token', 'p1', 3]]);
     });
 
     it('shows the stock error when there is not enough stock', async () => {
@@ -210,7 +211,7 @@ describe('changing the basket', () => {
             .send({ _csrf: token });
 
         expect(res.status).toBe(302);
-        expect(calls).toEqual([['token-c1', 'p1']]);
+        expect(calls).toEqual([['basket-token', 'p1']]);
     });
 
     it('sends the customer back to login when the backend rejects their token during an update', async () => {

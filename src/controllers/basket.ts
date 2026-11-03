@@ -1,11 +1,12 @@
 import { type Request, type Response, Router } from 'express';
+import { clearAuthentication } from '../middleware/authentication';
 import type { BasketItem } from '../models/basket';
 import { BasketError, type BasketService } from '../services/basket';
 
-// The backend identifies the customer from this token, not from the session's customerId
+// The backend identifies the customer from the JWT access token, not from a customer ID we send
 function getCredential(req: Request): string {
     if (!req.auth) throw new Error('Basket requires an authenticated customer');
-    return req.auth.customerId;
+    return req.auth.accessToken;
 }
 
 function parseQuantity(value: unknown): number | null {
@@ -25,10 +26,8 @@ function calculateTotal(items: BasketItem[]): string {
 
 // The backend rejected our token (expired, revoked or invalid), so the customer must sign in again
 function signInAgain(req: Request, res: Response) {
-    req.session.destroy(() => {
-        res.clearCookie('connect.sid');
-        res.redirect(`/login?returnTo=${encodeURIComponent('/basket')}&notice=expired`);
-    });
+    clearAuthentication(req, res);
+    res.redirect(`/login?returnTo=${encodeURIComponent('/basket')}&notice=expired`);
 }
 
 export function createBasketRouter(basket: BasketService): Router {
