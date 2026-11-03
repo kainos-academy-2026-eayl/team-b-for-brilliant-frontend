@@ -57,8 +57,8 @@
       <li><a href="/discounts"{% if currentPath == '/discounts' %} aria-current="page"{% elif currentPath and currentPath.startsWith('/discounts/') %} aria-current="location"{% endif %}>Discounts</a></li>
       {% if isSignedIn %}
         <li><a href="/account"{% if currentPath == '/account' %} aria-current="page"{% endif %}>My account</a></li>
-        <li>
         <li><a href="/basket"{% if currentPath == '/basket' %} aria-current="page"{% endif %}>Basket</a></li>
+        <li>
           <form method="post" action="/logout">
             <input type="hidden" name="_csrf" value="{{ csrfToken }}">
             <button type="submit" class="site-menu__button">Log out</button>
