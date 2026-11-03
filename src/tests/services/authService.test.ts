@@ -13,12 +13,13 @@ const makeClient = (result: VerifyResult) => ({
 describe('authService.login', () => {
   it('returns success for valid credentials', async () => {
     const service = createAuthService(
-      makeClient({ status: 'valid', customerId: 'c1', mfaEnabled: false }),
+      makeClient({ status: 'valid', customerId: 'c1', mfaEnabled: false, accessToken: 'test-token' }),
       createLoginThrottle(),
     )
     expect(await service.login('a@b.com', 'pw', '1.1.1.1')).toEqual({
       status: 'success',
       customerId: 'c1',
+      accessToken: 'test-token',
     })
   })
 

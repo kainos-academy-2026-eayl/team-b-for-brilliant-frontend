@@ -7,7 +7,7 @@ import type { LoginThrottle } from '../middleware/loginThrottle';
 const MFA_MAX_RETRIES = 4; // 1 attempt + 4 retries = 5 calls
 
 export type LoginResult =
-  | { status: 'success'; customerId: string; accessToken?: string; }
+  | { status: 'success'; customerId: string; accessToken: string; }
   | { status: 'mfa_required'; customerId: string; }
   | { status: 'not_found'; }
   | { status: 'invalid'; }
@@ -70,7 +70,7 @@ export function createAuthService(
             : {
               status: 'success',
               customerId: result.customerId,
-              ...(result.accessToken ? { accessToken: result.accessToken } : {}),
+              accessToken: result.accessToken,
             };
         }
         throttle.recordFailure(keys);

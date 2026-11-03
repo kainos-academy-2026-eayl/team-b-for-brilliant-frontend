@@ -13,6 +13,15 @@ it('preserves the backend access token after verifying credentials', async () =>
     .resolves.toEqual({
       status: 'valid', customerId: 'customer-1', mfaEnabled: false, accessToken: 'server-side-token',
     });
+
+});
+
+it('rejects successful credential responses without a JWT', async () => {
+  vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(
+    Response.json({ customerId: 'customer-1' }),
+  ));
+  await expect(createAccountClient(baseUrl).verifyCredentials('user@example.com', 'password123'))
+    .rejects.toThrow();
 });
 
 describe('registration API contract', () => {

@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createApp } from '../../app';
+import { createTestApp as createApp } from '../helpers/createTestApp';
 import type { AccountClient } from '../../clients/accountClient';
 import { stubProfileService } from '../helpers/stubProfileService';
 
@@ -45,7 +45,7 @@ describe('registration sign-in recovery', () => {
     expect(response.text).toContain('href="/login"');
   });
 
-  it('resumes onboarding when the registered email signs in successfully in the same session', async () => {
+  it('resumes onboarding when the registered email signs in successfully in the same browser', async () => {
     const { agent, client } = await failedAutomaticSignIn();
     const login = await agent.get('/login').expect(200);
     await agent.post('/login').type('form').send({

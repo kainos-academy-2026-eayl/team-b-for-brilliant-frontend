@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { createApp } from '../../app';
+import { createTestApp as createApp } from '../helpers/createTestApp';
 import type { AccountClient } from '../../clients/accountClient';
 import type { ProfileService } from '../../services/profileService';
 
@@ -117,7 +117,7 @@ describe('login flow', () => {
     expect(res.text).toContain('Too many failed attempts');
   });
 
-  it('logs out and ends the session', async () => {
+  it('logs out and revokes the JWT', async () => {
     const agent = request.agent(createApp({ accountClient, profileService }));
     const loginToken = await csrf(agent);
     await agent.post('/login').type('form').send({
