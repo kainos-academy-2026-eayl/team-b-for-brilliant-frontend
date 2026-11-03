@@ -70,7 +70,7 @@ export function createAuthRouter(authService: AuthService): Router {
       if (result.status === 'locked') return renderError(429, LOCKED_ERROR);
       if (result.status === 'error') return renderError(503, UNAVAILABLE_ERROR);
       if (result.status === 'not_found') {
-        return renderError(401, GENERIC_ERROR, true);
+        return renderError(401, GENERIC_ERROR);
       }
       if (result.status === 'invalid') return renderError(401, GENERIC_ERROR);
 
