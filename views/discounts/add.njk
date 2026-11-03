@@ -19,7 +19,7 @@
       <div class="form-field">
         <label for="code">Discount code</label>
         <input id="code" name="code" type="text" autocomplete="off" required maxlength="30" value="{{ values.code }}" aria-describedby="code-hint code-error"{% if errors.code %} aria-invalid="true"{% endif %}>
-        <p id="code-hint" class="form-message">3 to 30 letters, numbers, hyphens or underscores, for example SUMMER10.</p>
+        <p id="code-hint" class="form-message">5 to 15 letters, numbers, hyphens or underscores, for example SUMMER10.</p>
         <p id="code-error" class="field-error">{{ errors.code }}</p>
       </div>
 
