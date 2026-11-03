@@ -76,11 +76,19 @@ Before pushing, run `npm run format`, `npm run lint`, `npm run typecheck`, and `
 
 ## Registration integration
 
-The server-handled `/register` form includes the session CSRF token. The frontend
+The server-handled `/register` form includes the session CSRF token. Validation,
+existing-account, service and automatic sign-in errors use the single `form-error`
+alert above the form; all three inputs reference this shared error element.
+Registration passwords must be between 8 and 16 characters inclusive and match
+the confirmation. The server validates these rules before calling the account service.
+The frontend
 checks `POST {CUSTOMER_ACCOUNT_SERVICE_URL}/auth/unique-email`, reading the
 `unique` boolean from its HTTP 200 response, then sends `{ email, password }` to
 `POST {CUSTOMER_ACCOUNT_SERVICE_URL}/api/v1/auth/register`.
 The backend accepts registration with HTTP 202 and a message, not a customer ID.
+Duplicate emails return HTTP 409, including conflicts detected during creation
+after the preliminary uniqueness check. The frontend preserves this status and
+shows the existing-account error without automatic sign-in or a success redirect.
 Success signs the visitor in and redirects to `/register/details`. This optional
 step collects first name, surname, two address lines and postcode. "Save and
 continue" saves the details and redirects to `/home`; "Skip for now" goes to

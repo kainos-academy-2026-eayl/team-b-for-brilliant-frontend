@@ -18,6 +18,7 @@ export type UniqueEmailResult = { status: 'unique' } | { status: 'not_unique' };
 
 export type RegisterResult = 
   | { status: 'registered' }
+  | { status: 'existing' }
   | { status: 'error' };
 
 // Network error, timeout or 5xx: the only failures that are retried
@@ -114,7 +115,7 @@ export function createAccountClient(baseUrl: string): AccountClient {
       } catch (error) {
         throw new ServiceUnavailableError((error as Error).message);
       }
-      if (response.status === 409) return { status: 'error' };
+      if (response.status === 409) return { status: 'existing' };
       if (response.status >= 500) {
         throw new ServiceUnavailableError(
           `Account service responded ${response.status}`,

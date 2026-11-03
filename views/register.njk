@@ -18,20 +18,17 @@
       <input type="hidden" name="_csrf" value="{{ csrfToken }}">
       <div class="form-field">
         <label for="email">Email</label>
-        <input id="email" name="email" type="email" autocomplete="email" aria-describedby="email-error" value="{{ email }}">
-        <p id="email-error" class="field-error" role="alert"></p>
+        <input id="email" name="email" type="email" autocomplete="email" aria-describedby="form-error" value="{{ email }}">
       </div>
 
       <div class="form-field">
         <label for="password">Password</label>
-        <input id="password" name="password" type="password" autocomplete="new-password" aria-describedby="password-error">
-        <p id="password-error" class="field-error" role="alert"></p>
+        <input id="password" name="password" type="password" autocomplete="new-password" aria-describedby="form-error">
       </div>
 
       <div class="form-field">
         <label for="confirm-password">Confirm password</label>
-        <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" aria-describedby="confirm-password-error">
-        <p id="confirm-password-error" class="field-error" role="alert"></p>
+        <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" aria-describedby="form-error">
       </div>
 
       <button type="submit" id="submit-button" class="button">Register</button>

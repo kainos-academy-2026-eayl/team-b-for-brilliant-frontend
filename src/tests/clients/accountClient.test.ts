@@ -70,6 +70,14 @@ describe('registration API contract', () => {
       .rejects.toThrow(`Account service responded ${status}`);
   });
 
+  it('preserves an upstream duplicate-email conflict', async () => {
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({ error: 'Account already exists' }, { status: 409 }),
+    ));
+    await expect(createAccountClient(baseUrl).register('user@example.com', 'password123'))
+      .resolves.toEqual({ status: 'existing' });
+  });
+
   it('surfaces a network failure', async () => {
     vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockRejectedValue(new Error('Connection refused')));
     await expect(createAccountClient(baseUrl).register('user@example.com', 'password123'))
