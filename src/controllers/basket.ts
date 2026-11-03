@@ -4,7 +4,8 @@ import { BasketError, type BasketService } from '../services/basket';
 
 // The backend identifies the customer from this token, not from the session's customerId
 function getCredential(req: Request): string {
-    return req.session.accountToken ?? '';
+    if (!req.auth) throw new Error('Basket requires an authenticated customer');
+    return req.auth.customerId;
 }
 
 function parseQuantity(value: unknown): number | null {

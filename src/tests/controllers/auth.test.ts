@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { createApp } from '../../app';
+import { createTestApp as createApp } from '../helpers/createTestApp';
 import type { AccountClient } from '../../clients/accountClient';
 import type { ProfileService } from '../../services/profileService';
 
@@ -12,12 +12,10 @@ const accountClient: AccountClient = {
     throw new Error('Registration should not run during login');
   },
   async verifyCredentials(email, password,) {
+    if (email !== 'jane@example.com') return { status: 'not_found' };
     return email === 'jane@example.com' && password === 'correct'
-      ? { status: 'valid', customerId: 'c1', mfaEnabled: false, accessToken: 'test-token' }
+      ? { status: 'valid', customerId: 'c1', accessToken: 'test-token' }
       : { status: 'invalid' };
-  },
-  async verifyMfa() {
-    throw new Error('MFA verification should not run when MFA is disabled');
   },
 };
 
@@ -87,6 +85,8 @@ describe('login flow', () => {
     expect(badPassword.status).toBe(401);
     expect(badEmail.text).toContain('Email or password is incorrect');
     expect(badPassword.text).toContain('Email or password is incorrect');
+    expect(badEmail.text).not.toContain('Register here');
+    expect(badPassword.text).not.toContain('Register here');
   });
 
   it('rejects a POST without a valid CSRF token', async () => {
@@ -117,7 +117,7 @@ describe('login flow', () => {
     expect(res.text).toContain('Too many failed attempts');
   });
 
-  it('logs out and ends the session', async () => {
+  it('logs out and revokes the JWT', async () => {
     const agent = request.agent(createApp({ accountClient, profileService }));
     const loginToken = await csrf(agent);
     await agent.post('/login').type('form').send({

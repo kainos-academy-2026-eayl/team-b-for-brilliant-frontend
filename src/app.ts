@@ -1,6 +1,5 @@
 import path from 'node:path';
 import express, { type Express, type Request, type Response } from 'express';
-import session from 'express-session';
 import nunjucks from 'nunjucks';
 import {
   type AccountClient,
@@ -23,6 +22,9 @@ import { createAccountRouter } from './controllers/register';
 import { createRegistrationDetailsRouter } from './controllers/registrationDetails';
 import { verifyEmailRouter } from './controllers/verifyEmail';
 import { csrfProtection } from './middleware/csrf';
+import { createBrowserState } from './middleware/browserState';
+import { createAuthentication } from './middleware/authentication';
+import { createTokenClient, type TokenClient } from './clients/tokenClient';
 import {
   createLoginThrottle,
   type LoginThrottle,
@@ -51,6 +53,7 @@ import { createRegisterService } from './services/registerService';
 import type { getSecurityQuestions, saveRegistrationDetails } from './services/registrationDetails';
 
 interface AppOptions {
+  tokenClient?: TokenClient;
   saveRegistrationDetails?: typeof saveRegistrationDetails;
   getSecurityQuestions?: typeof getSecurityQuestions;
   accountClient?: AccountClient;
@@ -67,9 +70,6 @@ interface AppOptions {
 export function createApp(options: AppOptions = {}): Express {
   const app = express();
   const isProd = process.env.NODE_ENV === 'production';
-  if (isProd && !process.env.SESSION_SECRET) {
-    throw new Error('SESSION_SECRET is required in production');
-  }
 
   if (isProd) app.set('trust proxy', 1);
 
@@ -87,23 +87,12 @@ export function createApp(options: AppOptions = {}): Express {
   app.use('/assets', express.static(path.resolve('src/public')));
 
   app.use(express.urlencoded({ extended: false, limit: '10kb' }));
-  app.use(
-    session({
-      secret: process.env.SESSION_SECRET ?? 'dev-only-secret',
-      resave: false,
-      saveUninitialized: true,
-      cookie: {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: 'lax',
-        maxAge: 1000 * 60 * 60 * 2,
-      },
-    }),
-  );
+  app.use(createBrowserState());
   app.use(csrfProtection);
+  app.use(createAuthentication(options.tokenClient ?? createTokenClient(getApiBaseUrl())));
   app.use((req, res, next) => {
-    res.locals.isSignedIn = Boolean(req.session.customerId);
-    res.locals.csrfToken = req.session.csrfToken;
+    res.locals.isSignedIn = Boolean(req.auth);
+    res.locals.csrfToken = req.browserState.csrfToken;
     res.locals.currentPath = req.path;
     next();
   });
@@ -154,7 +143,6 @@ export function createApp(options: AppOptions = {}): Express {
   );
 
   app.use(createAuthRouter(authService));
-  //app.use(createAccountRouter(accountClient));
 
   app.get('/forgot-password', (_req, res) => res.render('forgot-password'));
   app.use(
@@ -172,7 +160,7 @@ export function createApp(options: AppOptions = {}): Express {
     createAdminLoginRouter(
       options.adminAuthService ??
       createAdminAuthService(
-        createAdminClient(process.env.API_BASE_URL ?? ''),
+        createAdminClient(getApiBaseUrl()),
       ),
     ),
   );

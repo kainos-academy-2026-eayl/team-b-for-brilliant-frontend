@@ -1,6 +1,7 @@
-import { type NextFunction, type Request, type Response, Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 import { requireAuth } from '../middleware/requireAuth';
 import { registrationDetailsSchema } from '../schemas/registrationDetails';
+import { saveBrowserState, tokenHash } from '../middleware/browserState';
 import {
   RegistrationDetailsError,
   getSecurityQuestions,
@@ -14,19 +15,17 @@ export function createRegistrationDetailsRouter(
   const router = Router();
   router.use(requireAuth);
   router.use((req, res, next) => {
-    if (!req.session.registrationDetailsPending) {
+    if (!req.auth || req.browserState.registrationTokenHash !== tokenHash(req.auth.accessToken)) {
       res.redirect('/home');
       return;
     }
     next();
   });
 
-  const finishOnboarding = (req: Request, res: Response, next: NextFunction) => {
-    delete req.session.registrationDetailsPending;
-    req.session.save((error) => {
-      if (error) return next(error);
-      res.redirect(303, '/home');
-    });
+  const finishOnboarding = (req: Request, res: Response) => {
+    delete req.browserState.registrationTokenHash;
+    saveBrowserState(req, res);
+    res.redirect(303, '/home');
   };
 
   const renderDetails = async (
@@ -35,7 +34,7 @@ export function createRegistrationDetailsRouter(
     status: number,
     context: Record<string, unknown>,
   ) => {
-    if (!req.session.accountToken) {
+    if (!req.auth?.accessToken) {
       res.status(401).render('registration-details', {
         ...context,
         questionsUnavailable: true,
@@ -44,7 +43,7 @@ export function createRegistrationDetailsRouter(
       return;
     }
     try {
-      const questions = await loadQuestions(req.session.accountToken);
+      const questions = await loadQuestions(req.auth.accessToken);
       res.status(status).render('registration-details', { ...context, questions });
     } catch (error) {
       console.error('Loading security questions failed', error);
@@ -65,7 +64,7 @@ export function createRegistrationDetailsRouter(
 
   router.post('/skip', finishOnboarding);
 
-  router.post('/', async (req, res, next) => {
+  router.post('/', async (req, res) => {
     const input = registrationDetailsSchema.safeParse(req.body);
     if (!input.success) {
       await renderDetails(req, res, 400, {
@@ -75,7 +74,7 @@ export function createRegistrationDetailsRouter(
       });
       return;
     }
-    if (!req.session.accountToken) {
+    if (!req.auth?.accessToken) {
       await renderDetails(req, res, 401, {
         values: input.data,
         error: 'Please sign out and sign in again before saving your details.',
@@ -88,8 +87,8 @@ export function createRegistrationDetailsRouter(
       const details = securityQuestionID && securityAnswer
         ? { ...profile, securityQuestionID, securityAnswer }
         : profile;
-      await save(req.session.accountToken, details);
-      finishOnboarding(req, res, next);
+      await save(req.auth.accessToken, details);
+      finishOnboarding(req, res);
     } catch (error) {
       console.error('Saving registration details failed', error);
       const expired = error instanceof RegistrationDetailsError && error.status === 401;

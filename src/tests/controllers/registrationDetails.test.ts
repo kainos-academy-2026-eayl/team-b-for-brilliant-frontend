@@ -1,15 +1,14 @@
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createApp } from '../../app';
+import { createTestApp as createApp } from '../helpers/createTestApp';
 import type { AccountClient } from '../../clients/accountClient';
 import { RegistrationDetailsError, type saveRegistrationDetails } from '../../services/registrationDetails';
 import { stubProfileService } from '../helpers/stubProfileService';
 
 const client: AccountClient = {
   verifyCredentials: async () => ({
-    status: 'valid', customerId: 'customer-1', mfaEnabled: false, accessToken: 'private-token',
+    status: 'valid', customerId: 'customer-1', accessToken: 'private-token',
   }),
-  verifyMfa: async () => { throw new Error('MFA is not used'); },
   uniqueEmail: async () => ({ status: 'unique' }),
   register: async () => ({ status: 'registered' }),
 };
@@ -61,7 +60,7 @@ describe('optional registration details', () => {
     expect(page.text).toContain('name="securityQuestionID"');
   });
 
-  it('saves trimmed details using the server-side token, then redirects home', async () => {
+  it('saves trimmed details using the verified JWT, then redirects home', async () => {
     const { agent, save, csrf } = await signedIn();
     await agent.post('/register/details').type('form').send({
       _csrf: csrf, firstname: ' Jane ', surname: 'Smith', addressLine1: '1 Main Street',

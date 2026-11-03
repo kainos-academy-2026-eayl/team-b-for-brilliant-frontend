@@ -1,5 +1,7 @@
 # Technologist Academy Node Service Template
 
+David is the best mentor.
+
 A starter repository for building Node.js HTTP services in the Technologist Academy.
 
 It gives you a working Express service with TypeScript and a production build already wired together, so you can start writing features. Out of the box it exposes a single `GET /health` endpoint that reports service status and uptime.
@@ -76,7 +78,8 @@ Before pushing, run `npm run format`, `npm run lint`, `npm run typecheck`, and `
 
 ## Registration integration
 
-The server-handled `/register` form includes the session CSRF token. The frontend
+The server-handled `/register` form includes a CSRF token from a signed,
+HttpOnly browser-state cookie. The frontend
 checks `POST {CUSTOMER_ACCOUNT_SERVICE_URL}/auth/unique-email`, reading the
 `unique` boolean from its HTTP 200 response, then sends `{ email, password }` to
 `POST {CUSTOMER_ACCOUNT_SERVICE_URL}/api/v1/auth/register`.
@@ -96,22 +99,25 @@ Answers are masked, never prefilled after an error, and must be re-entered.
 Question-loading failures are displayed explicitly while skipping remains
 available.
 
-The details page is a one-time registration step, not a profile editor. A
-server-side session flag is set only after registration and automatic sign-in.
-Both viewing and submitting the form require that flag. Successful saving or
-the CSRF-protected skip submission clears it before redirecting home. Ordinary
-sign-in does not enable onboarding, and completed/skipped sessions cannot replay
-an old form to overwrite saved details. Validation and service failures keep the
-step available for retry or skip.
+The details page is a registration step, not a profile editor. A signed
+browser-state marker, bound to a hash of the verified access token, is set only
+after registration and automatic sign-in. Both viewing and submitting the form
+require that marker. Successful saving or the CSRF-protected skip submission
+clears it before redirecting home. Ordinary sign-in does not enable onboarding.
+Validation and service failures keep the step available for retry or skip.
+This frontend-only progress marker expires after two hours. It is not a durable
+one-time completion record: replaying a previously captured, valid state cookie
+and its matching access token can reopen the step until expiry. Strict replay
+prevention would require a backend-persisted completion marker.
 
-If automatic sign-in fails after registration, the same browser session keeps
+If automatic sign-in fails after registration, the signed browser-state cookie keeps
 the newly registered email. A later successful sign-in to that same email
 resumes the details step. Signing in to a different account does not enable
-onboarding, and session regeneration removes the recovery marker. Already
+onboarding, and successful sign-in replaces the recovery marker. Already
 completed or skipped onboarding is not reopened by ordinary sign-in.
 
-The backend access token returned by credential verification stays in the
-server-side session and authenticates `PUT /account/details`. Profile updates
+The backend access token returned by credential verification is retained in an
+HttpOnly browser-session cookie and authenticates `PUT /account/details`. Profile updates
 never trust a customer ID submitted by the browser. The form includes a CSRF
 token and displays validation or service errors without discarding entered
 values. Registration does not promise a verification email.
@@ -209,7 +215,7 @@ Environment variables are loaded from `.env` by [dotenv](https://github.com/motd
 | Variable | Required | Description |
 | --- | --- | --- |
 | `PORT` | yes | Port the service listens on. The service exits at startup if it is missing or invalid. |
-| `SESSION_SECRET` | yes in production | Secret used to sign the session cookie. |
+| `COOKIE_SECRET` | yes in production | At least 32 bytes of random secret material for signing browser-state JWTs. Generate with `openssl rand -hex 32`. Development uses a random process-local key when unset. |
 | `API_BASE_URL` | yes | Base URL of the backend API (products, discounts, images and the customer account service). Login calls `POST {url}/auth/verify`. Defaults to `http://localhost:3001`. |
 
 ## Login
@@ -217,9 +223,50 @@ Environment variables are loaded from `.env` by [dotenv](https://github.com/motd
 | Route | Description |
 | --- | --- |
 | `GET /login`, `POST /login` | Sign-in page and form submission. Locks sign-in after 5 consecutive failed attempts. |
-| `POST /logout` | Ends the session. |
+| `POST /logout` | Clears browser authentication and revokes the backend JWT. |
 | `GET /account` | Account page, requires sign-in. Signed-out visitors are redirected to `/login?returnTo=...`. |
 | `GET /forgot-password` | Placeholder page. |
+
+### JWT authentication
+
+Express sessions and their in-memory store are not used. The backend JWT from
+`POST /auth/verify` is required for successful sign-in and stored unchanged in
+the `access_token` cookie. JavaScript cannot read it. On each dynamic request
+with a token, the frontend calls `GET /auth/session` with `Authorization: Bearer`
+to obtain the verified customer ID and access level. The backend validates HS256
+signatures, issuer `brilliant-backend`, audience `brilliant-client`, expiry and
+revocation. The frontend neither decodes an unverified identity nor needs the
+backend's `JWT_SECRET`. Backend-issued JWTs currently expire after 24 hours.
+
+Admin sign-in also uses `/auth/verify`, rather than the unsupported
+`/api/v1/auth/admin/login` endpoint. Only verified access level `1` grants admin
+access; a company email address alone is insufficient. Customer and admin sign-in
+use the same authentication cookie.
+
+MFA challenge flows are not supported. Customer and admin credential responses
+may omit the legacy `mfaEnabled` field or set it to `false`. A `true` or malformed
+value is rejected as an unsupported backend response, logged and shown as a
+sign-in service error (HTTP 503); its token is never installed in a cookie.
+Registration automatic sign-in uses the same check. There is no MFA challenge
+page, completion endpoint call or retry flow in this frontend.
+
+Both `access_token` and `browser_state` are HttpOnly, SameSite=Lax cookies,
+Secure in production, with no `Max-Age` or `Expires`: they are browser-session
+cookies, not the old two-hour persistent cookie. Browser session-restore
+features can restore these cookies, so closing the browser is not guaranteed
+logout. Use the CSRF-protected logout form to revoke the token. All running
+frontend instances must share `COOKIE_SECRET`; changing it invalidates CSRF and
+registration-progress state, not backend access tokens. Old `connect.sid`
+cookies are cleared when encountered, and users must sign in again after
+migrating from Express sessions.
+
+Logout calls `POST /auth/logout`. Invalid, expired or revoked tokens clear
+authentication and protected pages redirect to sign-in. Validation outages
+fail closed with HTTP 503; logout clears local cookies even if validation or
+revocation is unavailable and explicitly reports that revocation could not be
+confirmed. Dynamic responses use `Cache-Control: no-store`. CSRF protection
+remains required for every state-changing form, with a new CSRF token on sign-in
+and sign-out. No token is stored in localStorage or rendered into HTML.
 
 ### Home page
 
