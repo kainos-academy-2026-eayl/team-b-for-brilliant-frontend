@@ -1,6 +1,7 @@
 import { z } from 'zod';
+import { passwordOnlyAuthSchema } from '../schemas/passwordOnlyAuth';
 
-const adminTokenSchema = z.object({
+const adminTokenSchema = passwordOnlyAuthSchema.extend({
     accessToken: z.string().min(1),
     accessLevel: z.union([z.literal(0), z.literal(1)]),
 });

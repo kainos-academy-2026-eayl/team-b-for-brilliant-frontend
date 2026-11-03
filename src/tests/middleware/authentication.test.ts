@@ -10,9 +10,8 @@ import { tokenHash } from '../../middleware/browserState';
 const secret = 'test-only-browser-state-signing-secret';
 const accountClient: AccountClient = {
   async verifyCredentials() {
-    return { status: 'valid', customerId: 'c1', mfaEnabled: false, accessToken: 'backend-jwt' };
+    return { status: 'valid', customerId: 'c1', accessToken: 'backend-jwt' };
   },
-  async verifyMfa() { throw new Error('not used'); },
   async register() { return { status: 'registered' }; },
   async uniqueEmail() { return { status: 'unique' }; },
 };
@@ -161,21 +160,6 @@ describe('JWT browser authentication', () => {
     await agent.get('/home').expect(302);
   });
 
-  it('does not authenticate an MFA-required credential response', async () => {
-    const agent = request.agent(createTestApp({
-      accountClient: {
-        ...accountClient,
-        async verifyCredentials() {
-          return { status: 'valid', customerId: 'c1', mfaEnabled: true, accessToken: 'backend-jwt' };
-        },
-      },
-    }));
-    const page = await agent.get('/login');
-    await agent.post('/login').type('form').send({
-      _csrf: csrf(page.text), email: 'user@example.com', password: 'password',
-    }).expect(401);
-    await agent.get('/home').expect(302);
-  });
 
   it('revokes logout tokens so copying the old cookie cannot restore authentication', async () => {
     const app = createTestApp({ accountClient });

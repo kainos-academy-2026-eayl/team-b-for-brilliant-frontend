@@ -58,10 +58,6 @@ export function createAuthRouter(authService: AuthService): Router {
       }
       if (result.status === 'invalid') return renderError(401, GENERIC_ERROR)
 
-      if (result.status === 'mfa_required') {
-        return renderError(401, 'Multi-factor authentication must be completed before signing in.')
-      }
-
       const resumeRegistration =
         req.browserState.pendingRegistrationEmail === email.toLowerCase()
       try {

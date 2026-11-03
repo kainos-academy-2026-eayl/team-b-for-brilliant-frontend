@@ -19,12 +19,8 @@ const accountClient: AccountClient = {
     return {
       status: 'valid',
       customerId: 'c1',
-      mfaEnabled: false,
       accessToken: 'api-token',
     }
-  },
-  async verifyMfa() {
-    throw new Error('MFA verification should not run when MFA is disabled')
   },
 }
 

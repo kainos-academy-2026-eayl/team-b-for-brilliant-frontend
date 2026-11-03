@@ -241,6 +241,13 @@ Admin sign-in also uses `/auth/verify`, rather than the unsupported
 access; a company email address alone is insufficient. Customer and admin sign-in
 use the same authentication cookie.
 
+MFA challenge flows are not supported. Customer and admin credential responses
+may omit the legacy `mfaEnabled` field or set it to `false`. A `true` or malformed
+value is rejected as an unsupported backend response, logged and shown as a
+sign-in service error (HTTP 503); its token is never installed in a cookie.
+Registration automatic sign-in uses the same check. There is no MFA challenge
+page, completion endpoint call or retry flow in this frontend.
+
 Both `access_token` and `browser_state` are HttpOnly, SameSite=Lax cookies,
 Secure in production, with no `Max-Age` or `Expires`: they are browser-session
 cookies, not the old two-hour persistent cookie. Browser session-restore

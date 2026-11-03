@@ -5,6 +5,22 @@ const baseUrl = 'http://account-service.test';
 afterEach(() => vi.unstubAllGlobals());
 
 describe('admin JWT credentials', () => {
+  it('accepts an explicitly disabled legacy MFA flag without retaining it', async () => {
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({ accessLevel: 1, accessToken: 'admin-jwt', mfaEnabled: false }),
+    ));
+    await expect(createAdminClient(baseUrl).verifyCredentials('a@b-brilliant.com', 'password'))
+      .resolves.toEqual({ status: 'valid', accessToken: 'admin-jwt' });
+  });
+
+  it.each([true, 'true', 'false', 1, null])('rejects unsupported MFA flags: %j', async (flag) => {
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({ accessLevel: 1, accessToken: 'admin-jwt', mfaEnabled: flag }),
+    ));
+    await expect(createAdminClient(baseUrl).verifyCredentials('a@b-brilliant.com', 'password'))
+      .rejects.toThrow();
+  });
+
   it('uses the existing backend credential endpoint and retains the admin JWT', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       Response.json({ accessLevel: 1, accessToken: 'admin-jwt' }),

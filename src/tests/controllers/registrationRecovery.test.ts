@@ -17,10 +17,8 @@ async function failedAutomaticSignIn() {
     verifyCredentials: vi.fn<AccountClient['verifyCredentials']>()
       .mockResolvedValueOnce({ status: 'not_found' })
       .mockResolvedValue({
-        status: 'valid', customerId: 'customer-1', mfaEnabled: false, accessToken: 'test-token',
+        status: 'valid', customerId: 'customer-1', accessToken: 'test-token',
       }),
-    verifyMfa: vi.fn<AccountClient['verifyMfa']>()
-      .mockRejectedValue(new Error('MFA is not used')),
   } satisfies AccountClient;
   const save = vi.fn().mockResolvedValue(undefined);
   const agent = request.agent(createApp({

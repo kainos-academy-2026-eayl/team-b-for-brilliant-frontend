@@ -7,9 +7,8 @@ import { stubProfileService } from '../helpers/stubProfileService';
 
 const client: AccountClient = {
   verifyCredentials: async () => ({
-    status: 'valid', customerId: 'customer-1', mfaEnabled: false, accessToken: 'private-token',
+    status: 'valid', customerId: 'customer-1', accessToken: 'private-token',
   }),
-  verifyMfa: async () => { throw new Error('MFA is not used'); },
   uniqueEmail: async () => ({ status: 'unique' }),
   register: async () => ({ status: 'registered' }),
 };

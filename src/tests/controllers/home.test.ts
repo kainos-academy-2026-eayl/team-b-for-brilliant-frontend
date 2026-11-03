@@ -12,10 +12,7 @@ const accountClient: AccountClient = {
     throw new Error('Registration should not run on the home page');
   },
   async verifyCredentials() {
-    return { status: 'valid', customerId: 'c1', mfaEnabled: false, accessToken: 'home-token' };
-  },
-  async verifyMfa() {
-    throw new Error('MFA verification should not run when MFA is disabled');
+    return { status: 'valid', customerId: 'c1', accessToken: 'home-token' };
   },
 };
 

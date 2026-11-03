@@ -7,9 +7,8 @@ import { getSecurityQuestions, RegistrationDetailsError, type saveRegistrationDe
 const questions = [{ questionID: 'q1', question: 'What is your favourite colour?' }];
 const accountClient: AccountClient = {
   verifyCredentials: async () => ({
-    status: 'valid', customerId: 'customer-1', mfaEnabled: false, accessToken: 'test-token',
+    status: 'valid', customerId: 'customer-1', accessToken: 'test-token',
   }),
-  verifyMfa: async () => { throw new Error('MFA is not used'); },
   uniqueEmail: async () => ({ status: 'unique' }),
   register: async () => ({ status: 'registered' }),
 };

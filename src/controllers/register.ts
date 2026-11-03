@@ -66,9 +66,7 @@ export function createAccountRouter(authService: AuthService, registerService: R
           if (loginResult.status !== 'success') {
             const status = loginResult.status === 'locked' ? 429
               : loginResult.status === 'error' ? 503 : 401
-            const error = loginResult.status === 'mfa_required'
-              ? 'Registration was processed. Please sign in to complete multi-factor authentication.'
-              : loginResult.status === 'locked'
+            const error = loginResult.status === 'locked'
                 ? 'Registration was processed, but sign-in is temporarily locked. Please try signing in later.'
                 : 'Registration was processed, but automatic sign-in failed. Please sign in.'
             return res.status(status).render('register', { registered: true, error })

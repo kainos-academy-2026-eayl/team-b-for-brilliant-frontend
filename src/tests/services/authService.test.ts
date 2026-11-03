@@ -5,7 +5,6 @@ import { createAuthService } from '../../services/authService'
 
 const makeClient = (result: VerifyResult) => ({
   verifyCredentials: vi.fn().mockResolvedValue(result),
-  verifyMfa: vi.fn(),
   uniqueEmail: vi.fn(),
   register: vi.fn(),
 })
@@ -13,7 +12,7 @@ const makeClient = (result: VerifyResult) => ({
 describe('authService.login', () => {
   it('returns success for valid credentials', async () => {
     const service = createAuthService(
-      makeClient({ status: 'valid', customerId: 'c1', mfaEnabled: false, accessToken: 'test-token' }),
+      makeClient({ status: 'valid', customerId: 'c1', accessToken: 'test-token' }),
       createLoginThrottle(),
     )
     expect(await service.login('a@b.com', 'pw', '1.1.1.1')).toEqual({
@@ -48,7 +47,6 @@ describe('authService.login', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const client = {
       verifyCredentials: vi.fn().mockRejectedValue(new Error('down')),
-      verifyMfa: vi.fn(),
       uniqueEmail: vi.fn(),
       register: vi.fn(),
     }

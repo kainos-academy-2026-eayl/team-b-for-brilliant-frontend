@@ -13,10 +13,7 @@ const accountClient: AccountClient = {
         throw new Error('Registration should not run');
     },
     async verifyCredentials() {
-        return { status: 'valid', customerId: 'c1', mfaEnabled: false, accessToken: 'basket-token' };
-    },
-    async verifyMfa() {
-        throw new Error('MFA should not run');
+        return { status: 'valid', customerId: 'c1', accessToken: 'basket-token' };
     },
 };
 
