@@ -1,0 +1,29 @@
+{% extends "main.njk" %}
+
+{% block title %}Activate Discount | B-Brilliant{% endblock %}
+
+{% block content %}
+  <section class="card">
+    <h1>Activate Discount</h1>
+    <p class="card-subtitle">Enter a new expiry date for discount {{ discount.code }}.</p>
+
+    {% if formError %}
+      <p class="alert" role="alert">{{ formError }}</p>
+    {% elif errors.expiryDate %}
+      <p class="alert" role="alert">Please fix the problem below and try again.</p>
+    {% endif %}
+
+    <form method="post" action="/discounts/{{ discount.discountID | urlencode }}/activate" novalidate>
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+      <div class="form-field">
+        <label for="expiryDate">New expiry date</label>
+        <input id="expiryDate" name="expiryDate" type="date" required value="{{ values.expiryDate }}" aria-describedby="expiryDate-error"{% if errors.expiryDate %} aria-invalid="true"{% endif %}>
+        <p id="expiryDate-error" class="field-error">{{ errors.expiryDate }}</p>
+      </div>
+
+      <button type="submit" class="button">Activate Discount</button>
+      <a class="button-link" href="/discounts">Cancel</a>
+    </form>
+  </section>
+{% endblock %}
