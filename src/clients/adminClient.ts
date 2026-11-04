@@ -1,5 +1,13 @@
+import { z } from 'zod';
+import { passwordOnlyAuthSchema } from '../schemas/passwordOnlyAuth';
+
+const adminTokenSchema = passwordOnlyAuthSchema.extend({
+    accessToken: z.string().min(1),
+    accessLevel: z.union([z.literal(0), z.literal(1)]),
+});
+
 export type AdminVerifyResult =
-    | { status: 'valid'; }
+    | { status: 'valid'; accessToken: string; }
     | { status: 'invalid'; }
     | { status: 'locked'; };
 
@@ -10,15 +18,19 @@ export interface AdminClient {
 export function createAdminClient(baseUrl: string): AdminClient {
     return {
         async verifyCredentials(email, password) {
-            const response = await fetch(`${baseUrl}/api/v1/auth/admin/login`, {
+            const response = await fetch(`${baseUrl}/auth/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
                 signal: AbortSignal.timeout(5000),
             });
 
-            if (response.ok) return { status: 'valid' };
-            if (response.status === 401) return { status: 'invalid' };
+            if (response.ok) {
+                const { accessToken, accessLevel } = adminTokenSchema.parse(await response.json());
+                if (accessLevel !== 1) return { status: 'invalid' };
+                return { status: 'valid', accessToken };
+            }
+            if (response.status === 401 || response.status === 404) return { status: 'invalid' };
             if (response.status === 429) return { status: 'locked' };
             throw new Error(`Admin service responded ${response.status}`);
         },

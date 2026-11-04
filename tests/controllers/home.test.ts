@@ -6,10 +6,7 @@ import type { ProductWithPrice } from '../../src/models/product';
 
 const accountClient: AccountClient = {
   async verifyCredentials() {
-    return { status: 'valid', customerId: 'c1', mfaEnabled: false };
-  },
-  async verifyMfa() {
-    throw new Error('MFA verification should not run when MFA is disabled');
+    return { status: 'valid', customerId: 'c1', accessToken: 'test-token' };
   },
 };
 

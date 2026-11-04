@@ -1,7 +1,9 @@
-import { type NextFunction, type Request, type Response, Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 import { safeRedirect } from '../utils/safeRedirect';
 import type { AuthService } from '../services/authService';
 import type { RegisterService } from '../services/registerService';
+import { signIn } from '../middleware/authentication';
+import { saveBrowserState, tokenHash } from '../middleware/browserState';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -14,7 +16,7 @@ export function createAccountRouter(authService: AuthService, registerService: R
     const router = Router();
 
     router.get('/register', (req: Request, res: Response) => {
-        if (req.session.customerId) {
+        if (req.auth) {
             res.redirect('/account');
             return;
         }
@@ -26,7 +28,7 @@ export function createAccountRouter(authService: AuthService, registerService: R
 
     router.post(
         '/register',
-        async (req: Request, res: Response, next: NextFunction) => {
+        async (req: Request, res: Response) => {
           const body = req.body ?? {}
           const email = String(body.email ?? '').trim()
           const password = String(body.password ?? '')
@@ -57,30 +59,31 @@ export function createAccountRouter(authService: AuthService, registerService: R
 
           if (registerResult.status === 'error') return renderError(503, UNAVAILABLE_ERROR)
 
-          req.session.pendingRegistrationEmail = email.toLowerCase()
+          req.browserState.pendingRegistrationEmail = email.toLowerCase()
+          saveBrowserState(req, res)
           const loginResult = await authService.login(email, password, req.ip ?? 'unknown')
 
           if (loginResult.status !== 'success') {
             const status = loginResult.status === 'locked' ? 429
               : loginResult.status === 'error' ? 503 : 401
-            const error = loginResult.status === 'mfa_required'
-              ? 'Registration was processed. Please sign in to complete multi-factor authentication.'
-              : loginResult.status === 'locked'
+            const error = loginResult.status === 'locked'
                 ? 'Registration was processed, but sign-in is temporarily locked. Please try signing in later.'
                 : 'Registration was processed, but automatic sign-in failed. Please sign in.'
             return res.status(status).render('register', { registered: true, error })
           }
 
-          req.session.regenerate((error) => {
-            if (error) return next(error)
-            req.session.customerId = loginResult.customerId
-            req.session.registrationDetailsPending = true
-            if (loginResult.accessToken) req.session.accountToken = loginResult.accessToken
-            req.session.save((saveError) => {
-              if (saveError) return next(saveError)
-              res.redirect(303, '/register/details')
+          try {
+            await signIn(req, res, loginResult.accessToken, loginResult.customerId)
+            req.browserState.registrationTokenHash = tokenHash(loginResult.accessToken)
+            saveBrowserState(req, res)
+            res.redirect(303, '/register/details')
+          } catch (error) {
+            console.error('Registration JWT sign-in failed', error)
+            res.status(503).render('register', {
+              registered: true,
+              error: 'Registration was processed, but automatic sign-in failed. Please sign in.',
             })
-          })
+          }
         },
       )
 

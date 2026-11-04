@@ -1,8 +1,12 @@
 import { type Request, type Response, Router } from 'express';
+import { clearAuthentication } from '../middleware/authentication';
+import type { BasketItem } from '../models/basket';
 import { BasketError, type BasketService } from '../services/basket';
 
+// The backend identifies the customer from the JWT access token, not from a customer ID we send
 function getCredential(req: Request): string {
-    return req.session.customerId ?? '';
+    if (!req.auth) throw new Error('Basket requires an authenticated customer');
+    return req.auth.accessToken;
 }
 
 function parseQuantity(value: unknown): number | null {
@@ -11,14 +15,33 @@ function parseQuantity(value: unknown): number | null {
     return Number.isInteger(quantity) && quantity >= 0 ? quantity : null;
 }
 
+// Adds up in whole pence so decimal rounding errors can't creep into money
+function calculateTotal(items: BasketItem[]): string {
+    const pence = items.reduce(
+        (sum, item) => sum + (item.lineTotal ? Math.round(Number(item.lineTotal) * 100) : 0),
+        0,
+    );
+    return (pence / 100).toFixed(2);
+}
+
+// The backend rejected our token (expired, revoked or invalid), so the customer must sign in again
+function signInAgain(req: Request, res: Response) {
+    clearAuthentication(req, res);
+    res.redirect(`/login?returnTo=${encodeURIComponent('/basket')}&notice=expired`);
+}
+
 export function createBasketRouter(basket: BasketService): Router {
     const router = Router();
 
     async function renderBasket(req: Request, res: Response, status = 200, error?: string) {
         try {
-            const { items } = await basket.getBasket(getCredential(req));
-            res.status(status).render('basket.njk', { items, error });
+            const { items, notices } = await basket.getBasket(getCredential(req));
+            res.status(status).render('basket.njk', { items, notices, total: calculateTotal(items), error });
         } catch (caught) {
+            if (caught instanceof BasketError && caught.status === 401) {
+                signInAgain(req, res);
+                return;
+            }
             console.error(caught);
             res.status(502).render('error.njk', {
                 message: 'We could not load your basket right now. Please try again later.',
@@ -31,6 +54,10 @@ export function createBasketRouter(basket: BasketService): Router {
             await action();
             res.redirect('/basket');
         } catch (caught) {
+            if (caught instanceof BasketError && caught.status === 401) {
+                signInAgain(req, res);
+                return;
+            }
             if (caught instanceof BasketError) {
                 await renderBasket(req, res, caught.status, caught.message);
                 return;

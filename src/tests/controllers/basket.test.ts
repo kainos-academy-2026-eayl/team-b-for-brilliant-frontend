@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { createApp } from '../../app';
+import { createTestApp as createApp } from '../helpers/createTestApp';
 import type { AccountClient } from '../../clients/accountClient';
 import type { BasketItem } from '../../models/basket';
 import { BasketError, type BasketService } from '../../services/basket';
@@ -13,10 +13,7 @@ const accountClient: AccountClient = {
         throw new Error('Registration should not run');
     },
     async verifyCredentials() {
-        return { status: 'valid', customerId: 'c1', mfaEnabled: false };
-    },
-    async verifyMfa() {
-        throw new Error('MFA should not run');
+        return { status: 'valid', customerId: 'c1', accessToken: 'basket-token' };
     },
 };
 
@@ -24,6 +21,9 @@ const item: BasketItem = {
     basketItemID: 'i1',
     productID: 'p1',
     productName: 'Mug',
+    imageUrl: null,
+    unitPrice: null,
+    lineTotal: null,
     quantityInBasket: 2,
     stockAvailable: 25,
     isQuantityAvailable: true,
@@ -31,12 +31,12 @@ const item: BasketItem = {
 };
 
 function fakeBasket(
-    overrides: Partial<BasketService> & { items?: BasketItem[]; } = {},
+    overrides: Partial<BasketService> & { items?: BasketItem[]; notices?: string[]; } = {},
 ): BasketService {
-    const { items = [item], ...methods } = overrides;
+    const { items = [item], notices = [], ...methods } = overrides;
     return {
         async getBasket() {
-            return { items };
+            return { items, notices };
         },
         async addItem() { },
         async setQuantity() { },
@@ -97,6 +97,32 @@ describe('GET /basket', () => {
         expect(res.text).toContain('Reduce the quantity');
     });
 
+        
+    it('shows the notices sent by the backend', async () => {
+        const agent = await signIn(
+            fakeBasket({ notices: ['We reduced Mug to 3 because only 3 are left.'] }),
+        );
+        const res = await agent.get('/basket');
+
+        expect(res.text).toContain('We reduced Mug to 3 because only 3 are left.');
+    });
+
+    it('sends the customer back to login when the backend rejects their token', async () => {
+        const agent = await signIn(
+            fakeBasket({
+                async getBasket() {
+                    throw new BasketError(401, 'Login required');
+                },
+            }),
+        );
+        const res = await agent.get('/basket');
+
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toContain('/login');
+        expect(res.headers.location).toContain('notice=expired');
+        expect(String(res.headers['set-cookie'])).toContain('access_token=;');
+    });
+
     it('redirects signed-out visitors to login', async () => {
         const res = await request(
             createApp({ accountClient, basketService: fakeBasket() }),
@@ -126,7 +152,7 @@ describe('changing the basket', () => {
 
         expect(res.status).toBe(302);
         expect(res.headers.location).toBe('/basket');
-        expect(calls).toEqual([['c1', 'p1', 3]]);
+        expect(calls).toEqual([['basket-token', 'p1', 3]]);
     });
 
     it('shows the stock error when there is not enough stock', async () => {
@@ -185,6 +211,25 @@ describe('changing the basket', () => {
             .send({ _csrf: token });
 
         expect(res.status).toBe(302);
-        expect(calls).toEqual([['c1', 'p1']]);
+        expect(calls).toEqual([['basket-token', 'p1']]);
+    });
+
+    it('sends the customer back to login when the backend rejects their token during an update', async () => {
+        const agent = await signIn(
+            fakeBasket({
+                async setQuantity() {
+                    throw new BasketError(401, 'Login required');
+                },
+            }),
+        );
+        const token = extractToken((await agent.get('/basket')).text);
+
+        const res = await agent
+            .post('/basket/items/p1/update')
+            .type('form')
+            .send({ _csrf: token, quantity: '3' });
+
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toContain('/login');
     });
 });
