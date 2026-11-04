@@ -5,14 +5,41 @@ const baseUrl = 'http://account-service.test';
 
 afterEach(() => vi.unstubAllGlobals());
 
+it('accepts an explicitly disabled legacy MFA flag without retaining it', async () => {
+  vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(
+    Response.json({ customerId: 'customer-1', accessToken: 'server-side-token', mfaEnabled: false }),
+  ));
+  await expect(createAccountClient(baseUrl).verifyCredentials('user@example.com', 'password123'))
+    .resolves.toEqual({
+      status: 'valid', customerId: 'customer-1', accessToken: 'server-side-token',
+    });
+});
+
+it.each([true, 'true', 'false', 1, null])('rejects unsupported MFA flags: %j', async (flag) => {
+  vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(
+    Response.json({ customerId: 'customer-1', accessToken: 'server-side-token', mfaEnabled: flag }),
+  ));
+  await expect(createAccountClient(baseUrl).verifyCredentials('user@example.com', 'password123'))
+    .rejects.toThrow();
+});
+
 it('preserves the backend access token after verifying credentials', async () => {
   vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(
     Response.json({ customerId: 'customer-1', accessToken: 'server-side-token' }),
   ));
   await expect(createAccountClient(baseUrl).verifyCredentials('user@example.com', 'password123'))
     .resolves.toEqual({
-      status: 'valid', customerId: 'customer-1', mfaEnabled: false, accessToken: 'server-side-token',
+      status: 'valid', customerId: 'customer-1', accessToken: 'server-side-token',
     });
+
+});
+
+it('rejects successful credential responses without a JWT', async () => {
+  vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(
+    Response.json({ customerId: 'customer-1' }),
+  ));
+  await expect(createAccountClient(baseUrl).verifyCredentials('user@example.com', 'password123'))
+    .rejects.toThrow();
 });
 
 describe('registration API contract', () => {

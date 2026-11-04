@@ -237,7 +237,7 @@ describe('GET /products', () => {
       expect(html).not.toContain('product-gallery.js');
     });
 
-    it('shows stock-limited quantity choices and a UI-only basket button between price and description', async () => {
+    it('shows stock-limited quantity choices and a basket button between price and description', async () => {
       const { html } = await getPage(
         async () => [],
         '/products/p1',
@@ -251,7 +251,7 @@ describe('GET /products', () => {
         '<option value="2">2</option>',
         '<option value="3">3</option>',
       ]);
-      expect(html).toContain('<button type="button" class="button">Add to basket</button>');
+      expect(html).toContain('<button type="submit" class="button">Add to basket</button>');
       expect(html.indexOf('£22.49')).toBeLessThan(html.indexOf('id="product-quantity"'));
       expect(html.indexOf('id="product-quantity"')).toBeLessThan(html.indexOf('Add to basket'));
       expect(html.indexOf('Add to basket')).toBeLessThan(html.indexOf('<h2>Description</h2>'));
@@ -279,7 +279,7 @@ describe('GET /products', () => {
 
       expect(html).toContain('<select id="product-quantity" name="quantity" disabled>');
       expect(html).toContain('<option value="0">0</option>');
-      expect(html).toContain('<button type="button" class="button" disabled>Add to basket</button>');
+      expect(html).toContain('<button type="submit" class="button" disabled>Add to basket</button>');
       expect(html).not.toContain('<option value="1">');
     });
 

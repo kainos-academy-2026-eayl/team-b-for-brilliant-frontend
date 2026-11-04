@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createApp } from '../../app';
+import { createTestApp as createApp } from '../helpers/createTestApp';
 import type { AccountClient } from '../../clients/accountClient';
 import { stubProfileService } from '../helpers/stubProfileService';
 
@@ -8,10 +8,8 @@ function registrationClient() {
   return {
     verifyCredentials: vi.fn<AccountClient['verifyCredentials']>()
       .mockResolvedValue({
-        status: 'valid', customerId: 'new-customer', mfaEnabled: false, accessToken: 'account-token',
+        status: 'valid', customerId: 'new-customer', accessToken: 'account-token',
       }),
-    verifyMfa: vi.fn<AccountClient['verifyMfa']>()
-      .mockRejectedValue(new Error('MFA should not run during registration')),
     uniqueEmail: vi.fn<AccountClient['uniqueEmail']>()
       .mockResolvedValue({ status: 'unique' }),
     register: vi.fn<AccountClient['register']>()

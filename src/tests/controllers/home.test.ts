@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createApp } from '../../app';
+import { createTestApp as createApp } from '../helpers/createTestApp';
 import type { AccountClient } from '../../clients/accountClient';
 import type { ProductWithPrice } from '../../models/product';
 
@@ -12,10 +12,7 @@ const accountClient: AccountClient = {
     throw new Error('Registration should not run on the home page');
   },
   async verifyCredentials() {
-    return { status: 'valid', customerId: 'c1', mfaEnabled: false };
-  },
-  async verifyMfa() {
-    throw new Error('MFA verification should not run when MFA is disabled');
+    return { status: 'valid', customerId: 'c1', accessToken: 'home-token' };
   },
 };
 

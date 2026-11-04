@@ -16,7 +16,7 @@ export const stubProfileService: ProfileService = {
     throw new Error('Profile updates are not used in this test')
   },
   async getBasket() {
-    return { items: [] }
+    return { items: [], notices: [] }
   },
   async getOrders() {
     return []
