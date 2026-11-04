@@ -35,7 +35,7 @@
 
       <div class="form-field">
         <label for="value">Value</label>
-        <input id="value" name="value" type="text" inputmode="decimal" autocomplete="off" required maxlength="10" value="{{ values.value }}" aria-describedby="value-hint value-error"{% if errors.value %} aria-invalid="true"{% endif %}>
+        <input id="value" name="value" type="text" inputmode="decimal" autocomplete="off" required maxlength="11" value="{{ values.value }}" aria-describedby="value-hint value-error"{% if errors.value %} aria-invalid="true"{% endif %}>
         <p id="value-hint" class="form-message">Percentage: a whole number from 0 to 100. Raw amount: a positive number, for example 5.50.</p>
         <p id="value-error" class="field-error">{{ errors.value }}</p>
       </div>
