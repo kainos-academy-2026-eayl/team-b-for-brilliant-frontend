@@ -70,7 +70,7 @@ export function createDiscountsRouter(
     }
 
     try {
-      await saveDiscount(req.session.accountToken, {
+      await saveDiscount(req.auth?.accessToken, {
         code: values.code,
         type: values.type as 'percentage' | 'amount',
         value: values.value,
@@ -101,7 +101,7 @@ export function createDiscountsRouter(
   });
 
   router.post('/:id/deactivate', async (req: Request, res: Response) => {
-    const token = req.session.accountToken;
+    const token = req.auth?.accessToken;
     try {
       await deactivate(token, String(req.params.id));
     } catch (error) {
@@ -125,7 +125,7 @@ export function createDiscountsRouter(
   router.get('/:id/activate', async (req: Request, res: Response) => {
     res.set('Cache-Control', 'no-store');
     try {
-      const discounts = await fetchDiscounts(req.session.accountToken);
+      const discounts = await fetchDiscounts(req.auth?.accessToken);
       const discount = discounts.find((item) => item.discountID === req.params.id);
       if (!discount) {
         res.redirect(303, '/discounts');
@@ -143,7 +143,7 @@ export function createDiscountsRouter(
   });
 
   router.post('/:id/activate', async (req: Request, res: Response) => {
-    const token = req.session.accountToken;
+    const token = req.auth?.accessToken;
     const discountID = String(req.params.id);
     const { expiryDate } = readDiscountForm(req.body);
 
