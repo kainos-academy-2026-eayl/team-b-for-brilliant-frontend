@@ -63,12 +63,12 @@ describe('registration flow', () => {
     {
       name: 'missing password',
       fields: { password: '' },
-      error: 'Password must be between 8 and 16 characters long.',
+      error: 'Email or password is incorrect. Please try again.',
     },
     {
       name: 'mismatched passwords',
       fields: { confirmPassword: 'different-password' },
-      error: 'Passwords do not match. Please try again.',
+      error: 'Email or password is incorrect. Please try again.',
     },
   ])('renders $name in the shared error element', async ({ fields, error }) => {
     const client = registrationClient();
@@ -89,7 +89,7 @@ describe('registration flow', () => {
     const response = await agent.post('/register').type('form')
       .send({ ...body, password, confirmPassword: password }).expect(401);
 
-    expect(response.text).toContain('<div id="form-error" class="alert" role="alert">Password must be between 8 and 16 characters long.</div>');
+    expect(response.text).toContain('<div id="form-error" class="alert" role="alert">Email or password is incorrect. Please try again.</div>');
     expect(client.uniqueEmail).not.toHaveBeenCalled();
     expect(client.register).not.toHaveBeenCalled();
   });
@@ -119,7 +119,8 @@ describe('registration flow', () => {
     client.uniqueEmail.mockResolvedValue({ status: 'not_unique' });
     const { agent, body } = await registrationForm(client);
     const response = await agent.post('/register').type('form').send(body).expect(409);
-    expect(response.text).toContain('<div id="form-error" class="alert" role="alert">An account with this email address already exists. Please sign in.</div>');
+    expect(response.text).toContain('<div id="form-error" class="alert" role="alert">Email or password is incorrect. Please try again.</div>');
+    expect(response.text).not.toContain('An account with this email address already exists');
     expect(response.text).toContain('value="new@example.com"');
     expect(response.text).not.toContain('Too many failed attempts');
     expect(client.register).not.toHaveBeenCalled();
@@ -143,7 +144,8 @@ describe('registration flow', () => {
     const { agent, body } = await registrationForm(client);
     const response = await agent.post('/register').type('form').send(body).expect(409);
 
-    expect(response.text).toContain('<div id="form-error" class="alert" role="alert">An account with this email address already exists. Please sign in.</div>');
+    expect(response.text).toContain('<div id="form-error" class="alert" role="alert">Email or password is incorrect. Please try again.</div>');
+    expect(response.text).not.toContain('An account with this email address already exists');
     expect(response.headers.location).toBeUndefined();
     expect(client.register).toHaveBeenCalledExactlyOnceWith(body.email, body.password);
     expect(client.verifyCredentials).not.toHaveBeenCalled();

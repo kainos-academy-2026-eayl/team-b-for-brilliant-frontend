@@ -88,7 +88,11 @@ checks `POST {CUSTOMER_ACCOUNT_SERVICE_URL}/auth/unique-email`, reading the
 The backend accepts registration with HTTP 202 and a message, not a customer ID.
 Duplicate emails return HTTP 409, including conflicts detected during creation
 after the preliminary uniqueness check. The frontend preserves this status and
-shows the existing-account error without automatic sign-in or a success redirect.
+shows the same generic error as invalid emails, invalid password lengths and
+password-confirmation mismatches: "Email or password is incorrect. Please try again."
+Duplicate responses retain HTTP 409, while validation errors return HTTP 401;
+matching the wording does not make these responses indistinguishable.
+Duplicates do not trigger automatic sign-in or a success redirect.
 Success signs the visitor in and redirects to `/register/details`. This optional
 step collects first name, surname, two address lines and postcode. "Save and
 continue" saves the details and redirects to `/home`; "Skip for now" goes to

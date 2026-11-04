@@ -3,11 +3,8 @@ import { safeRedirect } from '../utils/safeRedirect';
 import type { AuthService } from '../services/authService';
 import type { RegisterService } from '../services/registerService';
 
-const PASSWORD_LENGTH_ERROR_MESSAGE = 'Password must be between 8 and 16 characters long.';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const NO_MATCH_ERROR = 'Passwords do not match. Please try again.';
 const GENERIC_ERROR = 'Email or password is incorrect. Please try again.';
-const EXISTING_ACCOUNT_ERROR = 'An account with this email address already exists. Please sign in.';
 const UNAVAILABLE_ERROR =
   'We could not register your account right now. Please try again later.';
 
@@ -48,11 +45,11 @@ export function createAccountRouter(authService: AuthService, registerService: R
         return;
       }
       if (password.length < 8 || password.length > 16) {
-        renderError(401, PASSWORD_LENGTH_ERROR_MESSAGE);
+        renderError(401, GENERIC_ERROR);
         return;
       }
       if (password !== confirmPassword) {
-        renderError(401, NO_MATCH_ERROR);
+        renderError(401, GENERIC_ERROR);
         return;
       }
 
@@ -60,12 +57,12 @@ export function createAccountRouter(authService: AuthService, registerService: R
         email
       );
 
-      if (result.status === 'not_unique') return renderError(409, EXISTING_ACCOUNT_ERROR);
+      if (result.status === 'not_unique') return renderError(409, GENERIC_ERROR);
       if (result.status === 'error') return renderError(503, UNAVAILABLE_ERROR);
 
       const registerResult = await registerService.register(email, password);
 
-      if (registerResult.status === 'existing') return renderError(409, EXISTING_ACCOUNT_ERROR);
+      if (registerResult.status === 'existing') return renderError(409, GENERIC_ERROR);
       if (registerResult.status === 'error') return renderError(503, UNAVAILABLE_ERROR);
 
       req.session.pendingRegistrationEmail = email.toLowerCase();
