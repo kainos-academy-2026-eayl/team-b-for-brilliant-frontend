@@ -42,6 +42,7 @@ const FIELD_ORDER: FieldName[] = [
 
 const UK_POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i;
 const GENERIC_ERROR = 'We could not complete your order right now. Please try again.';
+const QUOTE_ERROR = 'We could not refresh your order total right now. Please try again before paying.';
 
 type AddressChoice = 'saved' | 'new';
 
@@ -104,6 +105,15 @@ function defaultValues(profile: Profile): FormValues {
         cvv: '',
     };
 }
+
+const EMPTY_PROFILE: Profile = {
+    email: '',
+    firstname: null,
+    surname: null,
+    addressLine1: null,
+    addressLine2: null,
+    postcode: null,
+};
 
 function readForm(body: unknown, profile: Profile): FormValues {
     const source = (body ?? {}) as Record<string, unknown>;
@@ -279,8 +289,19 @@ export function createCheckoutRouter(
         context: CheckoutContext,
         status: number,
         view: PageView,
+        quoteUnavailable = false,
     ) {
-        const { quote, discountError } = await quoteFor(token, view.values.discountCode);
+        let quote: Quote | null = null;
+        let discountError: string | null = null;
+        if (!quoteUnavailable) {
+            try {
+                ({ quote, discountError } = await quoteFor(token, view.values.discountCode));
+            } catch (error) {
+                if (statusOf(error) === 401) throw error;
+                console.error('Checkout quote failed', (error as Error).message);
+                quoteUnavailable = true;
+            }
+        }
 
         res.set('Cache-Control', 'no-store');
         res.status(discountError && status === 200 ? 400 : status).render('checkout.njk', {
@@ -292,11 +313,40 @@ export function createCheckoutRouter(
             values: { ...view.values, cardNumber: '', cvv: '' },
             errors: view.errors,
             errorList: toErrorList(view.errors),
-            formError: view.formError,
+            formError: view.formError ?? (quoteUnavailable ? QUOTE_ERROR : null),
             discountError,
             discountApplied:
-                Boolean(view.values.discountCode) && !discountError && quote.discount !== '0.00',
+                Boolean(view.values.discountCode) &&
+                !discountError &&
+                quote !== null &&
+                quote.discount !== '0.00',
         });
+    }
+
+    async function loadPostContext(
+        req: Request,
+        res: Response,
+        token: string,
+    ): Promise<CheckoutContext | null> {
+        try {
+            return await loadContext(token);
+        } catch (error) {
+            if (statusOf(error) === 401) throw error;
+            console.error('Checkout failed', (error as Error).message);
+            await renderPage(
+                res,
+                token,
+                { items: [], profile: EMPTY_PROFILE },
+                502,
+                {
+                    values: readForm(req.body, EMPTY_PROFILE),
+                    errors: {},
+                    formError: GENERIC_ERROR,
+                },
+                true,
+            );
+            return null;
+        }
     }
 
     router.get(
@@ -319,7 +369,8 @@ export function createCheckoutRouter(
     router.post(
         '/discount',
         guarded(async (req, res, token) => {
-            const context = await loadContext(token);
+            const context = await loadPostContext(req, res, token);
+            if (!context) return;
             if (!canCheckOut(context.items)) {
                 res.redirect('/basket');
                 return;
@@ -335,7 +386,8 @@ export function createCheckoutRouter(
     router.post(
         '/',
         guarded(async (req, res, token) => {
-            const context = await loadContext(token);
+            const context = await loadPostContext(req, res, token);
+            if (!context) return;
             if (!canCheckOut(context.items)) {
                 res.redirect('/basket');
                 return;
