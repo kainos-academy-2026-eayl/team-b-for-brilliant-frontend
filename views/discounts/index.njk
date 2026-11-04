@@ -16,6 +16,10 @@
     <a class="button discounts__add" href="/discounts/add">Add Discount</a>
   </div>
 
+  {% if formError %}
+    <p class="alert" role="alert">{{ formError }}</p>
+  {% endif %}
+
   {% if discounts.length %}
     <table class="discounts__table">
       <thead>
@@ -36,8 +40,14 @@
             <td>{{ discount.value }}</td>
             <td>{{ expiry[2] }}/{{ expiry[1] }}/{{ expiry[0] }}</td>
             <td class="discounts__actions">
-              <button type="button" class="button button-link" aria-label="Edit discount {{ discount.code }}">Edit</button>
-              <button type="button" class="button button-link" aria-label="Delete discount {{ discount.code }}">Delete</button>
+              {% if discount.isActive %}
+                <form method="post" action="/discounts/{{ discount.discountID | urlencode }}/deactivate">
+                  <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+                  <button type="submit" class="button button-link" aria-label="Deactivate discount {{ discount.code }}">Deactivate</button>
+                </form>
+              {% else %}
+                <a class="button-link" href="/discounts/{{ discount.discountID | urlencode }}/activate" aria-label="Activate discount {{ discount.code }}">Activate</a>
+              {% endif %}
             </td>
           </tr>
         {% endfor %}
