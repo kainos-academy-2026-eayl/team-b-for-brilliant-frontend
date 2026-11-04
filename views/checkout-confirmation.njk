@@ -1,0 +1,42 @@
+{% extends "main.njk" %}
+
+{% block title %}Order confirmed | B-Brilliant{% endblock %}
+
+{% block head %}
+<style>
+  .total-row { display: flex; justify-content: space-between; margin: 0 0 0.5rem; }
+  .total-final { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border); font-size: 1.25rem; font-weight: 700; }
+  .confirmation-actions { display: grid; gap: 0.75rem; margin-top: 1.5rem; }
+  .confirmation-actions .button { display: block; text-align: center; text-decoration: none; }
+  .order-reference { overflow-wrap: anywhere; }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="card" aria-labelledby="confirmation-heading">
+  <h1 id="confirmation-heading">Thank you, your order is confirmed</h1>
+
+  <p class="alert alert-success" role="status">Payment received (test mode).</p>
+
+  {% if savedAsDefault %}
+    <p class="alert alert-success" role="status">Your default address has been updated.</p>
+  {% endif %}
+  {% if defaultAddressFailed %}
+    <p class="alert" role="alert">Your order was placed, but we could not update your default address. You can change it on your account page.</p>
+  {% endif %}
+
+  <p>Your order number is <strong class="order-reference">{{ order.orderID }}</strong>.</p>
+
+  <p class="total-row"><span>Subtotal</span><span>£{{ order.subtotal }}</span></p>
+  {% if order.discount != '0.00' %}
+    <p class="total-row"><span>Discount</span><span>−£{{ order.discount }}</span></p>
+  {% endif %}
+  <p class="total-row"><span>Delivery</span><span>£{{ order.delivery }}</span></p>
+  <p class="total-row total-final"><span>Total paid</span><span>£{{ order.total }}</span></p>
+
+  <div class="confirmation-actions">
+    <a class="button" href="/account">View my orders</a>
+    <a class="button" href="/products">Keep shopping</a>
+  </div>
+</section>
+{% endblock %}

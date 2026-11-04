@@ -1,0 +1,265 @@
+{% extends "main.njk" %}
+
+{% macro textField(id, label, value, error, autocomplete, inputmode) %}
+  <div class="form-field">
+    <label for="{{ id }}">{{ label }}</label>
+    <input id="{{ id }}" name="{{ id }}" type="text" autocomplete="{{ autocomplete }}"{% if inputmode %} inputmode="{{ inputmode }}"{% endif %} value="{{ value }}"{% if error %} aria-invalid="true" aria-describedby="{{ id }}-error"{% endif %}>
+    {% if error %}<p id="{{ id }}-error" class="field-error">{{ error }}</p>{% endif %}
+  </div>
+{% endmacro %}
+
+{% block title %}Checkout | B-Brilliant{% endblock %}
+
+{% block head %}
+<style>
+  main { max-width: 64rem; }
+  .checkout-title { text-align: center; }
+
+  /* One column on phones, two on wider screens */
+  .checkout-layout { display: grid; gap: 1.5rem; }
+  .checkout-main, .checkout-side { min-width: 0; }
+  @media (min-width: 48rem) {
+    .checkout-layout { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  }
+
+  .checkout-fieldset { min-width: 0; margin: 0 0 1.5rem; }
+  .checkout-fieldset legend { padding: 0 0.25rem; font-size: 1.25rem; font-weight: 700; }
+  .checkout-section-title { margin: 0 0 1rem; font-size: 1.25rem; }
+  .checkout-main > :last-child, .checkout-side > :last-child { margin-bottom: 0; }
+
+  .checkout-items { list-style: none; margin: 0; padding: 0; }
+  .checkout-item { display: flex; gap: 0.75rem; align-items: center; padding: 0.75rem 0; border-top: 1px solid var(--color-border); }
+  .checkout-item:first-child { border-top: 0; }
+  .checkout-item img { width: 4rem; height: 4rem; object-fit: cover; border-radius: 0.25rem; }
+  .checkout-item-info { flex: 1; min-width: 0; }
+  .checkout-item-info p { margin: 0; }
+  .checkout-item-name { font-weight: 600; overflow-wrap: anywhere; }
+  .checkout-item-total { margin: 0; font-weight: 600; }
+
+  .choice { margin: 0 0 1rem; }
+  .choice label { display: flex; gap: 0.5rem; align-items: flex-start; font-weight: 600; }
+  .choice input { width: auto; margin-top: 0.3rem; }
+  .choice address { margin: 0.25rem 0 0 1.5rem; font-style: normal; }
+  .new-address-fields { margin-top: 1rem; }
+  .default-choice label { display: flex; gap: 0.5rem; align-items: center; }
+
+  .test-mode { margin: 0 0 1rem; padding: 0.75rem 1rem; border: 2px dashed var(--color-input-border); border-radius: 0.25rem; }
+
+  .discount-row { display: flex; gap: 0.5rem; }
+  .discount-row input { flex: 1; min-width: 0; }
+  .discount-row .button { width: auto; }
+  .discount-applied { margin: 0.25rem 0 0; font-weight: 600; }
+
+  .total-row { display: flex; justify-content: space-between; margin: 0 0 0.5rem; }
+  .total-final { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border); font-size: 1.25rem; font-weight: 700; }
+  .back-link { margin: 1rem 0 0; text-align: center; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="checkout-title">Checkout</h1>
+
+{% if formError or errorList.length %}
+  <div class="alert" role="alert">
+    {% if formError %}
+      <p>{{ formError }} <a href="/basket">Check your basket</a></p>
+    {% endif %}
+    {% if errorList.length %}
+      <p>Please check the following:</p>
+      <ul>
+        {% for problem in errorList %}
+          <li><a href="#{{ problem.anchor }}">{{ problem.message }}</a></li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+{% endif %}
+
+<form id="checkout-form" method="post" action="/checkout" novalidate>
+  <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+  <div class="checkout-layout">
+    <div class="checkout-main">
+
+      <section class="card checkout-fieldset" aria-labelledby="items-heading">
+        <h2 id="items-heading">Your order</h2>
+        <ul class="checkout-items">
+          {% for item in items %}
+            <li class="checkout-item">
+              {% if item.imageUrl %}
+                <img src="{{ item.imageUrl }}" alt="{{ item.productName }}" width="64" height="64">
+              {% endif %}
+              <div class="checkout-item-info">
+                <p class="checkout-item-name">{{ item.productName }}</p>
+                <p>{{ item.quantityInBasket }}{% if item.unitPrice %} × £{{ item.unitPrice }}{% endif %}</p>
+              </div>
+              <p class="checkout-item-total">{% if item.lineTotal %}£{{ item.lineTotal }}{% endif %}</p>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+
+      <fieldset class="card checkout-fieldset" id="delivery-address">
+        <legend>Delivery address</legend>
+
+        {% if errors.addressChoice %}
+          <p class="field-error">{{ errors.addressChoice }}</p>
+        {% endif %}
+
+        {% if hasSavedAddress %}
+          <div class="choice">
+            <label>
+              <input type="radio" name="addressChoice" value="saved"{% if values.addressChoice == 'saved' %} checked{% endif %}>
+              Use my saved address
+            </label>
+            <address>
+              {% for line in savedAddressLines %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}
+            </address>
+          </div>
+          <div class="choice">
+            <label>
+              <input type="radio" name="addressChoice" value="new"{% if values.addressChoice == 'new' %} checked{% endif %}>
+              Use a different address
+            </label>
+          </div>
+        {% else %}
+          <input type="hidden" name="addressChoice" value="new">
+          <p>You have no complete address saved, so please enter one below.</p>
+        {% endif %}
+
+        <div id="new-address-fields" class="new-address-fields">
+          {{ textField('firstname', 'First name', values.firstname, errors.firstname, 'given-name') }}
+          {{ textField('surname', 'Surname', values.surname, errors.surname, 'family-name') }}
+          {{ textField('addressLine1', 'Address line 1', values.addressLine1, errors.addressLine1, 'address-line1') }}
+          {{ textField('addressLine2', 'Address line 2 (optional)', values.addressLine2, errors.addressLine2, 'address-line2') }}
+          {{ textField('postcode', 'Postcode', values.postcode, errors.postcode, 'postal-code') }}
+          <p class="default-choice">
+            <label>
+              <input type="checkbox" name="setAsDefault" value="yes"{% if values.setAsDefault %} checked{% endif %}>
+              Set this as my default address
+            </label>
+          </p>
+        </div>
+      </fieldset>
+
+    </div>
+
+    <div class="checkout-side">
+      <section class="card checkout-fieldset" id="payment" aria-labelledby="payment-heading">
+        <h2 class="checkout-section-title" id="payment-heading">Payment</h2>
+        <p class="test-mode"><strong>Test mode.</strong> No real payment is taken. Do not enter a real card. Use <strong>4242 4242 4242 4242</strong> to pay successfully. Any other card is declined. Use any future expiry date and any 3 digits.</p>
+        <div class="form-field">
+          <label for="cardNumber">Card number (16 digits)</label>
+          <input id="cardNumber" name="cardNumber" type="text" inputmode="numeric" autocomplete="off" required maxlength="19" pattern="[0-9]{4} [0-9]{4} [0-9]{4} [0-9]{4}" placeholder="4242 4242 4242 4242" value="{{ values.cardNumber }}"{% if errors.cardNumber %} aria-invalid="true" aria-describedby="cardNumber-error"{% endif %}>
+          {% if errors.cardNumber %}<p id="cardNumber-error" class="field-error">{{ errors.cardNumber }}</p>{% endif %}
+        </div>
+        <div class="form-field">
+          <label for="expiry">Expiry date (required)</label>
+          <p id="expiry-hint">Enter the month and year, for example 08/27.</p>
+          <input
+            id="expiry"
+            name="expiry"
+            type="text"
+            required
+            placeholder="MM/YY"
+            maxlength="5"
+            pattern="(0[1-9]|1[0-2])/[0-9]{2}"
+            autocomplete="off"
+            value="{{ values.expiry }}"
+            aria-describedby="expiry-hint{% if errors.expiry %} expiry-error{% endif %}"
+            {% if errors.expiry %}aria-invalid="true"{% endif %}
+          >
+          {% if errors.expiry %}
+            <p id="expiry-error" class="field-error">{{ errors.expiry }}</p>
+          {% endif %}
+        </div>
+        <div class="form-field">
+          <label for="cvv">Security code (3 digits)</label>
+          <input id="cvv" name="cvv" type="text" inputmode="numeric" autocomplete="off" required maxlength="3" pattern="[0-9]{3}" value="{{ values.cvv }}"{% if errors.cvv %} aria-invalid="true" aria-describedby="cvv-error"{% endif %}>
+          {% if errors.cvv %}<p id="cvv-error" class="field-error">{{ errors.cvv }}</p>{% endif %}
+        </div>
+      </section>
+
+    <aside class="card checkout-summary" aria-labelledby="summary-heading">
+      <h2 id="summary-heading">Order total</h2>
+
+      <div class="form-field">
+        <label for="discountCode">Discount code</label>
+        <div class="discount-row">
+          <input id="discountCode" name="discountCode" type="text" autocomplete="off" value="{{ values.discountCode }}"{% if discountError %} aria-invalid="true" aria-describedby="discountCode-error"{% endif %}>
+          <button type="submit" class="button" formaction="/checkout/discount" formnovalidate>Apply</button>
+        </div>
+        {% if discountError %}<p id="discountCode-error" class="field-error">{{ discountError }}</p>{% endif %}
+        {% if discountApplied %}<p class="discount-applied" role="status">Discount code applied</p>{% endif %}
+      </div>
+
+      <p class="total-row"><span>Subtotal</span><span>£{{ quote.subtotal }}</span></p>
+      {% if quote.discount != '0.00' %}
+        <p class="total-row"><span>Discount</span><span>−£{{ quote.discount }}</span></p>
+      {% endif %}
+      <p class="total-row"><span>Delivery</span><span>£{{ quote.delivery }}</span></p>
+      <p class="total-row total-final"><span>Total</span><span>£{{ quote.total }}</span></p>
+
+      <button type="submit" id="pay-button" class="button" data-label="Pay £{{ quote.total }}">Pay £{{ quote.total }}</button>
+      <p class="back-link"><a href="/basket">Back to basket</a></p>
+    </aside>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var form = document.getElementById('checkout-form');
+    var newFields = document.getElementById('new-address-fields');
+    var payButton = document.getElementById('pay-button');
+
+    function restrictDigits(input, limit, groupDigits) {
+      input.addEventListener('input', function () {
+        var digitsBeforeCursor = input.value.slice(0, input.selectionStart).replace(/[^0-9]/g, '').length;
+        var digits = input.value.replace(/[^0-9]/g, '').slice(0, limit);
+        input.value = groupDigits ? digits.replace(/([0-9]{4})(?=[0-9])/g, '$1 ') : digits;
+        var digitPosition = Math.min(digitsBeforeCursor, digits.length);
+        var cursor = digitPosition + (groupDigits && digitPosition > 0 ? Math.floor((digitPosition - 1) / 4) : 0);
+        input.setSelectionRange(cursor, cursor);
+      });
+
+      if (groupDigits) {
+        // Backspace beside a separator should remove a digit rather than recreate the space.
+        input.addEventListener('keydown', function (event) {
+          var start = input.selectionStart;
+          if (event.key === 'Backspace' && start === input.selectionEnd && input.value[start - 1] === ' ') {
+            input.setSelectionRange(start - 2, start);
+          }
+        });
+      }
+    }
+
+    restrictDigits(document.getElementById('cardNumber'), 16, true);
+    restrictDigits(document.getElementById('cvv'), 3, false);
+
+    // Hide the new-address fields while "saved address" is chosen
+    function syncAddress() {
+      var chosen = form.querySelector('input[type="radio"][name="addressChoice"]:checked');
+      newFields.hidden = Boolean(chosen) && chosen.value === 'saved';
+    }
+    form.querySelectorAll('input[type="radio"][name="addressChoice"]').forEach(function (radio) {
+      radio.addEventListener('change', syncAddress);
+    });
+    syncAddress();
+
+    // Stop the customer paying twice by clicking again
+    form.addEventListener('submit', function (event) {
+      if (event.submitter === payButton) {
+        payButton.disabled = true;
+        payButton.textContent = 'Processing payment…';
+      }
+    });
+    window.addEventListener('pageshow', function () {
+      payButton.disabled = false;
+      payButton.textContent = payButton.dataset.label;
+    });
+  })();
+</script>
+{% endblock %}
