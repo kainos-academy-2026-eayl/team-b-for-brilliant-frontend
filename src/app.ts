@@ -38,7 +38,6 @@ import { createHomeRouter } from './routes/home';
 import { createAuthService } from './services/authService';
 import { type BasketService, createBasketService } from './services/basket';
 import { type CheckoutService, createCheckoutService } from './services/checkout';
-import { getDiscounts } from './services/discounts';
 import {
   activateDiscount,
   createDiscount,
