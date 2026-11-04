@@ -35,7 +35,6 @@ import type { Discount } from './models/discount';
 import type { ProductWithPrice } from './models/product';
 import { createHomeRouter } from './routes/home';
 import { createAuthService } from './services/authService';
-import { createDiscount, getDiscounts } from './services/discounts';
 import { type BasketService, createBasketService } from './services/basket';
 import {
   activateDiscount,
