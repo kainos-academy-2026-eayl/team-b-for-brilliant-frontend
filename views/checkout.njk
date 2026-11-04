@@ -53,16 +53,25 @@
   .total-row { display: flex; justify-content: space-between; margin: 0 0 0.5rem; }
   .total-final { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border); font-size: 1.25rem; font-weight: 700; }
   .back-link { margin: 1rem 0 0; text-align: center; }
+  .checkout-summary { display: flex; flex-direction: column; }
+  .checkout-summary > .form-field { order: 1; }
+  .checkout-summary > .total-row, .checkout-summary > .form-message { order: 2; }
+  .checkout-summary > .total-final { order: 3; }
+  .checkout-summary > #pay-button { order: 4; }
+  .checkout-summary > .back-link { order: 5; }
 </style>
 {% endblock %}
 
 {% block content %}
 <h1 class="checkout-title">Checkout</h1>
 
-{% if formError or errorList.length %}
+{% if formError or quoteError or errorList.length %}
   <div class="alert" role="alert">
     {% if formError %}
       <p>{{ formError }} <a href="/basket">Check your basket</a></p>
+    {% endif %}
+    {% if quoteError %}
+      <p>{{ quoteError }} Use Apply to try loading your total again.</p>
     {% endif %}
     {% if errorList.length %}
       <p>Please check the following:</p>
@@ -77,26 +86,31 @@
 
 <form id="checkout-form" method="post" action="/checkout" novalidate>
   <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+  <input type="hidden" name="quotedDiscountCode" value="{{ quotedDiscountCode }}">
 
   <div class="checkout-layout">
     <div class="checkout-main">
 
       <section class="card checkout-fieldset" aria-labelledby="items-heading">
         <h2 id="items-heading">Your order</h2>
-        <ul class="checkout-items">
-          {% for item in items %}
-            <li class="checkout-item">
-              {% if item.imageUrl %}
-                <img src="{{ item.imageUrl }}" alt="{{ item.productName }}" width="64" height="64">
-              {% endif %}
-              <div class="checkout-item-info">
-                <p class="checkout-item-name">{{ item.productName }}</p>
-                <p>{{ item.quantityInBasket }}{% if item.unitPrice %} × £{{ item.unitPrice }}{% endif %}</p>
-              </div>
-              <p class="checkout-item-total">{% if item.lineTotal %}£{{ item.lineTotal }}{% endif %}</p>
-            </li>
-          {% endfor %}
-        </ul>
+        {% if contextAvailable %}
+          <ul class="checkout-items">
+            {% for item in items %}
+              <li class="checkout-item">
+                {% if item.imageUrl %}
+                  <img src="{{ item.imageUrl }}" alt="{{ item.productName }}" width="64" height="64">
+                {% endif %}
+                <div class="checkout-item-info">
+                  <p class="checkout-item-name">{{ item.productName }}</p>
+                  <p>{{ item.quantityInBasket }}{% if item.unitPrice %} × £{{ item.unitPrice }}{% endif %}</p>
+                </div>
+                <p class="checkout-item-total">{% if item.lineTotal %}£{{ item.lineTotal }}{% endif %}</p>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="form-message">Your order items are temporarily unavailable.</p>
+        {% endif %}
       </section>
 
       <fieldset class="card checkout-fieldset" id="delivery-address">
@@ -115,6 +129,9 @@
             <address>
               {% for line in savedAddressLines %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}
             </address>
+            {% if not contextAvailable %}
+              <p class="form-message">Your saved address is temporarily unavailable.</p>
+            {% endif %}
           </div>
           <div class="choice">
             <label>
@@ -155,7 +172,6 @@
         </div>
         <div class="form-field">
           <label for="expiry">Expiry date (required)</label>
-          <p id="expiry-hint">Enter the month and year, for example 08/27.</p>
           <input
             id="expiry"
             name="expiry"
@@ -166,7 +182,7 @@
             pattern="(0[1-9]|1[0-2])/[0-9]{2}"
             autocomplete="off"
             value="{{ values.expiry }}"
-            aria-describedby="expiry-hint{% if errors.expiry %} expiry-error{% endif %}"
+            {% if errors.expiry %}aria-describedby="expiry-error"{% endif %}
             {% if errors.expiry %}aria-invalid="true"{% endif %}
           >
           {% if errors.expiry %}
@@ -182,14 +198,16 @@
 
     <aside class="card checkout-summary" aria-labelledby="summary-heading">
       <h2 id="summary-heading">Order total</h2>
+      <button type="submit" id="pay-button" class="button" data-available="{{ 'true' if canPay else 'false' }}" data-label="{% if canPay %}Pay £{{ quote.total }}{% else %}Pay unavailable{% endif %}"{% if not canPay %} disabled{% endif %}>{% if canPay %}Pay £{{ quote.total }}{% else %}Pay unavailable{% endif %}</button>
 
       <div class="form-field">
         <label for="discountCode">Discount code</label>
         <div class="discount-row">
-          <input id="discountCode" name="discountCode" type="text" autocomplete="off" value="{{ values.discountCode }}"{% if discountError %} aria-invalid="true" aria-describedby="discountCode-error"{% endif %}>
-          <button type="submit" class="button" formaction="/checkout/discount" formnovalidate>Apply</button>
+          <input id="discountCode" name="discountCode" type="text" autocomplete="off" value="{{ values.discountCode }}" data-quoted-code="{{ quotedDiscountCode }}"{% if discountError %} aria-invalid="true" aria-describedby="discountCode-error"{% endif %}>
+          <button type="submit" id="apply-discount" class="button" formaction="/checkout/discount" formnovalidate>Apply</button>
         </div>
         {% if discountError %}<p id="discountCode-error" class="field-error">{{ discountError }}</p>{% endif %}
+        <p id="discount-refresh-message" class="form-message" role="status" hidden>Apply the discount code and review the updated total before paying.</p>
         {% if discountApplied %}<p class="discount-applied" role="status">Discount code applied</p>{% endif %}
       </div>
 
@@ -201,10 +219,9 @@
         <p class="total-row"><span>Delivery</span><span>£{{ quote.delivery }}</span></p>
         <p class="total-row total-final"><span>Total</span><span>£{{ quote.total }}</span></p>
       {% else %}
-        <p role="status">Order totals are unavailable.</p>
+        <p class="form-message" role="status">Order total unavailable until checkout details can be loaded.</p>
       {% endif %}
 
-      <button type="submit" id="pay-button" class="button"{% if quote %} data-label="Pay £{{ quote.total }}" data-quote-available="true">Pay £{{ quote.total }}{% else %} data-label="Payment unavailable" data-quote-available="false" disabled>Payment unavailable{% endif %}</button>
       <p class="back-link"><a href="/basket">Back to basket</a></p>
     </aside>
     </div>
@@ -218,6 +235,8 @@
     var form = document.getElementById('checkout-form');
     var newFields = document.getElementById('new-address-fields');
     var payButton = document.getElementById('pay-button');
+    var discountInput = document.getElementById('discountCode');
+    var discountRefreshMessage = document.getElementById('discount-refresh-message');
 
     function restrictDigits(input, limit, groupDigits) {
       input.addEventListener('input', function () {
@@ -243,6 +262,15 @@
     restrictDigits(document.getElementById('cardNumber'), 16, true);
     restrictDigits(document.getElementById('cvv'), 3, false);
 
+    function syncDiscountState() {
+      var isStale = discountInput.value.trim() !== discountInput.dataset.quotedCode;
+      payButton.disabled = payButton.dataset.available !== 'true' || isStale;
+      discountRefreshMessage.hidden = !isStale;
+    }
+
+    discountInput.addEventListener('input', syncDiscountState);
+    syncDiscountState();
+
     // Hide the new-address fields while "saved address" is chosen
     function syncAddress() {
       var chosen = form.querySelector('input[type="radio"][name="addressChoice"]:checked');
@@ -261,8 +289,8 @@
       }
     });
     window.addEventListener('pageshow', function () {
-      payButton.disabled = payButton.dataset.quoteAvailable !== 'true';
       payButton.textContent = payButton.dataset.label;
+      syncDiscountState();
     });
   })();
 </script>

@@ -42,7 +42,6 @@ const FIELD_ORDER: FieldName[] = [
 
 const UK_POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i;
 const GENERIC_ERROR = 'We could not complete your order right now. Please try again.';
-const QUOTE_ERROR = 'We could not refresh your order total right now. Please try again before paying.';
 
 type AddressChoice = 'saved' | 'new';
 
@@ -66,10 +65,10 @@ interface PageView {
     formError: string | null;
 }
 
-interface CheckoutContext {
-    items: BasketItem[];
-    profile: Profile;
-}
+type CheckoutContext =
+    | { items: BasketItem[]; profile: Profile; available: true }
+    | { items: BasketItem[]; profile: null; available: false };
+type AvailableCheckoutContext = Extract<CheckoutContext, { available: true }>;
 
 function isFieldName(name: string): name is FieldName {
     return name in FIELD_MESSAGES;
@@ -106,21 +105,15 @@ function defaultValues(profile: Profile): FormValues {
     };
 }
 
-const EMPTY_PROFILE: Profile = {
-    email: '',
-    firstname: null,
-    surname: null,
-    addressLine1: null,
-    addressLine2: null,
-    postcode: null,
-};
-
-function readForm(body: unknown, profile: Profile): FormValues {
+function readForm(body: unknown, profile?: Profile): FormValues {
     const source = (body ?? {}) as Record<string, unknown>;
-    const read = (name: string) => String(source[name] ?? '').trim();
+    const read = (name: string) => (typeof source[name] === 'string' ? source[name].trim() : '');
 
     return {
-        addressChoice: hasSavedAddress(profile) && read('addressChoice') !== 'new' ? 'saved' : 'new',
+        addressChoice:
+            read('addressChoice') === 'saved' && (!profile || hasSavedAddress(profile))
+                ? 'saved'
+                : 'new',
         firstname: read('firstname'),
         surname: read('surname'),
         addressLine1: read('addressLine1'),
@@ -257,29 +250,46 @@ export function createCheckoutRouter(
         };
     }
 
-    async function loadContext(token: string): Promise<CheckoutContext> {
+    async function loadContext(token: string): Promise<AvailableCheckoutContext> {
         const [{ items }, profile] = await Promise.all([
             basket.getBasket(token),
             profiles.getProfile(token),
         ]);
-        return { items, profile };
+        return { items, profile, available: true };
     }
 
     // A bad discount code must not stop the page loading, so fall back to a quote without it
     async function quoteFor(
         token: string,
         discountCode: string,
-    ): Promise<{ quote: Quote; discountError: string | null }> {
-        if (!discountCode) {
-            return { quote: await checkout.getQuote(token, ''), discountError: null };
-        }
-        try {
-            return { quote: await checkout.getQuote(token, discountCode), discountError: null };
-        } catch (error) {
-            if (error instanceof CheckoutError && error.status === 400) {
-                return { quote: await checkout.getQuote(token, ''), discountError: error.message };
+    ): Promise<{ quote: Quote | null; discountError: string | null; failure: unknown | null }> {
+        let discountError: string | null = null;
+
+        if (discountCode) {
+            try {
+                return {
+                    quote: await checkout.getQuote(token, discountCode),
+                    discountError: null,
+                    failure: null,
+                };
+            } catch (error) {
+                if (statusOf(error) === 401) throw error;
+                if (!(error instanceof CheckoutError) || error.status !== 400) {
+                    return { quote: null, discountError: null, failure: error };
+                }
+                discountError = error.message;
             }
-            throw error;
+        }
+
+        try {
+            return {
+                quote: await checkout.getQuote(token, ''),
+                discountError,
+                failure: null,
+            };
+        } catch (error) {
+            if (statusOf(error) === 401) throw error;
+            return { quote: null, discountError, failure: error };
         }
     }
 
@@ -289,37 +299,51 @@ export function createCheckoutRouter(
         context: CheckoutContext,
         status: number,
         view: PageView,
-        quoteUnavailable = false,
     ) {
-        let quote: Quote | null = null;
-        let discountError: string | null = null;
-        if (!quoteUnavailable) {
-            try {
-                ({ quote, discountError } = await quoteFor(token, view.values.discountCode));
-            } catch (error) {
-                if (statusOf(error) === 401) throw error;
-                console.error('Checkout quote failed', (error as Error).message);
-                quoteUnavailable = true;
-            }
+        const quoteResult = context.available
+            ? await quoteFor(token, view.values.discountCode)
+            : { quote: null, discountError: null, failure: null };
+        const { quote, discountError, failure } = quoteResult;
+        const quoteError = context.available
+            ? quote
+                ? null
+                : 'Your order total is unavailable. Try again before paying.'
+            : 'Your checkout details could not be loaded, so your order total is unavailable.';
+
+        if (failure) {
+            console.error(
+                'Checkout quote unavailable',
+                failure instanceof Error ? failure.message : 'Unknown error',
+            );
         }
 
         res.set('Cache-Control', 'no-store');
-        res.status(discountError && status === 200 ? 400 : status).render('checkout.njk', {
+        const responseStatus = quoteError ? 502 : discountError && status === 200 ? 400 : status;
+        res.status(responseStatus).render('checkout.njk', {
             items: context.items,
             quote,
-            hasSavedAddress: hasSavedAddress(context.profile),
-            savedAddressLines: savedAddressLines(context.profile),
+            quoteError,
+            canPay:
+                context.available &&
+                canCheckOut(context.items) &&
+                Boolean(quote) &&
+                !discountError,
+            quotedDiscountCode: quote && !discountError ? view.values.discountCode : '',
+            contextAvailable: context.available,
+            hasSavedAddress: context.available
+                ? hasSavedAddress(context.profile)
+                : view.values.addressChoice === 'saved',
+            savedAddressLines: context.available ? savedAddressLines(context.profile) : [],
             // The card number and security code are never sent back to the browser
             values: { ...view.values, cardNumber: '', cvv: '' },
             errors: view.errors,
             errorList: toErrorList(view.errors),
-            formError: view.formError ?? (quoteUnavailable ? QUOTE_ERROR : null),
+            formError: view.formError,
             discountError,
             discountApplied:
                 Boolean(view.values.discountCode) &&
                 !discountError &&
-                quote !== null &&
-                quote.discount !== '0.00',
+                quote?.discount !== '0.00',
         });
     }
 
@@ -327,23 +351,24 @@ export function createCheckoutRouter(
         req: Request,
         res: Response,
         token: string,
-    ): Promise<CheckoutContext | null> {
+    ): Promise<{ context: AvailableCheckoutContext; values: FormValues } | null> {
+        const submittedValues = readForm(req.body);
         try {
-            return await loadContext(token);
+            const context = await loadContext(token);
+            return { context, values: readForm(req.body, context.profile) };
         } catch (error) {
             if (statusOf(error) === 401) throw error;
-            console.error('Checkout failed', (error as Error).message);
+
+            console.error(
+                'Checkout details could not be loaded',
+                error instanceof Error ? error.message : 'Unknown error',
+            );
             await renderPage(
                 res,
                 token,
-                { items: [], profile: EMPTY_PROFILE },
+                { items: [], profile: null, available: false },
                 502,
-                {
-                    values: readForm(req.body, EMPTY_PROFILE),
-                    errors: {},
-                    formError: GENERIC_ERROR,
-                },
-                true,
+                { values: submittedValues, errors: {}, formError: GENERIC_ERROR },
             );
             return null;
         }
@@ -369,14 +394,15 @@ export function createCheckoutRouter(
     router.post(
         '/discount',
         guarded(async (req, res, token) => {
-            const context = await loadPostContext(req, res, token);
-            if (!context) return;
+            const loaded = await loadPostContext(req, res, token);
+            if (!loaded) return;
+            const { context, values } = loaded;
             if (!canCheckOut(context.items)) {
                 res.redirect('/basket');
                 return;
             }
             await renderPage(res, token, context, 200, {
-                values: readForm(req.body, context.profile),
+                values,
                 errors: {},
                 formError: null,
             });
@@ -386,14 +412,27 @@ export function createCheckoutRouter(
     router.post(
         '/',
         guarded(async (req, res, token) => {
-            const context = await loadPostContext(req, res, token);
-            if (!context) return;
+            const loaded = await loadPostContext(req, res, token);
+            if (!loaded) return;
+            const { context, values } = loaded;
             if (!canCheckOut(context.items)) {
                 res.redirect('/basket');
                 return;
             }
 
-            const values = readForm(req.body, context.profile);
+            const quotedDiscountCode =
+                typeof req.body?.quotedDiscountCode === 'string'
+                    ? req.body.quotedDiscountCode.trim()
+                    : '';
+            if (values.discountCode !== quotedDiscountCode) {
+                await renderPage(res, token, context, 400, {
+                    values,
+                    errors: {},
+                    formError: 'The discount code changed. Review the updated total before paying.',
+                });
+                return;
+            }
+
             const errors = validate(values);
             if (Object.keys(errors).length > 0) {
                 await renderPage(res, token, context, 400, { values, errors, formError: null });
