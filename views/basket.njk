@@ -2,53 +2,143 @@
 
 {% block title %}Your basket | B-Brilliant{% endblock %}
 
+{% block head %}
+<style>
+  main { max-width: 64rem; }
+
+  .basket-title { text-align: center; }
+
+  /* One column on phones, two equal halves on wider screens */
+  .basket-layout { display: grid; gap: 1.5rem; }
+  @media (min-width: 48rem) {
+    .basket-layout { grid-template-columns: 1fr 1fr; align-items: start; }
+  }
+
+  .basket-items { list-style: none; margin: 0; padding: 0; }
+
+  .basket-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .basket-item:first-child { padding-top: 0; }
+
+  .basket-item img { flex: none; object-fit: cover; border-radius: 0.25rem; }
+
+  .basket-item-info { flex: 1; min-width: 0; }
+  .basket-item-info h2 { margin: 0 0 0.25rem; font-size: 1.1rem; }
+  .basket-item-info p { margin: 0 0 0.5rem; }
+
+  .basket-item-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+
+  .quantity-control { display: flex; align-items: center; gap: 0.5rem; }
+  .quantity-control form { margin: 0; }
+  .quantity-value { min-width: 1.5rem; text-align: center; font-weight: 600; }
+
+  .quantity-button, .remove-button {
+    padding: 0.35rem 0.75rem;
+    font: inherit;
+    font-weight: 600;
+    color: var(--color-text);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: 0.25rem;
+    cursor: pointer;
+  }
+  .quantity-button:hover:not(:disabled),
+  .remove-button:hover:not(:disabled) { border-color: var(--color-primary); }
+  .quantity-button:disabled { color: var(--color-muted); cursor: not-allowed; opacity: 0.6; }
+  .quantity-button:focus-visible,
+  .remove-button:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+
+  .keep-shopping { margin: 1.5rem 0 0; }
+  .keep-shopping .button { display: inline-block; width: auto; padding: 0.7rem 2rem; text-decoration: none; }
+
+  .basket-summary { padding: 1rem; border: 1px solid var(--color-border); border-radius: 0.25rem; }
+  .basket-total { display: flex; justify-content: space-between; margin: 0 0 1rem; font-size: 1.25rem; font-weight: 700; }
+  /* Reserved space for the Checkout button that will be added later */
+  .checkout-slot { min-height: 3rem; }
+</style>
+{% endblock %}
+
 {% block content %}
-<section class="card">
-  <h1>Your basket</h1>
+<h1 class="basket-title">Your Basket</h1>
 
-  {% if error %}
-    <p class="alert" role="alert">{{ error }}</p>
-  {% endif %}
+{% if error %}
+  <p class="alert" role="alert">{{ error }}</p>
+{% endif %}
 
-  {% set lowStockItems = items | selectattr('lowStock') | list %}
-  {% if lowStockItems.length %}
-    <div class="alert" role="status">
-      <p>Some items in your basket are running low:</p>
-      <ul>
-        {% for item in lowStockItems %}
-          <li>{{ item.productName }}: only {{ item.stockAvailable }} left</li>
-        {% endfor %}
-      </ul>
-    </div>
-  {% endif %}
+{% for notice in notices %}
+  <p class="alert" role="status">{{ notice }}</p>
+{% endfor %}
 
-  {% if items.length == 0 %}
-    <p>Your basket is empty. <a href="/products">Browse products</a>.</p>
-  {% else %}
+{% set lowStockItems = items | selectattr('lowStock') | list %}
+{% if lowStockItems.length %}
+  <div class="alert" role="status">
+    <p>Some items in your basket are running low:</p>
     <ul>
+      {% for item in lowStockItems %}
+        <li>{{ item.productName }}: only {{ item.stockAvailable }} left</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+{% if items.length == 0 %}
+  <p>Your basket is empty. <a href="/products">Browse products</a>.</p>
+{% else %}
+  <div class="basket-layout">
+    <div>
+    <ul class="basket-items">
       {% for item in items %}
-        <li>
-          <h2>{{ item.productName }}</h2>
-          {% if not item.isQuantityAvailable %}
-            <p class="alert">Only {{ item.stockAvailable }} available. Reduce the quantity to continue.</p>
+        <li class="basket-item">
+          {% if item.imageUrl %}
+            <img src="{{ item.imageUrl }}" alt="{{ item.productName }}" width="96" height="96">
           {% endif %}
 
-          <form method="post" action="/basket/items/{{ item.productID | urlencode }}/update" novalidate>
-            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-            <div class="form-field">
-              <label for="quantity-{{ item.productID }}">Quantity of {{ item.productName }}</label>
-              <input id="quantity-{{ item.productID }}" name="quantity" type="number" min="0" inputmode="numeric" value="{{ item.quantityInBasket }}">
-            </div>
-            <button type="submit" class="button">Update quantity</button>
-          </form>
+          <div class="basket-item-info">
+            <h2>{{ item.productName }}</h2>
+            <p>
+              {% if item.unitPrice %}£{{ item.unitPrice }} each, £{{ item.lineTotal }} in total{% else %}Price unavailable{% endif %}
+            </p>
+            {% if not item.isQuantityAvailable %}
+              <p class="alert">Only {{ item.stockAvailable }} available. Reduce the quantity to continue.</p>
+            {% endif %}
 
-          <form method="post" action="/basket/items/{{ item.productID | urlencode }}/remove">
-            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-            <button type="submit" class="button-link" aria-label="Remove {{ item.productName }} from basket">Remove</button>
-          </form>
+            <div class="basket-item-actions">
+              <div class="quantity-control">
+                <form method="post" action="/basket/items/{{ item.productID | urlencode }}/update">
+                  <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+                  <input type="hidden" name="quantity" value="{{ item.quantityInBasket - 1 }}">
+                  <button type="submit" class="quantity-button" aria-label="Decrease quantity of {{ item.productName }}"{% if item.quantityInBasket <= 1 %} disabled{% endif %}>−</button>
+                </form>
+
+                <span class="quantity-value" aria-label="Quantity of {{ item.productName }}: {{ item.quantityInBasket }}">{{ item.quantityInBasket }}</span>
+
+                <form method="post" action="/basket/items/{{ item.productID | urlencode }}/update">
+                  <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+                  <input type="hidden" name="quantity" value="{{ item.quantityInBasket + 1 }}">
+                  <button type="submit" class="quantity-button" aria-label="Increase quantity of {{ item.productName }}"{% if item.quantityInBasket >= item.stockAvailable %} disabled{% endif %}>+</button>
+                </form>
+              </div>
+
+              <form method="post" action="/basket/items/{{ item.productID | urlencode }}/remove">
+                <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+                <button type="submit" class="remove-button" aria-label="Remove {{ item.productName }} from basket">Remove</button>
+              </form>
+            </div>
+          </div>
         </li>
       {% endfor %}
     </ul>
-  {% endif %}
-</section>
+    <p class="keep-shopping"><a class="button" href="/products">Keep shopping</a></p>
+    </div>
+
+    <aside class="basket-summary" aria-label="Basket summary">
+      <p class="basket-total"><span>Total</span><span>£{{ total }}</span></p>
+      <div class="checkout-slot"></div>
+    </aside>
+  </div>
+{% endif %}
 {% endblock %}

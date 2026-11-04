@@ -184,6 +184,37 @@ describe('product editor template', () => {
     expect(html).not.toContain('Choose replacement images')
   })
 
+  it('renders a CSRF-protected basket form for the customer product page', () => {
+    const html = environment.render('products/detail.njk', {
+      product,
+      csrfToken: 'test-csrf-token',
+    })
+    expect(html).toContain(
+      '<form method="post" action="/basket/items" class="product-detail__basket">',
+    )
+    expect(html).toContain('name="_csrf" value="test-csrf-token"')
+    expect(html).toContain('name="productID" value="p1"')
+    expect(html).toContain(
+      '<button type="submit" class="button">Add to basket</button>',
+    )
+  })
+
+  it('keeps preview basket controls inert and avoids adding a nested purchase form', () => {
+    const preview = environment.render('products/detail.njk', {
+      product,
+      isProductPreview: true,
+    })
+    expect(preview).toContain('<div class="product-detail__basket">')
+    expect(preview).toContain(
+      '<button type="button" class="button">Add to basket</button>',
+    )
+    expect(preview).not.toContain('<form')
+    expect(preview).not.toContain('name="productID"')
+    const editor = render()
+    expect(editor).not.toContain('action="/basket/items"')
+    expect(editor.match(/<form\b/g)).toHaveLength(1)
+  })
+
   it('shares the product article with the customer page without adding editor controls there', () => {
     const html = environment.render('products/show.njk', { product })
     const article = environment.render('products/detail.njk', { product })

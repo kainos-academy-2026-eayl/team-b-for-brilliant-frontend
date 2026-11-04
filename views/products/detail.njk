@@ -50,7 +50,13 @@
     {% else %}
       <p class="product__price product__price--unavailable"{% if isProductPreview %} data-product-price{% endif %}>Price unavailable</p>
     {% endif %}
-    <div class="product-detail__basket">
+    {% if isProductPreview %}
+      <div class="product-detail__basket">
+    {% else %}
+      <form method="post" action="/basket/items" class="product-detail__basket">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <input type="hidden" name="productID" value="{{ product.productID }}">
+    {% endif %}
       <div class="form-field">
         <label for="product-quantity">Quantity</label>
         <select id="product-quantity" name="quantity"{% if product.quantity <= 0 %} disabled{% endif %}>
@@ -64,8 +70,12 @@
           {% endif %}
         </select>
       </div>
-      <button type="button" class="button"{% if product.quantity <= 0 %} disabled{% endif %}>Add to basket</button>
-    </div>
+      <button type="{{ 'button' if isProductPreview else 'submit' }}" class="button"{% if product.quantity <= 0 %} disabled{% endif %}>Add to basket</button>
+    {% if isProductPreview %}
+      </div>
+    {% else %}
+      </form>
+    {% endif %}
     {% if product.description or isProductPreview %}
       <h2{% if isProductPreview %} data-product-description-heading{% endif %}{% if not product.description %} hidden{% endif %}>Description</h2>
       <p class="product-detail__description"{% if not product.description %} hidden{% endif %}>{{ product.description }}</p>

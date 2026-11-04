@@ -276,6 +276,50 @@ describe('admin product editing', () => {
     expect(fetchProduct).toHaveBeenCalledExactlyOnceWith('draft-1')
   })
 
+  it('submits the customer product basket form using the verified token and selected quantity', async () => {
+    const addItem = vi.fn(async () => {})
+    const app = createTestApp({
+      fetchProduct: async () => product,
+      tokenClient: {
+        getIdentity: async () => ({ customerId: 'customer-1', accessLevel: 0 }),
+        logout: async () => {},
+      },
+      basketService: {
+        getBasket: async () => ({ items: [], notices: [] }),
+        addItem,
+        setQuantity: async () => {},
+        removeItem: async () => {},
+      },
+    })
+    const customer = request.agent(app)
+    const cookie = 'access_token=test-customer-token'
+    const detail = await customer
+      .get('/products/p1')
+      .set('Cookie', cookie)
+      .expect(200)
+    expect(detail.text).toContain(
+      '<form method="post" action="/basket/items" class="product-detail__basket">',
+    )
+    const productID = /name="productID" value="([^"]+)"/.exec(detail.text)?.[1]
+    expect(productID).toBe('p1')
+    const response = await customer
+      .post('/basket/items')
+      .set('Cookie', cookie)
+      .type('form')
+      .send({
+        _csrf: token(detail.text),
+        productID,
+        quantity: '2',
+      })
+      .expect(302)
+    expect(response.headers.location).toBe('/basket')
+    expect(addItem).toHaveBeenCalledExactlyOnceWith(
+      'test-customer-token',
+      'p1',
+      2,
+    )
+  })
+
   it('requires one publication choice and derives exclusive flags for both form and JSON saves', async () => {
     const { agent, service, signIn } = setup()
     await signIn()

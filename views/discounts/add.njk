@@ -3,5 +3,50 @@
 {% block title %}Add Discount | B-Brilliant{% endblock %}
 
 {% block content %}
-  <h1>Add Discount</h1>
+  <section class="card">
+    <h1>Add Discount</h1>
+    <p class="card-subtitle">All fields are required.</p>
+
+    {% if formError %}
+      <p class="alert" role="alert">{{ formError }}</p>
+    {% elif errors.code or errors.type or errors.value or errors.expiryDate %}
+      <p class="alert" role="alert">Please fix the problems below and try again.</p>
+    {% endif %}
+
+    <form method="post" action="/discounts/add" novalidate>
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+      <div class="form-field">
+        <label for="code">Discount code</label>
+        <input id="code" name="code" type="text" autocomplete="off" required maxlength="30" value="{{ values.code }}" aria-describedby="code-hint code-error"{% if errors.code %} aria-invalid="true"{% endif %}>
+        <p id="code-hint" class="form-message">5 to 15 letters, numbers, hyphens or underscores, for example SUMMER10.</p>
+        <p id="code-error" class="field-error">{{ errors.code }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="type">Discount type</label>
+        <select id="type" name="type" required aria-describedby="type-error"{% if errors.type %} aria-invalid="true"{% endif %}>
+          <option value="">Select a discount type</option>
+          <option value="percentage"{% if values.type == 'percentage' %} selected{% endif %}>Percentage (%)</option>
+          <option value="amount"{% if values.type == 'amount' %} selected{% endif %}>Raw amount (£)</option>
+        </select>
+        <p id="type-error" class="field-error">{{ errors.type }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="value">Value</label>
+        <input id="value" name="value" type="text" inputmode="decimal" autocomplete="off" required maxlength="10" value="{{ values.value }}" aria-describedby="value-hint value-error"{% if errors.value %} aria-invalid="true"{% endif %}>
+        <p id="value-hint" class="form-message">Percentage: a whole number from 0 to 100. Raw amount: a positive number, for example 5.50.</p>
+        <p id="value-error" class="field-error">{{ errors.value }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="expiryDate">Expiry date</label>
+        <input id="expiryDate" name="expiryDate" type="date" required value="{{ values.expiryDate }}" aria-describedby="expiryDate-error"{% if errors.expiryDate %} aria-invalid="true"{% endif %}>
+        <p id="expiryDate-error" class="field-error">{{ errors.expiryDate }}</p>
+      </div>
+
+      <button type="submit" class="button">Save Discount</button>
+    </form>
+  </section>
 {% endblock %}
