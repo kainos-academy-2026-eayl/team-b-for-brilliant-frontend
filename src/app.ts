@@ -35,8 +35,8 @@ import type { Discount } from './models/discount';
 import type { ProductWithPrice } from './models/product';
 import { createHomeRouter } from './routes/home';
 import { createAuthService } from './services/authService';
-import { type BasketService, createMockBasketService } from './services/basket';
-import { getDiscounts } from './services/discounts';
+import { createDiscount, getDiscounts } from './services/discounts';
+import { type BasketService, createBasketService } from './services/basket';
 import { fetchImage, type ProxiedImage } from './services/images';
 import {
   getApiBaseUrl,
@@ -68,6 +68,7 @@ interface AppOptions {
   fetchProxiedImage?: (fileName: string) => Promise<ProxiedImage | null>;
   fetchDiscounts?: (token?: string) => Promise<Discount[]>;
   productEditorService?: ProductEditorService;
+  saveDiscount?: typeof createDiscount;
 }
 
 export function createApp(options: AppOptions = {}): Express {
@@ -141,7 +142,10 @@ export function createApp(options: AppOptions = {}): Express {
   );
   app.use(
     '/discounts',
-    createDiscountsRouter(options.fetchDiscounts ?? getDiscounts),
+    createDiscountsRouter(
+      options.fetchDiscounts ?? getDiscounts,
+      options.saveDiscount ?? createDiscount,
+    ),
   );
   app.use(
     '/images',
@@ -170,7 +174,7 @@ export function createApp(options: AppOptions = {}): Express {
   app.use(
     '/basket',
     requireAuth,
-    createBasketRouter(options.basketService ?? createMockBasketService()),
+    createBasketRouter(options.basketService ?? createBasketService()),
   );
   app.use(
     '/admin/login',
