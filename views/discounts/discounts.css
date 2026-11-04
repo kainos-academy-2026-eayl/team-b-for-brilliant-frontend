@@ -37,3 +37,7 @@
 .discounts__actions .button + .button {
   margin-left: 1rem;
 }
+
+.discounts__actions form {
+  display: inline;
+}

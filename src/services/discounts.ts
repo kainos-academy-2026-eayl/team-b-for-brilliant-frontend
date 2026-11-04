@@ -15,7 +15,10 @@ export class DiscountSaveError extends Error {
   }
 }
 
-const BACKEND_TYPES = { percentage: 'PERCENTAGE', amount: 'AMOUNT_OFF' } as const;
+const BACKEND_TYPES = {
+  percentage: 'PERCENTAGE',
+  amount: 'AMOUNT_OFF',
+} as const;
 
 export async function createDiscount(
   token: string | undefined,
@@ -40,6 +43,69 @@ export async function createDiscount(
   if (!response.ok) {
     throw new DiscountSaveError(response.status);
   }
+}
+
+async function postDiscountAction(
+  token: string | undefined,
+  discountID: string,
+  action: 'activate' | 'deactivate',
+  body: object | undefined,
+  baseUrl: string,
+  fetchFn: typeof fetch,
+): Promise<void> {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  };
+  if (token) headers.Authorization = ['Bearer', token].join(' ');
+
+  const response = await fetchFn(
+    new URL(`/discounts/${encodeURIComponent(discountID)}/${action}`, baseUrl),
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body ?? {}),
+      signal: AbortSignal.timeout(5000),
+      cache: 'no-store',
+    },
+  );
+
+  if (!response.ok) {
+    throw new DiscountSaveError(response.status);
+  }
+}
+
+export function deactivateDiscount(
+  token: string | undefined,
+  discountID: string,
+  baseUrl: string = getApiBaseUrl(),
+  fetchFn: typeof fetch = fetch,
+): Promise<void> {
+  return postDiscountAction(
+    token,
+    discountID,
+    'deactivate',
+    undefined,
+    baseUrl,
+    fetchFn,
+  );
+}
+
+export function activateDiscount(
+  token: string | undefined,
+  discountID: string,
+  expiryDate: string,
+  baseUrl: string = getApiBaseUrl(),
+  fetchFn: typeof fetch = fetch,
+): Promise<void> {
+  return postDiscountAction(
+    token,
+    discountID,
+    'activate',
+    { expiryDate },
+    baseUrl,
+    fetchFn,
+  );
 }
 
 export async function getDiscounts(

@@ -78,6 +78,30 @@ function validateExpiryDate(
   return undefined
 }
 
+export function todayIso(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+// A discount stops being usable on its expiry date, so deactivating sets that date to today.
+export function isDiscountActive(
+  expiryDate: string,
+  today: string = todayIso(),
+): boolean {
+  return expiryDate.slice(0, 10) > today
+}
+
+export function validateReactivationDate(
+  expiryDate: string,
+  today: string = todayIso(),
+): string | undefined {
+  const error = validateExpiryDate(expiryDate, today)
+  if (error) return error
+  if (expiryDate === today) {
+    return 'The expiry date must be after today for the discount to be active.'
+  }
+  return undefined
+}
+
 export function validateDiscount(
   values: DiscountFormValues,
   today: string = new Date().toISOString().slice(0, 10),
