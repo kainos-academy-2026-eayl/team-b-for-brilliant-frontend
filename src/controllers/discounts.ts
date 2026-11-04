@@ -70,7 +70,7 @@ export function createDiscountsRouter(
     }
 
     try {
-      await saveDiscount(req.auth?.accessToken, {
+      await saveDiscount(req.session.accountToken, {
         code: values.code,
         type: values.type as 'percentage' | 'amount',
         value: values.value,

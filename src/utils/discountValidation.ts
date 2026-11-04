@@ -34,8 +34,8 @@ export function readDiscountForm(body: unknown): DiscountFormValues {
 
 function validateCode(code: string): string | undefined {
   if (!code) return 'Enter a discount code.'
-  if (code.length < 3 || code.length > 30) {
-    return 'The discount code must be between 3 and 30 characters long.'
+  if (code.length < 5 || code.length > 15) {
+    return 'The discount code must be between 5 and 15 characters long.'
   }
   if (!/^[A-Za-z0-9_-]+$/.test(code)) {
     return 'The discount code can only contain letters, numbers, hyphens and underscores, with no spaces.'
