@@ -1,66 +1,103 @@
 {% extends "main.njk" %}
 
-{% block title %}Products | Team B for Brilliant{% endblock %}
+{% block title %}Products | B-Brilliant{% endblock %}
+
+{% block main_class %}catalogue{% endblock %}
 
 {% block head %}
   <style>
     {% include "products/products.css" %}
   </style>
+  <link rel="stylesheet" href="/static/catalogue.css">
 {% endblock %}
 
 {% block content %}
-  <h1>Products</h1>
-
-  {# Preserve the category when submitting a product-name search. #}
-  <form class="products-search products-name-search" role="search" aria-label="Search products by name" method="get" action="/products">
-    {% if categoryFilter %}
-      <input type="hidden" name="category" value="{{ categoryFilter }}">
-    {% endif %}
-    <div class="form-field">
-      <label for="product-name-search">Search products</label>
-      <input type="search" id="product-name-search" name="q" value="{{ searchQuery }}" placeholder="Enter a product name" aria-describedby="product-name-search-hint">
-      <p id="product-name-search-hint" class="products-search__hint">Enter all or part of a product name.</p>
+  <section class="catalogue__hero" aria-labelledby="catalogue-title">
+    <div>
+      <p class="catalogue__eyebrow">The everyday collection</p>
+      <h1 id="catalogue-title">Products</h1>
+      <p class="catalogue__description">Find your next favourite. Explore the collection, search by name or browse by category.</p>
     </div>
-    <button type="submit" class="button">Search</button>
-    {% if searchQuery and not categoryFilter %}
-      <a class="products-search__clear" href="/products">Clear search</a>
-    {% endif %}
-  </form>
+    <svg class="catalogue__hero-art" viewBox="0 0 280 180" aria-hidden="true" focusable="false">
+      <circle class="catalogue__art-soft" cx="153" cy="90" r="77"/>
+      <rect class="catalogue__art-outline" x="48" y="46" width="93" height="114" rx="16" transform="rotate(-13 94 103)"/>
+      <rect class="catalogue__art-tile" x="117" y="23" width="103" height="124" rx="16" transform="rotate(12 169 85)"/>
+      <circle class="catalogue__art-circle" cx="168" cy="75" r="22"/>
+      <path class="catalogue__art-line" d="m148 116 38 8M66 79l35-8m-31 25 43-10"/>
+      <path class="catalogue__art-spark" d="m235 121 4 12 13 4-13 4-4 12-4-12-12-4 12-4Z"/>
+    </svg>
+  </section>
 
-  <form class="products-search" role="search" aria-label="Search products by category" method="get" action="/products">
-    {% if searchQuery %}
-      <input type="hidden" name="q" value="{{ searchQuery }}">
-    {% endif %}
-    <div class="form-field">
-      <label for="category-search">Category</label>
-      <select id="category-search" name="category" aria-describedby="category-search-hint">
-        <option value=""{% if not categoryFilter %} selected{% endif %}>All categories</option>
-        {% if categoryFilter and not selectedCategory %}
-          <option value="{{ categoryFilter }}" selected disabled>Category no longer available</option>
+  <section class="catalogue__search" aria-label="Find products">
+    <p class="catalogue__eyebrow">A little more you. A little less searching.</p>
+    <div class="catalogue__search-grid">
+      {# Preserve the category when submitting a product-name search. #}
+      <form class="products-search products-name-search" role="search" aria-label="Search products by name" method="get" action="/products">
+        {% if categoryFilter %}
+          <input type="hidden" name="category" value="{{ categoryFilter }}">
         {% endif %}
-        {% for category in categories %}
-          <option value="{{ category.categoryID }}"{% if categoryFilter == category.categoryID %} selected{% endif %}>{{ category.label }}</option>
-        {% endfor %}
-      </select>
-      <p id="category-search-hint" class="products-search__hint">Choose a category to find products.</p>
+        <div class="form-field">
+          <label for="product-name-search">Search products</label>
+          <div class="catalogue__search-input">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="10.5" cy="10.5" r="6.5"/>
+              <path d="m16 16 4.5 4.5"/>
+            </svg>
+            <input type="search" id="product-name-search" name="q" value="{{ searchQuery }}" placeholder="Enter a product name" aria-describedby="product-name-search-hint">
+          </div>
+          <p id="product-name-search-hint" class="products-search__hint">Enter all or part of a product name.</p>
+        </div>
+        <button type="submit" class="button">Search</button>
+        {% if searchQuery and not categoryFilter %}
+          <a class="products-search__clear" href="/products">Clear search</a>
+        {% endif %}
+      </form>
+
+      <form class="products-search" role="search" aria-label="Search products by category" method="get" action="/products">
+        {% if searchQuery %}
+          <input type="hidden" name="q" value="{{ searchQuery }}">
+        {% endif %}
+        <div class="form-field">
+          <label for="category-search">Category</label>
+          <select id="category-search" name="category" aria-describedby="category-search-hint">
+            <option value=""{% if not categoryFilter %} selected{% endif %}>All categories</option>
+            {% if categoryFilter and not selectedCategory %}
+              <option value="{{ categoryFilter }}" selected disabled>Category no longer available</option>
+            {% endif %}
+            {% for category in categories %}
+              <option value="{{ category.categoryID }}"{% if categoryFilter == category.categoryID %} selected{% endif %}>{{ category.label }}</option>
+            {% endfor %}
+          </select>
+          <p id="category-search-hint" class="products-search__hint">Choose a category to find products.</p>
+        </div>
+        <button type="submit" class="button">Filter products</button>
+        {% if categoryFilter %}
+          <a class="products-search__clear" href="/products">Clear search</a>
+        {% endif %}
+      </form>
     </div>
-    <button type="submit" class="button">Filter products</button>
-    {% if categoryFilter %}
-      <a class="products-search__clear" href="/products">Clear search</a>
-    {% endif %}
-  </form>
-  {% if searchQuery %}
-    <p class="products-search__results">{{ products.length }} product{{ 's' if products.length != 1 }} found for &ldquo;{{ searchQuery }}&rdquo;{% if selectedCategory %} in &ldquo;{{ selectedCategory.label }}&rdquo;{% endif %}.</p>
-  {% endif %}
-  {% if categoryFilter %}
-    {% if selectedCategory %}
-      {% if not searchQuery %}
-      <p class="products-search__results">{{ products.length }} product{{ 's' if products.length != 1 }} found in &ldquo;{{ selectedCategory.label }}&rdquo;.</p>
+  </section>
+
+  <div class="catalogue__results-header">
+    <p class="catalogue__section-label">{{ 'Search results' if searchQuery or categoryFilter else 'The collection' }}</p>
+    <div>
+      {% if not searchQuery and not categoryFilter %}
+        <p class="products-search__results">{{ products.length }} product{{ 's' if products.length != 1 }} to explore.</p>
       {% endif %}
-    {% else %}
-      <p class="products-search__results">This category is no longer available. Choose another category or clear your search.</p>
-    {% endif %}
-  {% endif %}
+      {% if searchQuery %}
+        <p class="products-search__results">{{ products.length }} product{{ 's' if products.length != 1 }} found for &ldquo;{{ searchQuery }}&rdquo;{% if selectedCategory %} in &ldquo;{{ selectedCategory.label }}&rdquo;{% endif %}.</p>
+      {% endif %}
+      {% if categoryFilter %}
+        {% if selectedCategory %}
+          {% if not searchQuery %}
+            <p class="products-search__results">{{ products.length }} product{{ 's' if products.length != 1 }} found in &ldquo;{{ selectedCategory.label }}&rdquo;.</p>
+          {% endif %}
+        {% else %}
+          <p class="products-search__results">This category is no longer available. Choose another category or clear your search.</p>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
 
   {% if products.length %}
     <ul class="product-list">
@@ -73,21 +110,24 @@
             {% else %}
               <span>No image available</span>
             {% endif %}
-          </div>
-          <div class="product__body">
-            <h2 class="product__name">
-              <a class="product__link" href="/products/{{ product.productID | urlencode }}">{{ product.name }}</a>
-            </h2>
             {% if product.quantity > 0 %}
               <span class="stock stock--in">In stock</span>
             {% else %}
               <span class="stock stock--out">Out of stock</span>
             {% endif %}
-            {% if product.currentPrice %}
-              <p class="product__price">£{{ product.currentPrice }}</p>
-            {% else %}
-              <p class="product__price product__price--unavailable">Price unavailable</p>
-            {% endif %}
+          </div>
+          <div class="product__body">
+            <h2 class="product__name">
+              <a class="product__link" href="/products/{{ product.productID | urlencode }}">{{ product.name }}</a>
+            </h2>
+            <div class="catalogue__card-footer">
+              {% if product.currentPrice %}
+                <p class="product__price">£{{ product.currentPrice }}</p>
+              {% else %}
+                <p class="product__price product__price--unavailable">Price unavailable</p>
+              {% endif %}
+              <span class="catalogue__card-cue" aria-hidden="true">&rarr;</span>
+            </div>
           </div>
         </li>
       {% endfor %}
