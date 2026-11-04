@@ -130,6 +130,22 @@ a:focus-visible,
     margin-top: 0.35rem;
 }
 
+.admin-badge {
+    margin-left: auto;
+    padding: 0.25rem 0.75rem;
+    color: var(--color-text);
+    background: var(--color-bg);
+    border: 2px solid var(--color-secondary);
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+:root[data-theme='dark'] .admin-badge {
+    border-color: var(--color-primary);
+}
+
 .brand__mark {
     display: inline-block;
     flex-shrink: 0;

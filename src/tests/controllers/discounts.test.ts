@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app';
+import type { TokenClient } from '../../clients/tokenClient';
 import type { Discount } from '../../models/discount';
 
 const today = new Date().toISOString().slice(0, 10);
@@ -37,6 +38,11 @@ function extractToken(html: string): string {
   return match[1];
 }
 
+const adminTokenClient: TokenClient = {
+  getIdentity: async () => ({ customerId: 'admin-1', accessLevel: 1 }),
+  logout: async () => {},
+};
+
 function setup() {
   const activateDiscount = vi.fn(async () => {});
   const deactivateDiscount = vi.fn(async () => {});
@@ -45,8 +51,10 @@ function setup() {
       fetchDiscounts: async () => discounts,
       activateDiscount,
       deactivateDiscount,
+      tokenClient: adminTokenClient,
     }),
   );
+  agent.set('Cookie', 'access_token=admin-token');
   return { agent, activateDiscount, deactivateDiscount };
 }
 
@@ -70,7 +78,7 @@ describe('discount activation', () => {
       .type('form')
       .send({ _csrf: token });
     expect(res.status).toBe(303);
-    expect(deactivateDiscount).toHaveBeenCalledWith(undefined, 'a1');
+    expect(deactivateDiscount).toHaveBeenCalledWith('admin-token', 'a1');
   });
 
   it('prompts for a new expiry date and saves it', async () => {
@@ -82,7 +90,7 @@ describe('discount activation', () => {
       .type('form')
       .send({ _csrf: extractToken(page.text), expiryDate: day(10) });
     expect(res.status).toBe(303);
-    expect(activateDiscount).toHaveBeenCalledWith(undefined, 'b2', day(10));
+    expect(activateDiscount).toHaveBeenCalledWith('admin-token', 'b2', day(10));
   });
 
   it.each([day(-1), today, ''])(
@@ -98,4 +106,56 @@ describe('discount activation', () => {
       expect(activateDiscount).not.toHaveBeenCalled();
     },
   );
+});
+
+describe('discounts access control', () => {
+  it('redirects anonymous users to the normal login page', async () => {
+    const fetchDiscounts = vi.fn(async () => discounts);
+    const res = await request(createApp({ fetchDiscounts })).get('/discounts');
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe('/login?returnTo=%2Fdiscounts');
+    expect(fetchDiscounts).not.toHaveBeenCalled();
+  });
+
+  it('returns 403 for signed-in customers', async () => {
+    const fetchDiscounts = vi.fn(async () => discounts);
+    const tokenClient: TokenClient = {
+      getIdentity: async () => ({ customerId: 'c1', accessLevel: 0 }),
+      logout: async () => {},
+    };
+    const res = await request(createApp({ fetchDiscounts, tokenClient }))
+      .get('/discounts')
+      .set('Cookie', 'access_token=some-token');
+    expect(res.status).toBe(403);
+    expect(res.text).not.toContain('/admin/login');
+    expect(fetchDiscounts).not.toHaveBeenCalled();
+  });
+
+  it('shows the Discounts menu link to admins', async () => {
+    const { agent } = setup();
+    expect((await agent.get('/discounts')).text).toContain('>Discounts</a>');
+  });
+
+  it('shows the hamburger menu with Discounts on the admin account page', async () => {
+    const { agent } = setup();
+    const res = await agent.get('/admin/account');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('id="site-menu"');
+    expect(res.text).toContain('href="/discounts"');
+    expect(res.text).toContain('class="admin-badge"');
+  });
+
+  it('shows an admin badge to admins only', async () => {
+    const { agent } = setup();
+    expect((await agent.get('/discounts')).text).toContain('class="admin-badge"');
+    const customer = request.agent(createApp({
+      tokenClient: { getIdentity: async () => ({ customerId: 'c1', accessLevel: 0 }), logout: async () => {} },
+      fetchProducts: async () => [],
+    }));
+    customer.set('Cookie', 'access_token=t');
+    const res = await customer.get('/home');
+    expect(res.status).toBe(200);
+    expect(res.text).not.toContain('admin-badge');
+    expect(res.text).not.toContain('>Discounts</a>');
+  });
 });

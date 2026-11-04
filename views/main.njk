@@ -22,6 +22,9 @@
       </a>
       <span class="tagline">Never Settle for less</span>
     </div>
+    {% if isAdmin %}
+      <span class="admin-badge" role="status">Admin signed in</span>
+    {% endif %}
     <button
       type="button"
       class="menu-toggle"
@@ -54,7 +57,9 @@
     <ul class="site-menu__list">
       <li><a href="/home"{% if currentPath == '/home' %} aria-current="page"{% endif %}>Home</a></li>
       <li><a href="/products"{% if currentPath == '/products' %} aria-current="page"{% elif currentPath and currentPath.startsWith('/products/') %} aria-current="location"{% endif %}>Shop all products</a></li>
-      <li><a href="/discounts"{% if currentPath == '/discounts' %} aria-current="page"{% elif currentPath and currentPath.startsWith('/discounts/') %} aria-current="location"{% endif %}>Discounts</a></li>
+      {% if isAdmin %}
+        <li><a href="/discounts"{% if currentPath == '/discounts' %} aria-current="page"{% elif currentPath and currentPath.startsWith('/discounts/') %} aria-current="location"{% endif %}>Discounts</a></li>
+      {% endif %}
       {% if isSignedIn %}
         <li><a href="/account"{% if currentPath == '/account' %} aria-current="page"{% endif %}>My account</a></li>
         <li><a href="/basket"{% if currentPath == '/basket' %} aria-current="page"{% endif %}>Basket</a></li>
