@@ -51,6 +51,8 @@ import {
 } from './services/profileService';
 import { createRegisterService } from './services/registerService';
 import type { getSecurityQuestions, saveRegistrationDetails } from './services/registrationDetails';
+import { createProductEditorRouter } from './controllers/productEditor';
+import { createProductEditorService, type ProductEditorService } from './services/productEditor';
 
 interface AppOptions {
   tokenClient?: TokenClient;
@@ -61,10 +63,11 @@ interface AppOptions {
   basketService?: BasketService;
   throttle?: LoginThrottle;
   adminAuthService?: AdminAuthService;
-  fetchProducts?: (filters?: ProductFilters) => Promise<ProductWithPrice[]>;
-  fetchProduct?: (productID: string) => Promise<ProductWithPrice | null>;
+  fetchProducts?: (filters?: ProductFilters, adminToken?: string) => Promise<ProductWithPrice[]>;
+  fetchProduct?: (productID: string, adminToken?: string) => Promise<ProductWithPrice | null>;
   fetchProxiedImage?: (fileName: string) => Promise<ProxiedImage | null>;
   fetchDiscounts?: (token?: string) => Promise<Discount[]>;
+  productEditorService?: ProductEditorService;
 }
 
 export function createApp(options: AppOptions = {}): Express {
@@ -86,12 +89,18 @@ export function createApp(options: AppOptions = {}): Express {
   );
   app.use('/assets', express.static(path.resolve('src/public')));
 
+  app.use(
+    '/products/:productID/edit',
+    express.urlencoded({ extended: false, limit: '128kb' }),
+    express.json({ limit: '8mb' }),
+  );
   app.use(express.urlencoded({ extended: false, limit: '10kb' }));
   app.use(createBrowserState());
   app.use(csrfProtection);
   app.use(createAuthentication(options.tokenClient ?? createTokenClient(getApiBaseUrl())));
   app.use((req, res, next) => {
     res.locals.isSignedIn = Boolean(req.auth);
+    res.locals.isAdmin = req.auth?.accessLevel === 1;
     res.locals.csrfToken = req.browserState.csrfToken;
     res.locals.currentPath = req.path;
     next();
@@ -113,13 +122,21 @@ export function createApp(options: AppOptions = {}): Express {
     res.redirect('/login');
   });
 
+  const productEditorService = options.productEditorService ?? createProductEditorService();
+  const fetchProducts = options.fetchProducts;
+  app.use('/products', createProductEditorRouter(productEditorService));
   app.use(
     '/products',
     createProductsRouter(
-      options.fetchProducts ?? ((filters) =>
-        getProductsWithPrices(undefined, undefined, undefined, filters)),
-      options.fetchProduct ?? getProductWithPrice,
-      options.fetchProducts ?? getProducts,
+      fetchProducts ?? ((filters, adminToken) =>
+        getProductsWithPrices(undefined, undefined, undefined, filters, adminToken)),
+      options.fetchProduct ?? ((productID, adminToken) =>
+        getProductWithPrice(productID, undefined, undefined, adminToken)),
+      fetchProducts
+        ? (adminToken) => adminToken
+          ? fetchProducts(undefined, adminToken)
+          : fetchProducts()
+        : (adminToken) => getProducts(undefined, undefined, undefined, adminToken),
     ),
   );
   app.use(

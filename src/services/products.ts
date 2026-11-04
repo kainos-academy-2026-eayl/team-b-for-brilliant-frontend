@@ -66,11 +66,12 @@ export async function getProductWithPrice(
   productID: string,
   baseUrl: string = getApiBaseUrl(),
   fetchFn: typeof fetch = fetch,
+  adminToken?: string,
 ): Promise<ProductWithPrice | null> {
   const response = await fetchFn(
-    new URL(`/products/${encodeURIComponent(productID)}`, baseUrl),
+    new URL(`${adminToken ? '/admin/products' : '/products'}/${encodeURIComponent(productID)}`, baseUrl),
     {
-      headers: { Accept: 'application/json' },
+      headers: { Accept: 'application/json', ...(adminToken && { Authorization: `Bearer ${adminToken}` }) },
       signal: AbortSignal.timeout(5000),
       cache: 'no-store',
     },
@@ -87,7 +88,8 @@ export async function getProductWithPrice(
   if (!result.success) {
     throw new Error('Product response from backend did not match schema');
   }
-  if (!result.data.product.visible) {
+  if (result.data.product.deletedAt !== null ||
+    (!adminToken && (!result.data.product.visible || result.data.product.draft))) {
     return null;
   }
 
@@ -102,14 +104,16 @@ export async function getProducts(
   baseUrl: string = getApiBaseUrl(),
   fetchFn: typeof fetch = fetch,
   filters: ProductFilters = {},
+  adminToken?: string,
 ): Promise<Product[]> {
   // The backend owns matching; URLSearchParams safely encodes user-entered text.
-  const url = new URL('/products', baseUrl);
+  const url = new URL(adminToken ? '/admin/products' : '/products', baseUrl);
   if (filters.q) url.searchParams.set('q', filters.q);
   if (filters.category) url.searchParams.set('category', filters.category);
   const response = await fetchFn(url, {
-    headers: { Accept: 'application/json' },
+    headers: { Accept: 'application/json', ...(adminToken && { Authorization: `Bearer ${adminToken}` }) },
     signal: AbortSignal.timeout(5000),
+    cache: 'no-store',
   });
 
   if (!response.ok) {
@@ -125,7 +129,8 @@ export async function getProducts(
 
   // Image URLs are rewritten to frontend paths so the browser never contacts the backend directly.
   return result.data.products
-    .filter((product) => product.visible)
+    .filter((product) => product.deletedAt === null &&
+      (Boolean(adminToken) || (product.visible && !product.draft)))
     .map((product) => withProxiedImages(product, baseUrl));
 }
 
@@ -134,9 +139,10 @@ export async function getProductsWithPrices(
   fetchFn: typeof fetch = fetch,
   concurrency: number = getPriceFetchConcurrency(),
   filters: ProductFilters = {},
+  adminToken?: string,
 ): Promise<ProductWithPrice[]> {
   // Attach prices only to the products returned by the backend search.
-  const products = await getProducts(baseUrl, fetchFn, filters);
+  const products = await getProducts(baseUrl, fetchFn, filters, adminToken);
 
   return mapWithConcurrency(products, concurrency, (product) =>
     withCurrentPrice(product, baseUrl, fetchFn),
