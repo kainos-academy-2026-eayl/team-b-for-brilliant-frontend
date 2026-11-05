@@ -40,12 +40,12 @@ function extractToken(html: string): string {
 
 const adminTokenClient: TokenClient = {
   getIdentity: async () => ({ customerId: 'admin-1', accessLevel: 1 }),
-  logout: async () => {},
+  logout: async () => { },
 };
 
 function setup() {
-  const activateDiscount = vi.fn(async () => {});
-  const deactivateDiscount = vi.fn(async () => {});
+  const activateDiscount = vi.fn(async () => { });
+  const deactivateDiscount = vi.fn(async () => { });
   const agent = request.agent(
     createApp({
       fetchDiscounts: async () => discounts,
@@ -121,7 +121,7 @@ describe('discounts access control', () => {
     const fetchDiscounts = vi.fn(async () => discounts);
     const tokenClient: TokenClient = {
       getIdentity: async () => ({ customerId: 'c1', accessLevel: 0 }),
-      logout: async () => {},
+      logout: async () => { },
     };
     const res = await request(createApp({ fetchDiscounts, tokenClient }))
       .get('/discounts')
@@ -149,7 +149,7 @@ describe('discounts access control', () => {
     const { agent } = setup();
     expect((await agent.get('/discounts')).text).toContain('class="admin-badge"');
     const customer = request.agent(createApp({
-      tokenClient: { getIdentity: async () => ({ customerId: 'c1', accessLevel: 0 }), logout: async () => {} },
+      tokenClient: { getIdentity: async () => ({ customerId: 'c1', accessLevel: 0 }), logout: async () => { } },
       fetchProducts: async () => [],
     }));
     customer.set('Cookie', 'access_token=t');
@@ -162,7 +162,7 @@ describe('discounts access control', () => {
 
 describe('adding a discount', () => {
   it('saves using the signed-in admin access token', async () => {
-    const saveDiscount = vi.fn(async () => {});
+    const saveDiscount = vi.fn(async () => { });
     const agent = request.agent(
       createApp({
         fetchDiscounts: async () => discounts,

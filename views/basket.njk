@@ -57,8 +57,7 @@
 
   .basket-summary { padding: 1rem; border: 1px solid var(--color-border); border-radius: 0.25rem; }
   .basket-total { display: flex; justify-content: space-between; margin: 0 0 1rem; font-size: 1.25rem; font-weight: 700; }
-  /* Reserved space for the Checkout button that will be added later */
-  .checkout-slot { min-height: 3rem; }
+  .checkout-button { display: block; text-align: center; text-decoration: none; }
 </style>
 {% endblock %}
 
@@ -137,7 +136,12 @@
 
     <aside class="basket-summary" aria-label="Basket summary">
       <p class="basket-total"><span>Total</span><span>£{{ total }}</span></p>
-      <div class="checkout-slot"></div>
+      {% set unavailableItems = items | rejectattr('isQuantityAvailable') | list %}
+      {% if unavailableItems.length == 0 %}
+        <a class="button checkout-button" href="/checkout">Go to checkout</a>
+      {% else %}
+        <p class="alert" role="status">Reduce the quantity of unavailable items to continue to checkout.</p>
+      {% endif %}
     </aside>
   </div>
 {% endif %}

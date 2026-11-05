@@ -1,0 +1,129 @@
+{% extends "main.njk" %}
+
+{% block title %}Edit {{ product.name }} | B-Brilliant{% endblock %}
+
+{% block head %}
+  <style>
+    {% include "products/products.css" %}
+  </style>
+  <link rel="stylesheet" href="/static/product-editor.css">
+{% endblock %}
+
+{% block content %}
+  <a class="products-back" href="/products">Back to products</a>
+  <div class="product-editor" id="product-editor">
+    <p class="form-message" id="product-editor-help">Changes remain private until you save them. Customer preview shows your unsaved edits.</p>
+    {% if saved %}<p class="alert alert-success" role="status">Product changes saved.</p>{% endif %}
+    <p class="alert" id="product-save-error" role="alert"{% if not errorMessage %} hidden{% endif %}>{{ errorMessage }}</p>
+    <noscript><p class="alert">Enable JavaScript to use customer preview and add, remove or reorder images. You can still save product details without changing images.</p></noscript>
+
+    <div class="product-editor__modes" id="product-editor-modes" role="group" aria-label="Product view" hidden>
+      <button type="button" class="button" id="product-edit-button" aria-controls="product-edit-panel" aria-pressed="true">Edit details</button>
+      <button type="button" class="button" id="product-preview-button" aria-controls="product-preview-panel" aria-pressed="false">Customer preview</button>
+    </div>
+
+    <section class="card" id="product-edit-panel" aria-labelledby="product-edit-heading">
+      <h1 id="product-edit-heading" tabindex="-1">Edit product</h1>
+      <p class="card-subtitle">Product ID: {{ product.productID }}</p>
+      <form id="product-edit-form" action="/products/{{ product.productID | urlencode }}/edit" method="post" aria-describedby="product-editor-help">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        {% set formValues = values if values is defined else product %}
+        <div class="form-field">
+          <label for="edit-product-name">Name</label>
+          <input id="edit-product-name" name="name" type="text" value="{{ formValues.name }}" maxlength="200" required>
+        </div>
+        <div class="form-field">
+          <label for="edit-product-description">Description</label>
+          <textarea id="edit-product-description" name="description" rows="6" maxlength="10000">{{ formValues.description }}</textarea>
+        </div>
+        <div class="product-editor__numbers">
+          <div class="form-field">
+            <label for="edit-product-price">Price (£)</label>
+            <input id="edit-product-price" name="price" type="number" min="0" max="99999999.99" step="0.01" value="{{ values.price if values is defined else product.currentPrice }}" required aria-describedby="edit-product-price-hint">
+            <p class="form-message" id="edit-product-price-hint">Enter a price in pounds, with up to two decimal places.</p>
+          </div>
+          <div class="form-field">
+            <label for="edit-product-stock">Stock quantity</label>
+            <input id="edit-product-stock" name="quantity" type="number" min="0" max="2147483647" step="1" value="{{ formValues.quantity }}" required>
+          </div>
+          <div class="form-field">
+            <label for="edit-product-weight">Weight</label>
+            <input id="edit-product-weight" name="weight" type="number" min="0" step="any" value="{{ formValues.weight }}" required>
+          </div>
+        </div>
+
+        <fieldset class="product-editor__fieldset">
+          <legend>Publication</legend>
+          {% set publication = values.publication if values is defined else ('visible' if product.visible and not product.draft else 'draft') %}
+          <p class="form-message" id="edit-product-publication-hint">Choose one option. Draft products are only shown to admins.</p>
+          <label class="product-editor__checkbox" for="edit-product-visible">
+            <input id="edit-product-visible" name="publication" type="radio" value="visible" required aria-describedby="edit-product-publication-hint"{% if publication == 'visible' %} checked{% endif %}>
+            Visible to customers
+          </label>
+          <label class="product-editor__checkbox" for="edit-product-draft">
+            <input id="edit-product-draft" name="publication" type="radio" value="draft" required aria-describedby="edit-product-publication-hint"{% if publication == 'draft' %} checked{% endif %}>
+            Draft
+          </label>
+        </fieldset>
+
+        <fieldset class="product-editor__fieldset">
+          <legend>Categories</legend>
+          {% set availableCategories = categories if categories is defined else product.categories %}
+          {% set availableDepartments = departments if departments is defined else product.departments %}
+          {% for category in availableCategories %}
+            {% set selected = false %}
+            {% set departmentName = 'Other categories' %}
+            {% for assignedCategory in product.categories %}
+              {% if assignedCategory.categoryID == category.categoryID %}{% set selected = true %}{% endif %}
+            {% endfor %}
+            {% if values is defined %}
+              {% set selected = category.categoryID in values.categoryIDs %}
+            {% endif %}
+            {% for department in availableDepartments %}
+              {% if department.departmentID == category.departmentID %}{% set departmentName = department.name %}{% endif %}
+            {% endfor %}
+            <label class="product-editor__checkbox" for="edit-product-category-{{ loop.index }}">
+              <input id="edit-product-category-{{ loop.index }}" name="categoryIDs" type="checkbox" value="{{ category.categoryID }}" data-product-category data-category-name="{{ category.name }}" data-department-id="{{ category.departmentID }}" data-department-name="{{ departmentName }}"{% if selected %} checked{% endif %}>
+              {{ category.name }} ({{ departmentName }})
+            </label>
+          {% else %}
+            <p class="form-message">No categories are available.</p>
+          {% endfor %}
+        </fieldset>
+
+        <fieldset class="product-editor__fieldset">
+          <legend>Product images</legend>
+          <p class="form-message" id="product-image-order-hint">Images appear in the order below. The first image is the main product image. Add images, remove individual images, or move them earlier or later before saving.</p>
+          <ol class="product-editor__image-list" id="product-image-list" aria-label="Product images in display order" aria-describedby="product-image-order-hint">
+            {% for image in product.productImages %}
+              <li data-image-id="{{ image.imageID }}" data-image-name="Existing image {{ loop.index }}">
+                <img src="{{ image.imageUrl }}" alt="Existing product image {{ loop.index }}" width="80" height="80">
+                <p>Image {{ loop.index }}{% if loop.first %} (main image){% endif %}</p>
+              </li>
+            {% endfor %}
+          </ol>
+          <div class="form-field">
+            <label for="edit-product-images">Add images</label>
+            <input id="edit-product-images" name="images" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple disabled aria-describedby="edit-product-images-hint edit-product-images-error">
+            <p class="form-message" id="edit-product-images-hint">Keep up to five images in total. New PNG, JPEG, GIF or WebP uploads must total 5 MB or less. Adding images keeps the images already in your list.</p>
+            <p class="field-error" id="edit-product-images-error" role="alert"></p>
+          </div>
+          <p class="form-message" id="product-image-status" aria-live="polite">{% if not product.productImages.length %}No images selected.{% else %}{{ product.productImages.length }} image{{ 's' if product.productImages.length != 1 }} selected.{% endif %}</p>
+        </fieldset>
+
+        <button type="submit" class="button" id="product-save-button">Save changes</button>
+        <p class="form-message" id="product-save-status" role="status"></p>
+      </form>
+    </section>
+
+    <section id="product-preview-panel" aria-label="Customer product preview" hidden>
+      <p class="form-message" id="product-publication-status" role="status"></p>
+      {% set isProductPreview = true %}
+      {% include "products/detail.njk" %}
+    </section>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/product-editor.js" defer></script>
+{% endblock %}

@@ -14,6 +14,7 @@ import {
 import { createAuthRouter } from './controllers/auth-controllers';
 import { adminAccountRouter } from './controllers/adminAccount';
 import { createBasketRouter } from './controllers/basket';
+import { createCheckoutRouter } from './controllers/checkout';
 import { createDiscountsRouter } from './controllers/discounts';
 import { createImagesRouter } from './controllers/images';
 import { createProductsRouter } from './controllers/products';
@@ -36,6 +37,7 @@ import type { ProductWithPrice } from './models/product';
 import { createHomeRouter } from './routes/home';
 import { createAuthService } from './services/authService';
 import { type BasketService, createBasketService } from './services/basket';
+import { type CheckoutService, createCheckoutService } from './services/checkout';
 import {
   activateDiscount,
   createDiscount,
@@ -56,6 +58,8 @@ import {
 } from './services/profileService';
 import { createRegisterService } from './services/registerService';
 import type { getSecurityQuestions, saveRegistrationDetails } from './services/registrationDetails';
+import { createProductEditorRouter } from './controllers/productEditor';
+import { createProductEditorService, type ProductEditorService } from './services/productEditor';
 
 interface AppOptions {
   tokenClient?: TokenClient;
@@ -64,12 +68,14 @@ interface AppOptions {
   accountClient?: AccountClient;
   profileService?: ProfileService;
   basketService?: BasketService;
+  checkoutService?: CheckoutService;
   throttle?: LoginThrottle;
   adminAuthService?: AdminAuthService;
-  fetchProducts?: (filters?: ProductFilters) => Promise<ProductWithPrice[]>;
-  fetchProduct?: (productID: string) => Promise<ProductWithPrice | null>;
+  fetchProducts?: (filters?: ProductFilters, adminToken?: string) => Promise<ProductWithPrice[]>;
+  fetchProduct?: (productID: string, adminToken?: string) => Promise<ProductWithPrice | null>;
   fetchProxiedImage?: (fileName: string) => Promise<ProxiedImage | null>;
   fetchDiscounts?: (token?: string) => Promise<Discount[]>;
+  productEditorService?: ProductEditorService;
   saveDiscount?: typeof createDiscount;
   activateDiscount?: typeof activateDiscount;
   deactivateDiscount?: typeof deactivateDiscount;
@@ -94,6 +100,11 @@ export function createApp(options: AppOptions = {}): Express {
   );
   app.use('/assets', express.static(path.resolve('src/public')));
 
+  app.use(
+    '/products/:productID/edit',
+    express.urlencoded({ extended: false, limit: '128kb' }),
+    express.json({ limit: '8mb' }),
+  );
   app.use(express.urlencoded({ extended: false, limit: '10kb' }));
   app.use(createBrowserState());
   app.use(csrfProtection);
@@ -122,13 +133,21 @@ export function createApp(options: AppOptions = {}): Express {
     res.redirect('/login');
   });
 
+  const productEditorService = options.productEditorService ?? createProductEditorService();
+  const fetchProducts = options.fetchProducts;
+  app.use('/products', createProductEditorRouter(productEditorService));
   app.use(
     '/products',
     createProductsRouter(
-      options.fetchProducts ?? ((filters) =>
-        getProductsWithPrices(undefined, undefined, undefined, filters)),
-      options.fetchProduct ?? getProductWithPrice,
-      options.fetchProducts ?? getProducts,
+      fetchProducts ?? ((filters, adminToken) =>
+        getProductsWithPrices(undefined, undefined, undefined, filters, adminToken)),
+      options.fetchProduct ?? ((productID, adminToken) =>
+        getProductWithPrice(productID, undefined, undefined, adminToken)),
+      fetchProducts
+        ? (adminToken) => adminToken
+          ? fetchProducts(undefined, adminToken)
+          : fetchProducts()
+        : (adminToken) => getProducts(undefined, undefined, undefined, adminToken),
     ),
   );
   app.use(
@@ -169,6 +188,15 @@ export function createApp(options: AppOptions = {}): Express {
     '/basket',
     requireAuth,
     createBasketRouter(options.basketService ?? createBasketService()),
+  );
+  app.use(
+    '/checkout',
+    requireAuth,
+    createCheckoutRouter(
+      options.basketService ?? createBasketService(),
+      options.profileService ?? createProfileService(),
+      options.checkoutService ?? createCheckoutService(),
+    ),
   );
   app.use(
     '/admin/login',

@@ -2,6 +2,7 @@ import type { AccountClient } from '../clients/accountClient';
 
 export type RegisterResult =
   | { status: 'success' }
+  | { status: 'existing' }
   | { status: 'error' };
 
 export interface RegisterService {
@@ -17,6 +18,8 @@ export function createRegisterService(
         const result = await accountClient.register(email, password);
         if (result.status === 'registered') {
           return { status: 'success' };
+        } else if (result.status === 'existing') {
+          return { status: 'existing' };
         } else {
           return { status: 'error' };
         }
