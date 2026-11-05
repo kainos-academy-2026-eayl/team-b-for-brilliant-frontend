@@ -110,6 +110,14 @@
             {% else %}
               <span>No image available</span>
             {% endif %}
+          </div>
+          <div class="product__body">
+            <h2 class="product__name">
+              <a class="product__link" href="/products/{{ product.productID | urlencode }}">{{ product.name }}</a>
+            </h2>
+            {% if isAdmin and (product.draft or not product.visible) %}
+              <span class="product__draft">Draft</span>
+            {% endif %}
             {% if product.quantity > 0 %}
               <span class="stock stock--in">In stock</span>
             {% else %}

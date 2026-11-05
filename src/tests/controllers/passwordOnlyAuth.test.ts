@@ -56,6 +56,7 @@ describe.each(flows)('password-only authentication through $path', (flow) => {
     const page = await agent.get(flow.path).expect(200);
     const response = await agent.post(flow.path).type('form').send({
       _csrf: csrf(page.text), email: 'user@b-brilliant.com', password: 'password',
+      ...(flow.path === '/register' ? { confirmPassword: 'password' } : {}),
     }).expect(flow.status).expect('Location', flow.destination);
 
     expect(getIdentity).toHaveBeenCalledExactlyOnceWith('backend-jwt');
@@ -70,6 +71,7 @@ describe.each(flows)('password-only authentication through $path', (flow) => {
     const page = await agent.get(flow.path).expect(200);
     const response = await agent.post(flow.path).type('form').send({
       _csrf: csrf(page.text), email: 'user@b-brilliant.com', password: 'password',
+      ...(flow.path === '/register' ? { confirmPassword: 'password' } : {}),
     }).expect(503);
 
     expect(getIdentity).not.toHaveBeenCalled();

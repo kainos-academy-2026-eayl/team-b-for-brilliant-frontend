@@ -29,6 +29,7 @@ async function registered(
   const form = await agent.get('/register').expect(200);
   await agent.post('/register').type('form').send({
     _csrf: csrf(form.text), email: 'new@example.com', password: 'password123',
+    confirmPassword: 'password123',
   }).expect(303);
   return { agent, save, load };
 }
