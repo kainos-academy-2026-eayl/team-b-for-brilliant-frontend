@@ -14,6 +14,7 @@ import {
 import { createAuthRouter } from './controllers/auth-controllers';
 import { adminAccountRouter } from './controllers/adminAccount';
 import { createBasketRouter } from './controllers/basket';
+import { createCheckoutRouter } from './controllers/checkout';
 import { createDiscountsRouter } from './controllers/discounts';
 import { createImagesRouter } from './controllers/images';
 import { createProductsRouter } from './controllers/products';
@@ -36,6 +37,7 @@ import type { ProductWithPrice } from './models/product';
 import { createHomeRouter } from './routes/home';
 import { createAuthService } from './services/authService';
 import { type BasketService, createBasketService } from './services/basket';
+import { type CheckoutService, createCheckoutService } from './services/checkout';
 import {
   activateDiscount,
   createDiscount,
@@ -66,6 +68,7 @@ interface AppOptions {
   accountClient?: AccountClient;
   profileService?: ProfileService;
   basketService?: BasketService;
+  checkoutService?: CheckoutService;
   throttle?: LoginThrottle;
   adminAuthService?: AdminAuthService;
   fetchProducts?: (filters?: ProductFilters, adminToken?: string) => Promise<ProductWithPrice[]>;
@@ -185,6 +188,15 @@ export function createApp(options: AppOptions = {}): Express {
     '/basket',
     requireAuth,
     createBasketRouter(options.basketService ?? createBasketService()),
+  );
+  app.use(
+    '/checkout',
+    requireAuth,
+    createCheckoutRouter(
+      options.basketService ?? createBasketService(),
+      options.profileService ?? createProfileService(),
+      options.checkoutService ?? createCheckoutService(),
+    ),
   );
   app.use(
     '/admin/login',
