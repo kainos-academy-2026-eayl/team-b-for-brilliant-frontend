@@ -33,6 +33,7 @@ const profileService: ProfileService = {
   async updateProfile() {
     throw new Error('not used in login tests');
   },
+  async deleteAccount() {},
   async getBasket() {
     return { items: [], notices: [] };
   },

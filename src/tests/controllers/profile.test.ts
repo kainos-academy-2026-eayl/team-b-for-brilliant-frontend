@@ -15,7 +15,8 @@ const accountClient: AccountClient = {
   async register() {
     throw new Error('Registration should not run')
   },
-  async verifyCredentials() {
+  async verifyCredentials(_email, password) {
+    if (password !== 'correct') return { status: 'invalid' }
     return {
       status: 'valid',
       customerId: 'c1',
@@ -89,6 +90,9 @@ function createFakeService(overrides: Partial<ProfileService> = {}) {
           ],
         },
       ]
+    },
+    async deleteAccount(token) {
+      calls.push({ method: 'deleteAccount', token })
     },
     ...overrides,
   }
@@ -316,5 +320,165 @@ describe('profile page', () => {
 
     expect(res.status).toBe(502)
     expect(res.text).toContain('We could not load your profile right now')
+  })
+})
+
+describe('delete account', () => {
+  it('shows a Delete account button below Save details with a confirmation dialog', async () => {
+    const { service } = createFakeService()
+    const agent = await signIn(service)
+
+    const res = await agent.get('/account')
+
+    expect(res.text).toContain('Delete account</button>')
+    expect(res.text.indexOf('Save details')).toBeLessThan(
+      res.text.indexOf('id="delete-account-open"'),
+    )
+    expect(res.text).toContain(
+      'Once an account is deleted all its data is lost, are you sure?',
+    )
+    expect(res.text).toContain('action="/account/delete"')
+    expect(res.text).toContain('type="password"')
+    expect(res.text.indexOf('id="delete-password"')).toBeLessThan(
+      res.text.indexOf('are you sure?'),
+    )
+    expect(res.text).toContain('/static/delete-account.js')
+  })
+
+  it('does not delete anything until the form is submitted', async () => {
+    const { service, calls } = createFakeService()
+    const agent = await signIn(service)
+
+    await agent.get('/account')
+
+    expect(calls.some((call) => call.method === 'deleteAccount')).toBe(false)
+  })
+
+  it('deletes the account, signs the customer out and shows a success message', async () => {
+    const { service, calls } = createFakeService()
+    const agent = await signIn(service)
+    const token = csrfFrom((await agent.get('/account')).text)
+
+    const res = await agent.post('/account/delete').type('form').send({ _csrf: token, password: 'correct' })
+
+    expect(res.status).toBe(200)
+    expect(res.text).toContain('Your account has been deleted')
+    expect(res.text).toContain('http-equiv="refresh" content="5;url=/login"')
+    expect(res.text).not.toContain('action="/logout"')
+    expect(calls).toContainEqual({ method: 'deleteAccount', token: 'api-token' })
+
+    const after = await agent.get('/account')
+    expect(after.status).toBe(302)
+    expect(after.headers.location).toBe('/login?returnTo=%2Faccount')
+  })
+
+  it('rejects a request without a CSRF token', async () => {
+    const { service, calls } = createFakeService()
+    const agent = await signIn(service)
+
+    const res = await agent.post('/account/delete').type('form').send({})
+
+    expect(res.status).toBe(403)
+    expect(calls.some((call) => call.method === 'deleteAccount')).toBe(false)
+  })
+
+  it('keeps the customer signed in and shows an error when deletion fails', async () => {
+    const { service } = createFakeService({
+      deleteAccount: async () => {
+        throw new ProfileError(500, 'Backend responded 500')
+      },
+    })
+    const agent = await signIn(service)
+    const token = csrfFrom((await agent.get('/account')).text)
+
+    const res = await agent.post('/account/delete').type('form').send({ _csrf: token, password: 'correct' })
+
+    expect(res.status).toBe(502)
+    expect(res.text).toContain('We could not delete your account right now')
+    expect(res.text).toContain('Hello Jane!')
+    expect((await agent.get('/account')).status).toBe(200)
+  })
+
+  it('sends the customer to sign in again when the token is no longer valid', async () => {
+    const { service } = createFakeService({
+      deleteAccount: async () => {
+        throw new ProfileError(401, 'Backend responded 401')
+      },
+    })
+    const agent = await signIn(service)
+    const token = csrfFrom((await agent.get('/account')).text)
+
+    const res = await agent.post('/account/delete').type('form').send({ _csrf: token, password: 'correct' })
+
+    expect(res.status).toBe(302)
+    expect(res.headers.location).toBe('/login?returnTo=%2Faccount')
+  })
+
+  it('treats an account that is already gone as deleted', async () => {
+    const { service } = createFakeService({
+      deleteAccount: async () => {
+        throw new ProfileError(404, 'Backend responded 404')
+      },
+    })
+    const agent = await signIn(service)
+    const token = csrfFrom((await agent.get('/account')).text)
+
+    const res = await agent.post('/account/delete').type('form').send({ _csrf: token, password: 'correct' })
+
+    expect(res.status).toBe(200)
+    expect(res.text).toContain('Your account has been deleted')
+  })
+
+  it('checks the password before the confirmation prompt is shown', async () => {
+    const { service, calls } = createFakeService()
+    const agent = await signIn(service)
+    const token = csrfFrom((await agent.get('/account')).text)
+
+    const valid = await agent
+      .post('/account/delete/verify')
+      .type('form')
+      .send({ _csrf: token, password: 'correct' })
+    const wrong = await agent
+      .post('/account/delete/verify')
+      .type('form')
+      .send({ _csrf: token, password: 'nope' })
+    const empty = await agent
+      .post('/account/delete/verify')
+      .type('form')
+      .send({ _csrf: token, password: '' })
+
+    expect(valid.status).toBe(204)
+    expect(wrong.status).toBe(401)
+    expect(wrong.body.error).toContain('password is incorrect')
+    expect(empty.status).toBe(400)
+    expect(calls.some((call) => call.method === 'deleteAccount')).toBe(false)
+  })
+
+  it('does not delete the account when the password is wrong', async () => {
+    const { service, calls } = createFakeService()
+    const agent = await signIn(service)
+    const token = csrfFrom((await agent.get('/account')).text)
+
+    const res = await agent
+      .post('/account/delete')
+      .type('form')
+      .send({ _csrf: token, password: 'nope' })
+
+    expect(res.status).toBe(401)
+    expect(res.text).toContain('The password is incorrect')
+    expect(res.text).toContain('Hello Jane!')
+    expect(calls.some((call) => call.method === 'deleteAccount')).toBe(false)
+    expect((await agent.get('/account')).status).toBe(200)
+  })
+
+  it('does not delete the account when no password is sent', async () => {
+    const { service, calls } = createFakeService()
+    const agent = await signIn(service)
+    const token = csrfFrom((await agent.get('/account')).text)
+
+    const res = await agent.post('/account/delete').type('form').send({ _csrf: token })
+
+    expect(res.status).toBe(400)
+    expect(calls.some((call) => call.method === 'deleteAccount')).toBe(false)
   })
 })

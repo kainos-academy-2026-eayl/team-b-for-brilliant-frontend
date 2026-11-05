@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 360" role="img" aria-labelledby="title">
+  <title id="title">Hydrating Lip Balm in a turquoise tube</title>
+  <rect width="400" height="360" rx="20" fill="#f0faf9"/>
+  <ellipse cx="200" cy="310" rx="85" ry="12" fill="#d9e0e6"/>
+  <rect x="145" y="140" width="65" height="165" rx="9" fill="#52dfdd" stroke="#028aa4" stroke-width="2"/>
+  <rect x="152" y="105" width="51" height="45" fill="#028aa4"/>
+  <path d="M157 110V80q0-15 20-15t21 15v30" fill="#e8b9a5"/>
+  <rect x="240" y="155" width="65" height="150" rx="10" fill="#028aa4"/>
+  <g fill="#1f2933" font-family="sans-serif" text-anchor="middle" font-size="10"><text x="178" y="205">HYDRATING</text><text x="178" y="224">LIP BALM</text></g>
+  <path d="M263 240q-20 20 0 28 20-8 0-28" fill="#52dfdd"/>
+</svg>

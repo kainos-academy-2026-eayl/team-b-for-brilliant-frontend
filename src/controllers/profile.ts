@@ -3,6 +3,7 @@ import type { Order } from '../models/order'
 import type { ProfileInput } from '../models/profile'
 import { ProfileError, type ProfileService } from '../services/profileService'
 import { clearAuthentication } from '../middleware/authentication'
+import type { AuthService } from '../services/authService'
 
 type FieldErrors = Partial<Record<keyof ProfileInput, string>>
 
@@ -16,6 +17,11 @@ const FIELD_MESSAGES: Record<keyof ProfileInput, string> = {
 
 const LOAD_ERROR =
   'We could not load your profile right now. Please try again later.'
+const DELETE_ERROR =
+  'We could not delete your account right now. Please try again later.'
+const PASSWORD_REQUIRED = 'Enter your password to delete your account.'
+const PASSWORD_INCORRECT = 'The password is incorrect. Please try again.'
+const PASSWORD_LOCKED = 'Too many failed attempts. Please try again later.'
 
 function readForm(body: unknown): ProfileInput {
   const source = (body ?? {}) as Record<string, unknown>
@@ -60,7 +66,10 @@ function signInAgain(req: Request, res: Response) {
   res.redirect(`/login?returnTo=${encodeURIComponent('/account')}`)
 }
 
-export function createProfileRouter(service: ProfileService): Router {
+export function createProfileRouter(
+  service: ProfileService,
+  authService: AuthService,
+): Router {
   const router = Router()
 
   function handleFailure(error: unknown, req: Request, res: Response) {
@@ -89,6 +98,7 @@ export function createProfileRouter(service: ProfileService): Router {
     status: number,
     form?: { values: ProfileInput; errors: FieldErrors },
     saved = false,
+    deleteError?: string,
   ) {
     const [profile, basket, orders] = await Promise.all([
       service.getProfile(token),
@@ -105,6 +115,7 @@ export function createProfileRouter(service: ProfileService): Router {
       orders: orders?.map(toOrderView) ?? [],
       ordersFailed: orders === null,
       saved,
+      deleteError,
       values: form?.values ?? {
         firstname: profile.firstname ?? '',
         surname: profile.surname ?? '',
@@ -157,6 +168,99 @@ export function createProfileRouter(service: ProfileService): Router {
       }
       handleFailure(error, req, res)
     }
+  })
+
+  type PasswordCheck =
+    | { ok: true }
+    | { ok: false; status: number; message: string }
+
+  // The backend does not ask for a password, so it is checked against the sign-in service first
+  async function checkPassword(
+    req: Request,
+    token: string,
+  ): Promise<PasswordCheck> {
+    const password = String(req.body?.password ?? '')
+    if (!password) {
+      return { ok: false, status: 400, message: PASSWORD_REQUIRED }
+    }
+
+    const { email } = await service.getProfile(token)
+    const result = await authService.login(email, password, req.ip ?? 'unknown')
+    if (result.status === 'success') return { ok: true }
+    if (result.status === 'locked') {
+      return { ok: false, status: 429, message: PASSWORD_LOCKED }
+    }
+    if (result.status === 'error') {
+      return { ok: false, status: 503, message: DELETE_ERROR }
+    }
+    return { ok: false, status: 401, message: PASSWORD_INCORRECT }
+  }
+
+  router.post('/delete/verify', async (req, res) => {
+    const token = req.auth?.accessToken
+    res.set('Cache-Control', 'no-store')
+    if (!token) {
+      res.status(401).json({ error: 'Please sign in again.' })
+      return
+    }
+
+    try {
+      const check = await checkPassword(req, token)
+      if (check.ok) res.status(204).end()
+      else res.status(check.status).json({ error: check.message })
+    } catch (error) {
+      if (error instanceof ProfileError && error.status === 401) {
+        res.status(401).json({ error: 'Please sign in again.' })
+        return
+      }
+      console.error('Password check failed', (error as Error).message)
+      res.status(502).json({ error: DELETE_ERROR })
+    }
+  })
+
+  router.post('/delete', async (req, res) => {
+    const token = req.auth?.accessToken
+    if (!token) {
+      signInAgain(req, res)
+      return
+    }
+
+    async function showDeleteError(status: number, message: string) {
+      try {
+        await renderPage(res, token as string, status, undefined, false, message)
+      } catch (renderError) {
+        handleFailure(renderError, req, res)
+      }
+    }
+
+    try {
+      // The password is checked again here, so the confirmation step cannot be skipped
+      const check = await checkPassword(req, token)
+      if (!check.ok) {
+        await showDeleteError(check.status, check.message)
+        return
+      }
+      await service.deleteAccount(token)
+    } catch (error) {
+      if (error instanceof ProfileError && error.status === 401) {
+        signInAgain(req, res)
+        return
+      }
+      // A missing account means it is already gone, so the customer is still signed out below
+      if (!(error instanceof ProfileError && error.status === 404)) {
+        console.error('Account deletion failed', (error as Error).message)
+        await showDeleteError(502, DELETE_ERROR)
+        return
+      }
+    }
+
+    // The backend has revoked the token, so there is nothing left to log out on its side
+    clearAuthentication(req, res)
+    res.locals.isSignedIn = false
+    res.locals.isAdmin = false
+    res.locals.csrfToken = req.browserState.csrfToken
+    res.set('Cache-Control', 'no-store')
+    res.render('account-deleted')
   })
 
   return router

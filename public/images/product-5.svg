@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 360" role="img" aria-labelledby="title">
+  <title id="title">Liquid Lipstick Set with three shades</title>
+  <rect width="400" height="360" rx="20" fill="#fff0f3"/>
+  <ellipse cx="200" cy="310" rx="130" ry="12" fill="#ecd5dc"/>
+  <g stroke="#fff" stroke-width="3"><rect x="90" y="150" width="55" height="150" rx="7" fill="#b93857"/><rect x="172" y="150" width="55" height="150" rx="7" fill="#8e304c"/><rect x="254" y="150" width="55" height="150" rx="7" fill="#bc776d"/></g>
+  <g fill="#1f2933"><rect x="90" y="80" width="55" height="80" rx="5"/><rect x="172" y="80" width="55" height="80" rx="5"/><rect x="254" y="80" width="55" height="80" rx="5"/></g>
+  <g fill="#fff" font-family="sans-serif" font-size="11" text-anchor="middle"><text x="118" y="230">LIQUID</text><text x="200" y="230">LIPSTICK</text><text x="282" y="230">SET</text></g>
+</svg>

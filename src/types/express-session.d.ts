@@ -1,0 +1,13 @@
+import 'express-session'
+
+declare module 'express-session' {
+  interface SessionData {
+    customerId?: string
+    accountToken?: string
+    registrationDetailsPending?: boolean
+    pendingRegistrationEmail?: string
+    csrfToken?: string
+    isAdmin?: boolean
+    pendingMfa?: { customerId: string; returnTo: string; expiresAt: number }
+  }
+}

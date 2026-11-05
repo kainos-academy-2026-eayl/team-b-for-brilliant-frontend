@@ -118,4 +118,31 @@ describe('profile service', () => {
       await expect(service.getProfile('tok')).rejects.toMatchObject({ status })
     }
   })
+
+  it('deletes the account with DELETE and accepts an empty 204 response', async () => {
+    const fetchFn = vi.fn(async () => new Response(null, { status: 204 }))
+    const service = createProfileService(
+      'http://backend:3000',
+      fetchFn as typeof fetch,
+    )
+
+    await expect(service.deleteAccount('tok')).resolves.toBeUndefined()
+
+    const [url, init] = fetchFn.mock.calls[0] as unknown as [URL, RequestInit]
+    expect(String(url)).toBe('http://backend:3000/account')
+    expect(init.method).toBe('DELETE')
+  })
+
+  it('throws a ProfileError with the status when deletion fails', async () => {
+    const fetchFn = vi.fn(async () => jsonResponse({ error: 'nope' }, 500))
+    const service = createProfileService(
+      'http://backend:3000',
+      fetchFn as typeof fetch,
+    )
+
+    await expect(service.deleteAccount('tok')).rejects.toMatchObject({
+      name: 'ProfileError',
+      status: 500,
+    })
+  })
 })
