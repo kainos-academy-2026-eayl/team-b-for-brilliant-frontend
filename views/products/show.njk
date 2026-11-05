@@ -10,102 +10,13 @@
 
 {% block content %}
   <a class="products-back" href="/products">Back to products</a>
-  <article class="product-detail">
-    <div class="product-detail__images{% if product.productImages.length > 1 %} product-detail__images--gallery{% endif %}">
-      {% if product.productImages.length > 1 %}
-        <div class="product-detail__thumbnails" role="group" aria-label="Product images">
-          {% for image in product.productImages %}
-            <button
-              type="button"
-              class="product-detail__thumbnail"
-              aria-label="View image {{ loop.index }} of {{ product.productImages.length }} for {{ product.name }}"
-              aria-controls="product-main-image"
-              aria-pressed="{{ 'true' if loop.first else 'false' }}"
-              data-image-src="{{ image.imageUrl }}"
-              data-image-alt="{{ product.name }} - image {{ loop.index }} of {{ product.productImages.length }}"
-            >
-              <img src="{{ image.imageUrl }}" alt="">
-            </button>
-          {% endfor %}
-        </div>
-      {% endif %}
-      {% if product.productImages.length %}
-        <div class="product__image product-detail__main-image">
-          <img id="product-main-image" src="{{ product.productImages[0].imageUrl }}" alt="{{ product.name }}{% if product.productImages.length > 1 %} - image 1 of {{ product.productImages.length }}{% endif %}">
-        </div>
-      {% else %}
-        <div class="product__image"><span>No image available</span></div>
-      {% endif %}
-    </div>
-    <div class="product-detail__body">
-      <h1>{{ product.name }}</h1>
-      {% if product.departments.length and not product.categories.length %}
-        <dl class="product-detail__classification">
-          <dt>Departments</dt>
-          <dd>
-            <ul>
-              {% for department in product.departments %}
-                <li>{{ department.name }}</li>
-              {% endfor %}
-            </ul>
-          </dd>
-        </dl>
-      {% endif %}
-      {% if product.quantity > 0 %}
-        <span class="stock stock--in">In stock</span>
-      {% else %}
-        <span class="stock stock--out">Out of stock</span>
-      {% endif %}
-      {% if product.currentPrice %}
-        <p class="product__price">£{{ product.currentPrice }}</p>
-      {% else %}
-        <p class="product__price product__price--unavailable">Price unavailable</p>
-      {% endif %}
-      <form method="post" action="/basket/items" class="product-detail__basket">
-        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-        <input type="hidden" name="productID" value="{{ product.productID }}">
-        <div class="form-field">
-          <label for="product-quantity">Quantity</label>
-          <select id="product-quantity" name="quantity"{% if product.quantity <= 0 %} disabled{% endif %}>
-            {% if product.quantity > 0 %}
-              {% set maxQuantity = 10 if product.quantity > 10 else product.quantity %}
-              {% for quantity in range(1, maxQuantity + 1) %}
-                <option value="{{ quantity }}">{{ quantity }}</option>
-              {% endfor %}
-            {% else %}
-              <option value="0">0</option>
-            {% endif %}
-          </select>
-        </div>
-        <button type="submit" class="button"{% if product.quantity <= 0 %} disabled{% endif %}>Add to basket</button>
-      </form>
-      {% if product.description %}
-        <h2>Description</h2>
-        <p class="product-detail__description">{{ product.description }}</p>
-      {% endif %}
-      {% if product.categories.length %}
-        <h2>Categories</h2>
-        <dl class="product-detail__classification">
-          {% for departmentID, categories in product.categories | groupby('departmentID') %}
-            {% set departmentName = 'Other categories' %}
-            {% for department in product.departments %}
-              {% if department.departmentID == departmentID %}
-                {% set departmentName = department.name %}
-              {% endif %}
-            {% endfor %}
-            <dt>{{ departmentName }}</dt>
-            <dd>
-              <ul>
-                {% for category in categories %}
-                  <li>{{ category.name }}</li>
-                {% endfor %}
-              </ul>
-            </dd>
-          {% endfor %}
-        </dl>
-      {% endif %}
-    </div>
-  </article>
+  {% if isAdmin %}
+    {% if product.draft or not product.visible %}
+      <p class="product__draft">Draft - visible only to admins</p>
+    {% endif %}
+    <p><a href="/products/{{ product.productID | urlencode }}/edit">Edit product</a></p>
+  {% endif %}
+  {% include "products/detail.njk" %}
 {% endblock %}
 
 {% block scripts %}
