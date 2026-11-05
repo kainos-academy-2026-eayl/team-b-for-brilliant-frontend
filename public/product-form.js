@@ -6,8 +6,85 @@ const status = document.getElementById('image-order-status')
 
 if (imageInput && orderInput && panel && list && status) {
   let images = []
+  let selectedPreviewImageIndex = null
+  const productPreview = document.getElementById('product-preview')
+
+  function updateProductPreview() {
+    if (!productPreview) return
+    const name = document.getElementById('name').value.trim() || 'Product name'
+    const description = document.getElementById('description').value.trim()
+    const price = document.getElementById('price').value.trim()
+    const quantity = document.getElementById('quantity').value.trim()
+    const draft = document.getElementById('draft').value
+    const validPrice = /^\d{1,8}(?:\.\d{1,2})?$/.test(price)
+    const validQuantity = /^\d+$/.test(quantity) && Number.isInteger(Number(quantity)) &&
+      Number(quantity) <= 2147483647
+    const inStock = validQuantity && Number(quantity) > 0
+    const previewPrice = document.getElementById('product-preview-price')
+    const previewStock = document.getElementById('product-preview-stock')
+    const previewImage = document.getElementById('product-preview-image')
+    const imagePlaceholder = document.getElementById('product-preview-image-placeholder')
+    const selectedImage = images.find((image) => image.index === selectedPreviewImageIndex) || images[0]
+    selectedPreviewImageIndex = selectedImage?.index ?? null
+    const selectedPosition = images.indexOf(selectedImage)
+
+    document.getElementById('product-preview-name').textContent = name
+    previewPrice.textContent = validPrice ? `\u00a3${Number(price).toFixed(2)}` : 'Price unavailable'
+    previewPrice.classList.toggle('product__price--unavailable', !validPrice)
+    previewStock.hidden = !validQuantity
+    previewStock.textContent = inStock ? 'In stock' : 'Out of stock'
+    previewStock.classList.toggle('stock--in', inStock)
+    previewStock.classList.toggle('stock--out', validQuantity && !inStock)
+    document.getElementById('product-preview-visibility').textContent = draft === 'true'
+      ? 'Draft - hidden from the shop'
+      : draft === 'false' ? 'Visible in the shop' : 'Select a draft status.'
+    document.getElementById('product-preview-description-section').hidden = !description
+    document.getElementById('product-preview-description').textContent = description
+    previewImage.alt = `${name}${images.length > 1 ? ` - image ${selectedPosition + 1} of ${images.length}` : ''}`
+    document.getElementById('product-preview-image-frame').classList.toggle('product-detail__main-image', images.length > 0)
+    if (selectedImage) {
+      if (previewImage.getAttribute('src') !== selectedImage.url) {
+        previewImage.src = selectedImage.url
+        previewImage.hidden = false
+        imagePlaceholder.hidden = true
+      }
+    } else {
+      previewImage.removeAttribute('src')
+      previewImage.hidden = true
+      imagePlaceholder.hidden = false
+    }
+    Array.from(document.getElementById('product-preview-thumbnails').children).forEach((button, position) => {
+      button.setAttribute('aria-label', `View image ${position + 1} of ${images.length} for ${name}`)
+      button.setAttribute('aria-pressed', String(images[position].index === selectedPreviewImageIndex))
+    })
+  }
+
+  function renderPreviewGallery() {
+    if (!productPreview) return
+    const thumbnails = document.getElementById('product-preview-thumbnails')
+    thumbnails.replaceChildren()
+    thumbnails.hidden = images.length < 2
+    document.getElementById('product-preview-gallery').classList.toggle('product-detail__images--gallery', images.length > 1)
+    if (images.length < 2) return
+    for (const image of images) {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.className = 'product-detail__thumbnail'
+      button.setAttribute('aria-controls', 'product-preview-image')
+      const thumbnail = document.createElement('img')
+      thumbnail.src = image.url
+      thumbnail.alt = ''
+      button.append(thumbnail)
+      button.addEventListener('click', () => {
+        selectedPreviewImageIndex = image.index
+        updateProductPreview()
+      })
+      thumbnails.append(button)
+    }
+  }
 
   function render(focusIndex, focusDirection) {
+    selectedPreviewImageIndex = null
     list.replaceChildren()
     orderInput.value = JSON.stringify(images.map((image) => image.index))
     panel.hidden = images.length === 0
@@ -59,6 +136,8 @@ if (imageInput && orderInput && panel && list && status) {
         focusTarget?.focus()
       }
     })
+    renderPreviewGallery()
+    updateProductPreview()
   }
 
   imageInput.addEventListener('change', () => {
@@ -72,5 +151,46 @@ if (imageInput && orderInput && panel && list && status) {
       : `${images.length} image${images.length === 1 ? '' : 's'} selected.${images.length > 5 ? ' Choose no more than 5 images.' : ' The first image is the main image.'}`
   })
 
+  if (productPreview) {
+    document.getElementById('product-preview-image').addEventListener('error', () => {
+      document.getElementById('product-preview-image').hidden = true
+      document.getElementById('product-preview-image-placeholder').hidden = false
+    })
+    imageInput.form.addEventListener('input', updateProductPreview)
+    imageInput.form.addEventListener('change', updateProductPreview)
+    updateProductPreview()
+    const views = [
+      { tab: document.getElementById('product-details-tab'), panel: document.getElementById('product-create-form') },
+      { tab: document.getElementById('product-preview-tab'), panel: productPreview },
+    ]
+    function activateView(selectedIndex, focusTab = false) {
+      if (selectedIndex === 1) updateProductPreview()
+      views.forEach(({ tab, panel }, index) => {
+        const selected = index === selectedIndex
+        tab.setAttribute('aria-selected', String(selected))
+        tab.tabIndex = selected ? 0 : -1
+        panel.hidden = !selected
+      })
+      if (focusTab) views[selectedIndex].tab.focus()
+    }
+    views.forEach(({ tab, panel }, index) => {
+      panel.setAttribute('role', 'tabpanel')
+      panel.setAttribute('aria-labelledby', tab.id)
+      panel.setAttribute('tabindex', '0')
+      tab.addEventListener('click', () => activateView(index))
+      tab.addEventListener('keydown', (event) => {
+        let next
+        if (event.key === 'ArrowRight') next = (index + 1) % views.length
+        else if (event.key === 'ArrowLeft') next = (index + views.length - 1) % views.length
+        else if (event.key === 'Home') next = 0
+        else if (event.key === 'End') next = views.length - 1
+        else return
+        event.preventDefault()
+        activateView(next, true)
+      })
+    })
+    activateView(0)
+    document.getElementById('product-editor-tabs').hidden = false
+  }
   if (imageInput.files.length) imageInput.dispatchEvent(new Event('change'))
 }

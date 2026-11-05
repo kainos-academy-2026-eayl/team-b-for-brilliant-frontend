@@ -2,9 +2,24 @@
 
 {% block title %}Create product | B-Brilliant{% endblock %}
 
+{% block head %}
+  <style>
+    {% include "products/product-card.css" %}
+    {% include "products/product-detail.css" %}
+  </style>
+{% endblock %}
+
+{% block main_class %}product-create-main{% endblock %}
+
 {% block content %}
-  <section class="card">
-    <h1>Create product</h1>
+<div class="product-editor">
+  <h1 class="product-editor__heading">Create product</h1>
+  <div class="product-editor__tabs" id="product-editor-tabs" role="tablist" aria-label="Create product view" hidden>
+    <button class="button" type="button" id="product-details-tab" role="tab" aria-controls="product-create-form" aria-selected="true">Product details</button>
+    <button class="button" type="button" id="product-preview-tab" role="tab" aria-controls="product-preview" aria-selected="false" tabindex="-1">Customer preview</button>
+  </div>
+  <section class="card product-editor__details product-editor__panel" id="product-create-form">
+    <h2>Product details</h2>
     <p class="card-subtitle">All fields except description and images are required.</p>
 
     {% if productCreated %}
@@ -19,7 +34,7 @@
       <p class="form-message">If you selected images, select them again before retrying.</p>
     {% endif %}
 
-    <form method="post" action="/products/add" enctype="multipart/form-data" novalidate>
+    <form id="product-create-fields" method="post" action="/products/add" enctype="multipart/form-data" novalidate>
       <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
       <div class="form-field">
@@ -76,7 +91,7 @@
       </div>
 
       <div id="image-order-panel" hidden>
-        <h2 id="image-order-heading">Image order</h2>
+        <h3 id="image-order-heading">Image order</h3>
         <ol id="image-order-list" class="image-order" aria-labelledby="image-order-heading"></ol>
       </div>
       <p id="image-order-status" class="form-message" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -85,6 +100,34 @@
     </form>
     <p class="card-footer"><a href="/admin/account">Cancel and return to your account</a></p>
   </section>
+  <section class="product-preview product-editor__panel" id="product-preview" aria-labelledby="product-preview-heading" hidden>
+    <h2 id="product-preview-heading">Customer preview</h2>
+    <p class="form-message">Preview only. This product has not been created.</p>
+    <p class="form-message" id="product-preview-visibility"></p>
+    <article class="product-detail">
+      <div class="product-detail__images" id="product-preview-gallery">
+        <div class="product-detail__thumbnails" id="product-preview-thumbnails" role="group" aria-label="Product images" hidden></div>
+        <div class="product__image" id="product-preview-image-frame">
+          <img id="product-preview-image" alt="" hidden>
+          <span id="product-preview-image-placeholder">No image available</span>
+        </div>
+      </div>
+      <div class="product-detail__body">
+        <h3 class="product-detail__name" id="product-preview-name">Product name</h3>
+        <span class="stock" id="product-preview-stock" hidden></span>
+        <p class="product__price product__price--unavailable" id="product-preview-price">Price unavailable</p>
+        <section id="product-preview-description-section" aria-labelledby="product-preview-description-heading" hidden>
+          <h4 class="product-detail__section-heading" id="product-preview-description-heading">Description</h4>
+          <p class="product-detail__description" id="product-preview-description"></p>
+        </section>
+      </div>
+    </article>
+    <div class="product-editor__actions">
+      <button type="submit" class="button" form="product-create-fields">Create product</button>
+      <p class="card-footer"><a href="/admin/account">Cancel and return to your account</a></p>
+    </div>
+  </section>
+</div>
 {% endblock %}
 
 {% block scripts %}

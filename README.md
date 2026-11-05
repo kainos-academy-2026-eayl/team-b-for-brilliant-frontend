@@ -162,6 +162,20 @@ reloading the form does not create another product.
 The page inherits the shared header, menu, keyboard controls and light/dark
 theme from `views/main.njk`; all fields use shared form components.
 
+With JavaScript enabled, **Product details** and **Customer preview** tabs switch
+between editing and a customer-style product detail page. Switching tabs keeps
+all entered values, selected files and image order without submitting the form.
+Arrow Left/Right and Home/End operate the tabs; Enter/Space activate their native
+buttons. Validation responses always reopen Product details so errors are visible.
+
+The customer preview updates the name, price, stock, draft visibility and
+description. Its clickable image thumbnails show every selected image in the
+chosen order, using the same responsive gallery/detail styles as the customer
+product page. Viewing another thumbnail does not change the saved order.
+Reordering or replacing uploads resets the gallery to the new main image.
+The product can be created from either tab, but previewing alone never saves it.
+Without JavaScript, the tabs and preview stay hidden and the form remains usable.
+
 ## Project structure
 
 ```
