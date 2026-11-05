@@ -29,7 +29,7 @@ import {
   createLoginThrottle,
   type LoginThrottle,
 } from './middleware/loginThrottle';
-import { requireAdmin } from './middleware/requireAdmin';
+import { requireAdmin, requireAdminRole } from './middleware/requireAdmin';
 import { requireAuth } from './middleware/requireAuth';
 import type { Discount } from './models/discount';
 import type { ProductWithPrice } from './models/product';
@@ -149,6 +149,7 @@ export function createApp(options: AppOptions = {}): Express {
   );
   app.use(
     '/discounts',
+    requireAdminRole,
     createDiscountsRouter(
       options.fetchDiscounts ?? getDiscounts,
       options.saveDiscount ?? createDiscount,
