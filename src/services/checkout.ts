@@ -11,6 +11,29 @@ export interface PlacedOrder extends Quote {
     orderID: string;
 }
 
+export interface ReorderItem {
+    productID: string;
+    productName: string;
+    imageUrl: string | null;
+    quantity: number;
+    unitPrice: string | null;
+    lineTotal: string | null;
+    available: boolean;
+    reason: string | null;
+}
+
+export interface UnavailableItem {
+    productName: string;
+    reason: string;
+}
+
+export interface ReorderSession {
+    items: ReorderItem[];
+    unavailableItems: UnavailableItem[];
+    canCheckOut: boolean;
+    totals: Quote | null;
+}
+
 export interface DeliveryDetails {
     firstname: string;
     surname: string;
@@ -29,6 +52,7 @@ export interface CheckoutRequest {
     delivery: DeliveryDetails;
     discountCode: string;
     card: CardDetails;
+    reorderOrderID?: string;
 }
 
 export class CheckoutError extends Error {
@@ -45,6 +69,7 @@ export class CheckoutError extends Error {
 
 export interface CheckoutService {
     getQuote(token: string, discountCode: string): Promise<Quote>;
+    getReorderSession(token: string, orderID: string, discountCode: string): Promise<ReorderSession>;
     placeOrder(token: string, request: CheckoutRequest): Promise<PlacedOrder>;
 }
 
@@ -82,6 +107,8 @@ export function createCheckoutService(
 
     return {
         getQuote: (token, discountCode) => post<Quote>('/checkout/quote', token, { discountCode }),
+        getReorderSession: (token, orderID, discountCode) =>
+            post<ReorderSession>('/checkout/reorder-session', token, { orderID, discountCode }),
         placeOrder: (token, request) => post<PlacedOrder>('/checkout', token, request),
     };
 }

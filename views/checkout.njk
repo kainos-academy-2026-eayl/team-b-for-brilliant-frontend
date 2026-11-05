@@ -65,10 +65,24 @@
 {% block content %}
 <h1 class="checkout-title">Checkout</h1>
 
+{% if isReorder %}
+  <p class="form-message" role="status">You are placing a new order based on a previous one. Your basket has not been changed.</p>
+  {% if unavailableItems.length %}
+    <div class="alert" role="alert">
+      <p>These items can't be reordered and have been left out:</p>
+      <ul>
+        {% for item in unavailableItems %}
+          <li>{{ item.productName }}: {{ item.reason }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+{% endif %}
+
 {% if formError or quoteError or errorList.length %}
   <div class="alert" role="alert">
     {% if formError %}
-      <p>{{ formError }} <a href="/basket">Check your basket</a></p>
+      <p>{{ formError }} {% if isReorder %}<a href="/account">Back to your account</a>{% else %}<a href="/basket">Check your basket</a>{% endif %}</p>
     {% endif %}
     {% if quoteError %}
       <p>{{ quoteError }} Use Apply to try loading your total again.</p>
@@ -87,12 +101,16 @@
 <form id="checkout-form" method="post" action="/checkout" novalidate>
   <input type="hidden" name="_csrf" value="{{ csrfToken }}">
   <input type="hidden" name="quotedDiscountCode" value="{{ quotedDiscountCode }}">
+  <input type="hidden" name="reorderOrderID" value="{{ reorderOrderID }}">
 
   <div class="checkout-layout">
     <div class="checkout-main">
 
       <section class="card checkout-fieldset" aria-labelledby="items-heading">
-        <h2 id="items-heading">Your order</h2>
+        <h2 id="items-heading">{% if isReorder %}Your reorder{% else %}Your order{% endif %}</h2>
+        {% if noItemsAvailable %}
+          <p class="alert" role="alert">None of the items from this order are available, so you can't check out.</p>
+        {% endif %}
         {% if contextAvailable %}
           <ul class="checkout-items">
             {% for item in items %}
@@ -222,7 +240,7 @@
         <p class="form-message" role="status">Order total unavailable until checkout details can be loaded.</p>
       {% endif %}
 
-      <p class="back-link"><a href="/basket">Back to basket</a></p>
+      <p class="back-link">{% if isReorder %}<a href="/account">Back to your account</a>{% else %}<a href="/basket">Back to basket</a>{% endif %}</p>
     </aside>
     </div>
   </div>

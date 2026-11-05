@@ -21,4 +21,7 @@ export const stubProfileService: ProfileService = {
   async getOrders() {
     return []
   },
+  async deleteAccount() {
+    throw new Error('Account deletion is not used in this test')
+  },
 }
