@@ -24,6 +24,7 @@ export interface ProfileService {
   updateProfile(token: string, input: ProfileInput): Promise<Profile>
   getBasket(token: string): Promise<Basket>
   getOrders(token: string): Promise<Order[]>
+  deleteAccount(token: string): Promise<void>
 }
 
 export function createProfileService(
@@ -33,7 +34,7 @@ export function createProfileService(
   async function callBackend<T>(
     path: string,
     token: string,
-    method: 'GET' | 'PUT' = 'GET',
+    method: 'GET' | 'PUT' | 'DELETE' = 'GET',
     payload?: unknown,
   ): Promise<T> {
     const headers: Record<string, string> = {
@@ -53,6 +54,7 @@ export function createProfileService(
 
     const response = await fetchFn(new URL(path, baseUrl), init)
 
+    if (response.status === 204) return undefined as T
     if (response.ok) return (await response.json()) as T
 
     if (response.status === 400) {
@@ -79,5 +81,8 @@ export function createProfileService(
     getBasket: (token) => callBackend<Basket>('/basket', token),
     getOrders: async (token) =>
       (await callBackend<{ orders: Order[] }>('/orders', token)).orders,
+    deleteAccount: async (token) => {
+      await callBackend<void>('/account', token, 'DELETE')
+    },
   }
 }

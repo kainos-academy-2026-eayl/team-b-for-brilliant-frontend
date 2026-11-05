@@ -1,0 +1,15 @@
+{% extends "main.njk" %}
+
+{% block title %}Account deleted | B-Brilliant{% endblock %}
+
+{% block head %}
+<meta http-equiv="refresh" content="5;url=/login">
+{% endblock %}
+
+{% block content %}
+<section class="card" aria-labelledby="deleted-heading">
+  <h1 id="deleted-heading">Account deleted</h1>
+  <p class="alert alert-success" role="status">Your account has been deleted and you have been signed out.</p>
+  <p>You will be taken to the sign in page in a few seconds. If nothing happens, <a href="/login">go to sign in</a>.</p>
+</section>
+{% endblock %}

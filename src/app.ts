@@ -182,7 +182,10 @@ export function createApp(options: AppOptions = {}): Express {
   app.use(
     '/account',
     requireAuth,
-    createProfileRouter(options.profileService ?? createProfileService()),
+    createProfileRouter(
+      options.profileService ?? createProfileService(),
+      authService,
+    ),
   );
   app.use(
     '/basket',

@@ -25,6 +25,13 @@
   #orders-heading { margin-top: 0; }
   .order { padding: 1rem 0; border-top: 1px solid #d8dee4; }
   .order h3 { margin: 0 0 0.25rem; }
+  .delete-account { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border); }
+  .button-danger { color: var(--color-error-text); background: var(--color-error-bg); border-color: var(--color-error-border); }
+  .button-danger:hover:not(:disabled) { background: var(--color-error-border); }
+  .delete-dialog { max-width: 24rem; padding: 1.5rem; color: var(--color-text); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 0.5rem; }
+  .delete-dialog::backdrop { background: rgb(0 0 0 / 0.6); }
+  .delete-dialog-actions { display: flex; gap: 0.75rem; }
+  .delete-dialog-actions .button { flex: 1; }
   .order-reference { margin: 0 0 0.5rem; font-size: 0.875rem; overflow-wrap: anywhere; }
 </style>
 {% endblock %}
@@ -38,6 +45,9 @@
 
   {% if saved %}
     <p class="alert alert-success" role="status">Your details have been saved.</p>
+  {% endif %}
+  {% if deleteError %}
+    <p class="alert" role="alert">{{ deleteError }}</p>
   {% endif %}
   {% if hasErrors %}
     <p class="alert" role="alert">We could not save your details. Please check the highlighted fields.</p>
@@ -56,6 +66,37 @@
     {{ textField('postcode', 'Postcode', values.postcode, errors.postcode, 'postal-code') }}
     <button type="submit" class="button">Save details</button>
   </form>
+
+  <div class="delete-account">
+    <button type="button" class="button button-danger" id="delete-account-open" aria-haspopup="dialog">Delete account</button>
+  </div>
+
+  <dialog class="delete-dialog" id="delete-account-dialog" aria-labelledby="delete-account-title">
+    <h2 id="delete-account-title">Delete account</h2>
+
+    <form id="delete-password-form" method="post" action="/account/delete/verify" novalidate>
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+      <div class="form-field">
+        <label for="delete-password">Enter your password to continue</label>
+        <input id="delete-password" name="password" type="password" autocomplete="current-password" required>
+        <p id="delete-password-error" class="field-error" role="alert" hidden></p>
+      </div>
+      <div class="delete-dialog-actions">
+        <button type="submit" class="button button-danger">Continue</button>
+        <button type="button" class="button" id="delete-password-cancel">Cancel</button>
+      </div>
+    </form>
+
+    <form id="delete-confirm-form" method="post" action="/account/delete" hidden>
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+      <input type="hidden" name="password" id="delete-confirm-password">
+      <p id="delete-account-message">Once an account is deleted all its data is lost, are you sure?</p>
+      <div class="delete-dialog-actions">
+        <button type="submit" class="button button-danger">Yes</button>
+        <button type="button" class="button" id="delete-account-cancel">No</button>
+      </div>
+    </form>
+  </dialog>
 </section>
 
 <div class="profile-side">
@@ -109,3 +150,6 @@
 </div>
 {% endblock %}
 
+{% block scripts %}
+<script src="/static/delete-account.js" defer></script>
+{% endblock %}
