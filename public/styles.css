@@ -7,6 +7,7 @@
     --color-action-bg: var(--color-primary);
     --color-action-hover: var(--color-primary-hover);
     --color-secondary: #028aa4;
+    --color-discount: #017389;
     --color-link: #017389;
     --color-text: #1f2933;
     --color-muted: #52606d;
@@ -25,6 +26,7 @@
 :root[data-theme='dark'] {
     color-scheme: dark;
     --color-bg: #2b2b38;
+    --color-discount: var(--color-primary);
     --color-text: #fff;
     --color-muted: #fff;
     --color-link: #fff;

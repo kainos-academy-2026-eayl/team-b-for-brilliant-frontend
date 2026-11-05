@@ -51,6 +51,7 @@
   .discount-applied { margin: 0.25rem 0 0; font-weight: 600; }
 
   .total-row { display: flex; justify-content: space-between; margin: 0 0 0.5rem; }
+  .total-discount { color: var(--color-discount); font-weight: 600; }
   .total-final { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border); font-size: 1.25rem; font-weight: 700; }
   .back-link { margin: 1rem 0 0; text-align: center; }
   .checkout-summary { display: flex; flex-direction: column; }
@@ -216,7 +217,7 @@
 
     <aside class="card checkout-summary" aria-labelledby="summary-heading">
       <h2 id="summary-heading">Order total</h2>
-      <button type="submit" id="pay-button" class="button" data-available="{{ 'true' if canPay else 'false' }}" data-label="{% if canPay %}Pay £{{ quote.total }}{% else %}Pay unavailable{% endif %}"{% if not canPay %} disabled{% endif %}>{% if canPay %}Pay £{{ quote.total }}{% else %}Pay unavailable{% endif %}</button>
+      <button type="submit" id="pay-button" class="button" data-available="{{ 'true' if payAvailable else 'false' }}" data-label="{% if payAvailable %}Pay £{{ quote.total }}{% else %}Pay unavailable{% endif %}"{% if not canPay %} disabled{% endif %}>{% if payAvailable %}Pay £{{ quote.total }}{% else %}Pay unavailable{% endif %}</button>
 
       <div class="form-field">
         <label for="discountCode">Discount code</label>
@@ -232,7 +233,7 @@
       {% if quote %}
         <p class="total-row"><span>Subtotal</span><span>£{{ quote.subtotal }}</span></p>
         {% if quote.discount != '0.00' %}
-          <p class="total-row"><span>Discount</span><span>−£{{ quote.discount }}</span></p>
+          <p class="total-row total-discount"><span>Discount</span><span>−£{{ quote.discount }}</span></p>
         {% endif %}
         <p class="total-row"><span>Delivery</span><span>£{{ quote.delivery }}</span></p>
         <p class="total-row total-final"><span>Total</span><span>£{{ quote.total }}</span></p>

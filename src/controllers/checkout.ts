@@ -43,6 +43,7 @@ const FIELD_ORDER: FieldName[] = [
 ];
 
 const UK_POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i;
+const INVALID_DISCOUNT_MESSAGE = 'Invalid discount code';
 const GENERIC_ERROR = 'We could not complete your order right now. Please try again.';
 
 type AddressChoice = 'saved' | 'new';
@@ -334,7 +335,7 @@ export function createCheckoutRouter(
                 if (!(error instanceof CheckoutError) || error.status !== 400) {
                     return { quote: null, discountError: null, failure: error };
                 }
-                discountError = error.message;
+                discountError = INVALID_DISCOUNT_MESSAGE;
             }
         }
 
@@ -385,6 +386,8 @@ export function createCheckoutRouter(
             items: context.items,
             quote,
             quoteError,
+            // Paying is possible whenever the order is quoted; an invalid code only blocks it until the field is cleared
+            payAvailable: context.available && canCheckOut(context.items) && Boolean(quote),
             canPay:
                 context.available &&
                 canCheckOut(context.items) &&
