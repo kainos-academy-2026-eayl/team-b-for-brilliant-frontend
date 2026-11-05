@@ -10,7 +10,7 @@ adminAccountRouter.get('/', (_req: Request, res: Response) => {
 adminAccountRouter.post('/logout', async (req: Request, res: Response) => {
     try {
         await signOut(req, res);
-        res.redirect('/admin/login');
+        res.redirect('/home');
     } catch (error) {
         console.error('Admin JWT sign-out failed', error);
         res.status(503).render('error', {

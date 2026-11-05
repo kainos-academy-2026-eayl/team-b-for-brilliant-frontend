@@ -5,18 +5,13 @@ import {
   type AccountClient,
   createAccountClient,
 } from './clients/accountClient';
-import { createAdminClient } from './clients/adminClient';
-import { createAdminLoginRouter } from './controllers/adminLogin';
-import {
-  type AdminAuthService,
-  createAdminAuthService,
-} from './services/adminAuthService';
 import { createAuthRouter } from './controllers/auth-controllers';
 import { adminAccountRouter } from './controllers/adminAccount';
 import { createBasketRouter } from './controllers/basket';
 import { createDiscountsRouter } from './controllers/discounts';
 import { createImagesRouter } from './controllers/images';
 import { createProductsRouter } from './controllers/products';
+import { createProductCreationRouter } from './controllers/createProduct';
 import { createProfileRouter } from './controllers/profile';
 import { createAccountRouter } from './controllers/register';
 import { createRegistrationDetailsRouter } from './controllers/registrationDetails';
@@ -30,6 +25,7 @@ import {
   type LoginThrottle,
 } from './middleware/loginThrottle';
 import { requireAdmin } from './middleware/requireAdmin';
+import { parseProductUpload } from './middleware/productUpload';
 import { requireAuth } from './middleware/requireAuth';
 import type { Discount } from './models/discount';
 import type { ProductWithPrice } from './models/product';
@@ -40,6 +36,7 @@ import { type BasketService, createBasketService } from './services/basket';
 import { fetchImage, type ProxiedImage } from './services/images';
 import {
   getApiBaseUrl,
+  createProduct,
   getProducts,
   getProductsWithPrices,
   getProductWithPrice,
@@ -60,12 +57,12 @@ interface AppOptions {
   profileService?: ProfileService;
   basketService?: BasketService;
   throttle?: LoginThrottle;
-  adminAuthService?: AdminAuthService;
   fetchProducts?: (filters?: ProductFilters) => Promise<ProductWithPrice[]>;
   fetchProduct?: (productID: string) => Promise<ProductWithPrice | null>;
   fetchProxiedImage?: (fileName: string) => Promise<ProxiedImage | null>;
   fetchDiscounts?: (token?: string) => Promise<Discount[]>;
   saveDiscount?: typeof createDiscount;
+  saveProduct?: typeof createProduct;
 }
 
 export function createApp(options: AppOptions = {}): Express {
@@ -89,14 +86,16 @@ export function createApp(options: AppOptions = {}): Express {
 
   app.use(express.urlencoded({ extended: false, limit: '10kb' }));
   app.use(createBrowserState());
-  app.use(csrfProtection);
   app.use(createAuthentication(options.tokenClient ?? createTokenClient(getApiBaseUrl())));
   app.use((req, res, next) => {
     res.locals.isSignedIn = Boolean(req.auth);
+    res.locals.isAdmin = req.auth?.accessLevel === 1;
     res.locals.csrfToken = req.browserState.csrfToken;
     res.locals.currentPath = req.path;
     next();
   });
+  app.post('/products/add', requireAdmin, parseProductUpload);
+  app.use(csrfProtection);
 
   app.get('/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', uptime: process.uptime() });
@@ -104,16 +103,16 @@ export function createApp(options: AppOptions = {}): Express {
 
   app.use(
     '/home',
-    requireAuth,
     createHomeRouter(options.fetchProducts ?? getProductsWithPrices),
   );
 
   app.use('/verify-email', verifyEmailRouter);
 
   app.get('/', (_req: Request, res: Response) => {
-    res.redirect('/login');
+    res.redirect('/home');
   });
 
+  app.use('/products/add', createProductCreationRouter(options.saveProduct ?? createProduct));
   app.use(
     '/products',
     createProductsRouter(
@@ -158,15 +157,6 @@ export function createApp(options: AppOptions = {}): Express {
     '/basket',
     requireAuth,
     createBasketRouter(options.basketService ?? createBasketService()),
-  );
-  app.use(
-    '/admin/login',
-    createAdminLoginRouter(
-      options.adminAuthService ??
-      createAdminAuthService(
-        createAdminClient(getApiBaseUrl()),
-      ),
-    ),
   );
   app.use('/admin/account', requireAdmin, adminAccountRouter);
   const registerService = createRegisterService(accountClient);

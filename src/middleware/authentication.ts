@@ -21,11 +21,9 @@ export async function signIn(
   res: Response,
   accessToken: string,
   customerId?: string,
-  adminOnly = false,
 ): Promise<void> {
   const identity = await req.tokenClient.getIdentity(accessToken);
-  if (!identity || (customerId && identity.customerId !== customerId)
-    || (adminOnly && identity.accessLevel !== 1)) {
+  if (!identity || (customerId && identity.customerId !== customerId)) {
     throw new Error('Backend returned an invalid access token or identity');
   }
   req.auth = { ...identity, accessToken };

@@ -92,7 +92,8 @@ a {
 a:focus-visible,
 .button:focus-visible,
 .form-field input:focus-visible,
-.form-field select:focus-visible {
+.form-field select:focus-visible,
+.form-field textarea:focus-visible {
     outline: var(--focus-ring);
     outline-offset: 2px;
 }
@@ -446,7 +447,8 @@ main {
 }
 
 .form-field input,
-.form-field select {
+.form-field select,
+.form-field textarea {
     width: 100%;
     padding: 0.6rem 0.75rem;
     font: inherit;
@@ -457,8 +459,61 @@ main {
 }
 
 .form-field input[aria-invalid='true'],
-.form-field select[aria-invalid='true'] {
+.form-field select[aria-invalid='true'],
+.form-field textarea[aria-invalid='true'] {
     border-color: var(--color-error-text);
+}
+
+.form-field textarea {
+    resize: vertical;
+}
+
+.form-field input[type='file']::file-selector-button {
+    margin-right: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    font: inherit;
+    color: var(--color-on-primary);
+    background: var(--color-action-bg);
+    border: 1px solid var(--color-primary);
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.form-field input[type='file']::file-selector-button:hover {
+    background: var(--color-action-hover);
+}
+
+.image-order {
+    padding-left: 1.5rem;
+}
+
+.image-order__item {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.25rem;
+}
+
+.image-order__preview {
+    display: block;
+    width: 100%;
+    height: 7rem;
+    object-fit: contain;
+}
+
+.image-order__name {
+    margin: 0.5rem 0;
+    overflow-wrap: anywhere;
+}
+
+.image-order__controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.image-order__controls .button {
+    flex: 1;
+    width: auto;
 }
 
 .field-error {

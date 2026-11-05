@@ -61,13 +61,16 @@ async function signedInAgent(fetchProducts: () => Promise<ProductWithPrice[]>) {
 describe('GET /home', () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it('requires sign-in without fetching products', async () => {
+  it('welcomes signed-out visitors without redirecting them to sign in', async () => {
     const fetchProducts = vi.fn(async () => []);
     const response = await request(createApp({ fetchProducts })).get('/home');
 
-    expect(response.status).toBe(302);
-    expect(response.headers.location).toBe('/login?returnTo=%2Fhome');
-    expect(fetchProducts).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(response.headers.location).toBeUndefined();
+    expect(fetchProducts).toHaveBeenCalledOnce();
+    expect(response.text).toContain('Featured products');
+    expect(response.text).toContain('href="/login"');
+    expect(response.text).not.toContain('href="/products/add"');
   });
 
   it('renders the three highest-selling products without mutating the catalogue', async () => {

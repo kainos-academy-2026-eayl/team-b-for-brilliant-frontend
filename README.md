@@ -122,6 +122,46 @@ never trust a customer ID submitted by the browser. The form includes a CSRF
 token and displays validation or service errors without discarding entered
 values. Registration does not promise a verification email.
 
+## Admin product creation
+
+Admins sign in through the standard `/login` page and can open **Create product** in the shared menu or their admin account
+page at `/admin/account`. `/products/add` requires a verified admin identity
+(`accessLevel: 1`) for both viewing and submitting the form.
+Visitors without verified admin access are redirected to the public `/home` page
+without loading the form or saving a product. Backend permission failures during
+submission also redirect home rather than displaying a separate admin sign-in.
+
+The CSRF-protected form collects name, optional description, price in pounds,
+optional images, quantity, weight and draft status. Price is required,
+from 0 to 99,999,999.99 with up to two decimal places. Quantity must be a whole
+number from 0 to 2,147,483,647; weight must be a finite nonnegative decimal.
+Visibility is set by the backend from draft status: drafts are hidden and
+non-drafts are visible. New products default to draft. There is no separate
+visibility input, and submitted visibility values are ignored.
+Categories are not set by this flow.
+
+Admins can select up to five static JPEG, PNG or WebP images, at most 5 MiB and
+40 megapixels each. Select multiple files together and use the preview list's
+**Move up** / **Move down** buttons to choose display order; the first image is the
+main image. The buttons support keyboard operation and announce position changes.
+Selecting files again replaces the selection and resets ordering. Without
+JavaScript, images use file-selection order. The server validates ordering as an
+exact permutation of all uploaded files before forwarding them in that order.
+The backend decodes and normalizes uploads to WebP and stores
+the product, initial price and image records atomically. It removes newly written
+files if persistence fails. Image storage must be on a persistent backend volume.
+
+The frontend sends multipart form data to `POST {API_BASE_URL}/products` using the
+verified admin's bearer token. The backend persists the product and returns
+HTTP 201 with `{ "product": ... }`. Validation and service errors preserve entered
+text values; files must be selected again after errors. Uploads are parsed only
+after admin authorization, before CSRF checks so the hidden token can be read.
+Successful saves use a 303 redirect and a one-time confirmation so
+reloading the form does not create another product.
+
+The page inherits the shared header, menu, keyboard controls and light/dark
+theme from `views/main.njk`; all fields use shared form components.
+
 ## Project structure
 
 ```
@@ -238,10 +278,11 @@ signatures, issuer `brilliant-backend`, audience `brilliant-client`, expiry and
 revocation. The frontend neither decodes an unverified identity nor needs the
 backend's `JWT_SECRET`. Backend-issued JWTs currently expire after 24 hours.
 
-Admin sign-in also uses `/auth/verify`, rather than the unsupported
-`/api/v1/auth/admin/login` endpoint. Only verified access level `1` grants admin
-access; a company email address alone is insufficient. Customer and admin sign-in
-use the same authentication cookie.
+Customers and admins use the same `/login` page, `/auth/verify` integration and
+authentication cookie. The dedicated `/admin/login` page and its credential flow
+have been removed. Only verified access level `1` grants admin access; a company
+email address alone is insufficient. Unauthorized admin-page requests redirect to
+the public `/home` page, as does admin-account logout. `/` redirects to `/home`.
 
 MFA challenge flows are not supported. Customer and admin credential responses
 may omit the legacy `mfaEnabled` field or set it to `false`. A `true` or malformed
@@ -270,7 +311,7 @@ and sign-out. No token is stored in localStorage or rendered into HTML.
 
 ### Home page
 
-`GET /home` requires sign-in and displays up to three visible, published,
+`GET /home` is public and displays up to three visible, published,
 non-deleted products from the backend product API, ranked by `salesNo` descending,
 then product ID descending for equal sales totals (numeric portions compare
 numerically, so ID `10` ranks above `9`). The API must return a non-negative integer
