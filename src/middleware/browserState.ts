@@ -9,6 +9,7 @@ const stateSchema = z.object({
   csrfToken: z.string().regex(/^[a-f0-9]{64}$/),
   pendingRegistrationEmail: z.string().email().optional(),
   registrationTokenHash: z.string().optional(),
+  productCreated: z.boolean().optional(),
 });
 
 export type BrowserState = z.infer<typeof stateSchema>;

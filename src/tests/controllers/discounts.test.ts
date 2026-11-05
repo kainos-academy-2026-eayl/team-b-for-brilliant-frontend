@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app';
 import type { TokenClient } from '../../clients/tokenClient';
 import type { Discount } from '../../models/discount';
+import { stubProfileService } from '../helpers/stubProfileService';
 
 const today = new Date().toISOString().slice(0, 10);
 const day = (offset: number) =>
@@ -52,6 +53,7 @@ function setup() {
       activateDiscount,
       deactivateDiscount,
       tokenClient: adminTokenClient,
+      profileService: stubProfileService,
     }),
   );
   agent.set('Cookie', 'access_token=admin-token');
@@ -136,9 +138,9 @@ describe('discounts access control', () => {
     expect((await agent.get('/discounts')).text).toContain('>Discounts</a>');
   });
 
-  it('shows the hamburger menu with Discounts on the admin account page', async () => {
+  it('shows the hamburger menu with Discounts on the shared account page for admins', async () => {
     const { agent } = setup();
-    const res = await agent.get('/admin/account');
+    const res = await agent.get('/account');
     expect(res.status).toBe(200);
     expect(res.text).toContain('id="site-menu"');
     expect(res.text).toContain('href="/discounts"');

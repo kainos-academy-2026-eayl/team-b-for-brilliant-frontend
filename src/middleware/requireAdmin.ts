@@ -6,7 +6,7 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
     next();
     return;
   }
-  res.redirect(`/admin/login?next=${encodeURIComponent(req.originalUrl)}`);
+  res.redirect('/home');
 }
 
 export function requireAdminRole(req: Request, res: Response, next: NextFunction) {

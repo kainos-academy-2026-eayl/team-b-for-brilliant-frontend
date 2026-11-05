@@ -6,9 +6,72 @@ import {
 import { mapWithConcurrency } from '../utils/concurrency';
 import { toProxiedImageUrl } from './images';
 import { getCurrentPrice } from './productPrices';
+import type { NewProduct } from '../schemas/newProduct';
+import { z } from 'zod';
 
 export const DEFAULT_API_BASE_URL = 'http://localhost:3001';
 export const DEFAULT_PRICE_FETCH_CONCURRENCY = 5;
+
+export class ProductSaveError extends Error {
+  constructor(
+    readonly status: number,
+    readonly publicMessage?: string,
+    readonly fieldErrors?: Record<string, string[]>,
+  ) {
+    super(`Failed to save product: HTTP ${status}`);
+  }
+}
+
+export interface ProductImageUpload {
+  buffer: Buffer;
+  originalname: string;
+  mimetype: string;
+}
+
+export async function createProduct(
+  token: string,
+  product: NewProduct,
+  images: readonly ProductImageUpload[] = [],
+  baseUrl: string = getApiBaseUrl(),
+  fetchFn: typeof fetch = fetch,
+): Promise<Product> {
+  const body = new FormData();
+  for (const [field, value] of Object.entries(product)) {
+    body.append(field, Array.isArray(value) ? JSON.stringify(value) : value === null ? '' : String(value));
+  }
+  for (const image of images) {
+    body.append('images', new Blob([new Uint8Array(image.buffer)], { type: image.mimetype }), image.originalname);
+  }
+  const response = await fetchFn(new URL('/products', baseUrl), {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body,
+    signal: AbortSignal.timeout(30000),
+    cache: 'no-store',
+  });
+  if (response.status !== 201) {
+    const error = response.status === 400 && response.headers.get('content-type')?.includes('application/json')
+      ? z.object({
+        error: z.string().max(500),
+        details: z.object({ fieldErrors: z.record(z.string(), z.array(z.string().max(500))).optional() }).optional(),
+      }).safeParse(await response.json())
+      : undefined;
+    throw new ProductSaveError(
+      response.status,
+      error?.success ? error.data.error : undefined,
+      error?.success ? error.data.details?.fieldErrors : undefined,
+    );
+  }
+
+  const result = ProductResponseSchema.safeParse(await response.json());
+  if (!result.success) {
+    throw new Error('Created product response from backend did not match schema');
+  }
+  return result.data.product;
+}
 
 export interface ProductFilters {
   q?: string;

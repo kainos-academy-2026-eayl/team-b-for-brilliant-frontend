@@ -1,105 +1,104 @@
-<article class="product-detail">
-  <div class="product-detail__images{% if product.productImages.length > 1 %} product-detail__images--gallery{% endif %}">
-    {% if product.productImages.length > 1 or isProductPreview %}
-      <div class="product-detail__thumbnails" role="group" aria-label="Product images"{% if product.productImages.length <= 1 %} hidden{% endif %}>
-        {% for image in product.productImages %}
-          <button
-            type="button"
-            class="product-detail__thumbnail"
-            aria-label="View image {{ loop.index }} of {{ product.productImages.length }} for {{ product.name }}"
-            aria-controls="product-main-image"
-            aria-pressed="{{ 'true' if loop.first else 'false' }}"
-            data-image-src="{{ image.imageUrl }}"
-            data-image-alt="{{ product.name }} - image {{ loop.index }} of {{ product.productImages.length }}"
-          >
-            <img src="{{ image.imageUrl }}" alt="">
-          </button>
-        {% endfor %}
-      </div>
-    {% endif %}
-    <div class="product__image{% if product.productImages.length %} product-detail__main-image{% endif %}">
-      {% if product.productImages.length or isProductPreview %}
-        <img id="product-main-image"{% if product.productImages.length %} src="{{ product.productImages[0].imageUrl }}"{% else %} hidden{% endif %} alt="{{ product.name }}{% if product.productImages.length > 1 %} - image 1 of {{ product.productImages.length }}{% endif %}">
+{% macro renderProductDetail(product, preview=false, csrfToken='', editorPreview=false, showBackLink=true) %}
+{% set anyPreview = preview or editorPreview %}
+{% set images = product.productImages or [] %}
+{% set categories = product.categories or [] %}
+{% set departments = product.departments or [] %}
+{% set quantity = product.quantity or 0 %}
+{% set imageID = 'product-preview-image' if preview else 'product-main-image' %}
+{% set quantityID = 'product-preview-quantity' if preview else 'product-quantity' %}
+<div class="product-customer-view">
+  {% if showBackLink %}<a class="products-back" href="/products">Back to products</a>{% endif %}
+  <article class="product-detail">
+    <div class="product-detail__images{% if images.length > 1 %} product-detail__images--gallery{% endif %}"{% if preview %} id="product-preview-gallery"{% endif %}>
+      {% if images.length > 1 or anyPreview %}
+        <div class="product-detail__thumbnails"{% if preview %} id="product-preview-thumbnails"{% endif %} role="group" aria-label="Product images"{% if images.length <= 1 %} hidden{% endif %}>
+          {% for image in images %}
+            <button type="button" class="product-detail__thumbnail" aria-label="View image {{ loop.index }} of {{ images.length }} for {{ product.name }}" aria-controls="{{ imageID }}" aria-pressed="{{ 'true' if loop.first else 'false' }}" data-image-src="{{ image.imageUrl }}" data-image-alt="{{ product.name }} - image {{ loop.index }} of {{ images.length }}">
+              <img src="{{ image.imageUrl }}" alt="">
+            </button>
+          {% endfor %}
+        </div>
       {% endif %}
-      {% if not product.productImages.length or isProductPreview %}
-        <span data-product-no-image{% if product.productImages.length %} hidden{% endif %}>No image available</span>
+      <div class="product__image{% if images.length %} product-detail__main-image{% endif %}"{% if preview %} id="product-preview-image-frame"{% endif %}>
+        {% if images.length or anyPreview %}
+          <img id="{{ imageID }}"{% if images.length %} src="{{ images[0].imageUrl }}" alt="{{ product.name }}{% if images.length > 1 %} - image 1 of {{ images.length }}{% endif %}"{% else %} hidden alt=""{% endif %}>
+        {% endif %}
+        {% if not images.length or anyPreview %}
+          <span{% if preview %} id="product-preview-image-placeholder"{% elif editorPreview %} data-product-no-image{% endif %}{% if images.length %} hidden{% endif %}>No image available</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="product-detail__body">
+      {% if preview %}
+        <h3 class="product-detail__name" id="product-preview-name">Product name</h3>
+      {% else %}
+        <h1 class="product-detail__name"{% if editorPreview %} data-product-name tabindex="-1"{% endif %}>{{ product.name }}</h1>
+      {% endif %}
+      {% if (departments.length and not categories.length) or editorPreview %}
+        <dl class="product-detail__classification"{% if editorPreview %} data-product-departments{% endif %}{% if not departments.length or categories.length %} hidden{% endif %}>
+          <dt>Departments</dt>
+          <dd><ul>{% for department in departments %}<li>{{ department.name }}</li>{% endfor %}</ul></dd>
+        </dl>
+      {% endif %}
+      <span class="stock {{ 'stock--in' if quantity > 0 else 'stock--out' }}"{% if preview %} id="product-preview-stock" hidden{% elif editorPreview %} data-product-stock{% endif %}>{{ 'In stock' if quantity > 0 else 'Out of stock' }}</span>
+      {% if product.currentPrice %}
+        <p class="product__price"{% if editorPreview %} data-product-price{% endif %}>£{{ product.currentPrice }}</p>
+      {% else %}
+        <p class="product__price product__price--unavailable"{% if preview %} id="product-preview-price"{% elif editorPreview %} data-product-price{% endif %}>Price unavailable</p>
+      {% endif %}
+      {% if anyPreview %}
+        <div class="product-detail__basket">
+      {% else %}
+        <form method="post" action="/basket/items" class="product-detail__basket">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <input type="hidden" name="productID" value="{{ product.productID }}">
+      {% endif %}
+        <div class="form-field">
+          <label for="{{ quantityID }}">Quantity</label>
+          <select id="{{ quantityID }}" name="quantity"{% if quantity <= 0 %} disabled{% endif %}>
+            {% if quantity > 0 %}
+              {% set maxQuantity = 10 if quantity > 10 else quantity %}
+              {% for value in range(1, maxQuantity + 1) %}
+                <option value="{{ value }}">{{ value }}</option>
+              {% endfor %}
+            {% else %}
+              <option value="0">0</option>
+            {% endif %}
+          </select>
+        </div>
+        {% if anyPreview %}
+          <button type="button" class="button"{% if preview %} id="product-preview-basket"{% endif %} aria-disabled="true" aria-describedby="{{ 'product-preview-notice' if preview else 'product-publication-status' }}" title="Unavailable in preview"{% if quantity <= 0 %} disabled{% endif %}>Add to basket</button>
+        {% else %}
+          <button type="submit" class="button"{% if quantity <= 0 %} disabled{% endif %}>Add to basket</button>
+        {% endif %}
+      {% if anyPreview %}</div>{% else %}</form>{% endif %}
+      {% if product.description or anyPreview %}
+        <div class="product-detail__optional-section"{% if preview %} id="product-preview-description-section"{% if not product.description %} hidden{% endif %}{% endif %}>
+          {% if preview %}<h4 class="product-detail__section-heading">Description</h4>{% else %}<h2{% if editorPreview %} data-product-description-heading{% endif %}{% if not product.description %} hidden{% endif %}>Description</h2>{% endif %}
+          <p class="product-detail__description"{% if preview %} id="product-preview-description"{% endif %}{% if editorPreview and not product.description %} hidden{% endif %}>{{ product.description }}</p>
+        </div>
+      {% endif %}
+      {% if categories.length or anyPreview %}
+        <div class="product-detail__optional-section"{% if preview %} id="product-preview-categories-section"{% if not categories.length %} hidden{% endif %}{% endif %}>
+          {% if preview %}<h4 class="product-detail__section-heading">Categories</h4>{% else %}<h2{% if editorPreview %} data-product-categories-heading{% endif %}{% if not categories.length %} hidden{% endif %}>Categories</h2>{% endif %}
+          <dl class="product-detail__classification"{% if preview %} id="product-preview-categories"{% elif editorPreview %} data-product-categories{% endif %}{% if editorPreview and not categories.length %} hidden{% endif %}>
+            {% for departmentID, group in categories | groupby('departmentID') %}
+              {% set departmentName = 'Other categories' %}
+              {% for department in departments %}
+                {% if department.departmentID == departmentID %}{% set departmentName = department.name %}{% endif %}
+              {% endfor %}
+              <dt>{{ departmentName }}</dt>
+              <dd><ul>{% for category in group %}<li>{{ category.name }}</li>{% endfor %}</ul></dd>
+            {% endfor %}
+          </dl>
+        </div>
       {% endif %}
     </div>
-  </div>
-  <div class="product-detail__body">
-    <h1{% if isProductPreview %} data-product-name tabindex="-1"{% endif %}>{{ product.name }}</h1>
-    {% if (product.departments.length and not product.categories.length) or isProductPreview %}
-      <dl class="product-detail__classification"{% if isProductPreview %} data-product-departments{% endif %}{% if not product.departments.length or product.categories.length %} hidden{% endif %}>
-        <dt>Departments</dt>
-        <dd>
-          <ul>
-            {% for department in product.departments %}
-              <li>{{ department.name }}</li>
-            {% endfor %}
-          </ul>
-        </dd>
-      </dl>
-    {% endif %}
-    {% if product.quantity > 0 %}
-      <span class="stock stock--in"{% if isProductPreview %} data-product-stock{% endif %}>In stock</span>
-    {% else %}
-      <span class="stock stock--out"{% if isProductPreview %} data-product-stock{% endif %}>Out of stock</span>
-    {% endif %}
-    {% if product.currentPrice %}
-      <p class="product__price"{% if isProductPreview %} data-product-price{% endif %}>£{{ product.currentPrice }}</p>
-    {% else %}
-      <p class="product__price product__price--unavailable"{% if isProductPreview %} data-product-price{% endif %}>Price unavailable</p>
-    {% endif %}
-    {% if isProductPreview %}
-      <div class="product-detail__basket">
-    {% else %}
-      <form method="post" action="/basket/items" class="product-detail__basket">
-        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-        <input type="hidden" name="productID" value="{{ product.productID }}">
-    {% endif %}
-      <div class="form-field">
-        <label for="product-quantity">Quantity</label>
-        <select id="product-quantity" name="quantity"{% if product.quantity <= 0 %} disabled{% endif %}>
-          {% if product.quantity > 0 %}
-            {% set maxQuantity = 10 if product.quantity > 10 else product.quantity %}
-            {% for quantity in range(1, maxQuantity + 1) %}
-              <option value="{{ quantity }}">{{ quantity }}</option>
-            {% endfor %}
-          {% else %}
-            <option value="0">0</option>
-          {% endif %}
-        </select>
-      </div>
-      <button type="{{ 'button' if isProductPreview else 'submit' }}" class="button"{% if product.quantity <= 0 %} disabled{% endif %}>Add to basket</button>
-    {% if isProductPreview %}
-      </div>
-    {% else %}
-      </form>
-    {% endif %}
-    {% if product.description or isProductPreview %}
-      <h2{% if isProductPreview %} data-product-description-heading{% endif %}{% if not product.description %} hidden{% endif %}>Description</h2>
-      <p class="product-detail__description"{% if not product.description %} hidden{% endif %}>{{ product.description }}</p>
-    {% endif %}
-    {% if product.categories.length or isProductPreview %}
-      <h2{% if isProductPreview %} data-product-categories-heading{% endif %}{% if not product.categories.length %} hidden{% endif %}>Categories</h2>
-      <dl class="product-detail__classification"{% if isProductPreview %} data-product-categories{% endif %}{% if not product.categories.length %} hidden{% endif %}>
-        {% for departmentID, categories in product.categories | groupby('departmentID') %}
-          {% set departmentName = 'Other categories' %}
-          {% for department in product.departments %}
-            {% if department.departmentID == departmentID %}
-              {% set departmentName = department.name %}
-            {% endif %}
-          {% endfor %}
-          <dt>{{ departmentName }}</dt>
-          <dd>
-            <ul>
-              {% for category in categories %}
-                <li>{{ category.name }}</li>
-              {% endfor %}
-            </ul>
-          </dd>
-        {% endfor %}
-      </dl>
-    {% endif %}
-  </div>
-</article>
+  </article>
+</div>
+{% endmacro %}
+
+{# Customer/editor pages include this template; creation imports the renderer. #}
+{% if product is defined %}
+  {{ renderProductDetail(product, false, csrfToken, isProductPreview, false) }}
+{% endif %}

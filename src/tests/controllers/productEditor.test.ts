@@ -76,15 +76,18 @@ function setup(products: ProductWithPrice[] = [product]) {
     productEditorService: service,
     fetchProducts,
     fetchProduct,
-    adminAuthService: {
-      login: async () => ({ status: 'success', accessToken: 'admin-token' }),
+    saveProduct: vi.fn(async () => product),
+    accountClient: {
+      verifyCredentials: async () => ({ status: 'valid', customerId: 'admin-1', accessToken: 'admin-token' }),
+      uniqueEmail: async () => ({ status: 'unique' }),
+      register: async () => ({ status: 'registered' }),
     },
-  })
+  }, 1)
   const agent = request.agent(app)
   async function signIn() {
-    const login = await agent.get('/admin/login')
+    const login = await agent.get('/login')
     await agent
-      .post('/admin/login')
+      .post('/login')
       .type('form')
       .send({
         _csrf: token(login.text),
@@ -97,6 +100,29 @@ function setup(products: ProductWithPrice[] = [product]) {
 }
 
 describe('admin product editing', () => {
+  it('serves creation and editing together without confusing their routes or payloads', async () => {
+    const { app, agent, service, signIn, fetchProduct } = setup()
+    await signIn()
+    const creation = await agent.get('/products/add').expect(200)
+    expect(creation.text).toContain('action="/products/add"')
+    expect(service.load).not.toHaveBeenCalled()
+    expect(fetchProduct).not.toHaveBeenCalled()
+    await agent.post('/products/add').type('form').send({
+      name: 'Created product', description: 'Created details', quantity: '4',
+      weight: '2', price: '20.99', draft: 'true', _csrf: token(creation.text),
+    }).expect(303).expect('Location', '/products/add')
+    expect(service.save).not.toHaveBeenCalled()
+    const editor = await agent.get('/products/p1/edit').expect(200)
+    expect(service.load).toHaveBeenCalledWith('p1', 'admin-token')
+    await agent.post('/products/p1/edit').send({
+      ...form, _csrf: token(editor.text),
+    }).expect(200)
+    expect(service.save).toHaveBeenCalledWith('p1', 'admin-token', expect.objectContaining({
+      draft: false, visible: true, categoryIDs: ['c1'],
+    }))
+    await request(app).get('/products/add').expect(302).expect('Location', '/home')
+  })
+
   it('keeps customer catalog links read-only and redirects non-admin editor access', async () => {
     const { app, service } = setup()
     const catalog = await request(app).get('/products').expect(200)
@@ -106,7 +132,7 @@ describe('admin product editing', () => {
     expect(detail.text).not.toContain('href="/products/p1/edit"')
     const editor = await request(app).get('/products/p1/edit').expect(302)
     expect(editor.headers.location).toBe(
-      '/admin/login?next=%2Fproducts%2Fp1%2Fedit',
+      '/home',
     )
     expect(service.load).not.toHaveBeenCalled()
   })
@@ -136,7 +162,7 @@ describe('admin product editing', () => {
     expect(service.load).not.toHaveBeenCalled()
     const detail = await agent.get('/products/p1').expect(200)
     expect(fetchProduct).toHaveBeenCalledWith('p1', 'admin-token')
-    expect(detail.text).toContain('<h1>Example</h1>')
+    expect(detail.text).toMatch(/<h1\b[^>]*>Example<\/h1>/)
     expect(detail.text).toContain(
       '<a href="/products/p1/edit">Edit product</a>',
     )

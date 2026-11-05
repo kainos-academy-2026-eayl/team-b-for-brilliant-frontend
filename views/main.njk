@@ -54,10 +54,12 @@
         <span aria-hidden="true">&times;</span>
       </button>
     </div>
+    {% set isCreateProductPage = currentPath == '/products/add' or currentPath == '/products/add/' %}
     <ul class="site-menu__list">
       <li><a href="/home"{% if currentPath == '/home' %} aria-current="page"{% endif %}>Home</a></li>
-      <li><a href="/products"{% if currentPath == '/products' %} aria-current="page"{% elif currentPath and currentPath.startsWith('/products/') %} aria-current="location"{% endif %}>Shop all products</a></li>
+      <li><a href="/products"{% if currentPath == '/products' %} aria-current="page"{% elif currentPath and currentPath.startsWith('/products/') and not isCreateProductPage %} aria-current="location"{% endif %}>Shop all products</a></li>
       {% if isAdmin %}
+        <li><a href="/products/add"{% if isCreateProductPage %} aria-current="page"{% endif %}>Create product</a></li>
         <li><a href="/discounts"{% if currentPath == '/discounts' %} aria-current="page"{% elif currentPath and currentPath.startsWith('/discounts/') %} aria-current="location"{% endif %}>Discounts</a></li>
       {% endif %}
       {% if isSignedIn %}

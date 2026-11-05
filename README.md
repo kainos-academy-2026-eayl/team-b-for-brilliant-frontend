@@ -141,7 +141,8 @@ non-deleted products. Admins also see non-deleted drafts, labelled "Draft",
 including draft-only category choices. Draft detail pages are admin-only.
 Selecting a product opens its customer-facing detail page for everyone.
 Only signed-in admins see the "Edit product" link on that page, which opens
-the protected editor. Customers cannot access editing directly.
+the protected editor. Customers cannot access editing directly; unauthorized
+creation/editing page requests redirect to `/home`.
 The editor supports name, description, price, stock, weight, publication,
 categories and image management. Customer preview uses the same product
 article as the customer detail page; switching views never saves or purchases.
@@ -165,6 +166,83 @@ without JavaScript, leaving images unchanged.
 Validation or API errors keep browser edits available for retry; a successful
 save reloads persisted data with a confirmation. Refreshing before saving
 discards edits. Backend image storage must be on a persistent volume.
+
+## Admin product creation
+
+Admins sign in through the standard `/login` page. Both admins and customers use
+the shared `/account` page. Admins can open **Create product** from that page or
+the shared menu. `/products/add` requires a verified admin identity
+(`accessLevel: 1`) for both viewing and submitting the form.
+Visitors without verified admin access are redirected to the public `/home` page
+without loading the form or saving a product. Backend permission failures during
+submission also redirect home rather than displaying a separate admin sign-in.
+
+The CSRF-protected form collects name, optional description, price in pounds,
+optional images, quantity, weight and draft status. Price is required,
+from 0 to 99,999,999.99 with up to two decimal places. Quantity must be a whole
+number from 0 to 2,147,483,647; weight must be a finite nonnegative decimal.
+Visibility is set by the backend from draft status: drafts are hidden and
+non-drafts are visible. New products default to draft. There is no separate
+visibility input, and submitted visibility values are ignored.
+Categories are optional. The form loads all existing categories directly from
+the database-backed admin `GET /categories` API, including categories not yet
+assigned to a product. Check any number of choices; there is no per-product
+category count cap or facility for creating new categories. Department names
+disambiguate labels. Selected categories appear in Customer preview and remain
+selected after validation or save errors.
+
+The frontend validates selected IDs against the current database choices and
+sends them as a JSON array in the multipart `categoryIDs` field. The backend
+atomically connects those existing records through `ProductCategories`, without
+creating category records. Unknown/deleted or duplicate IDs are rejected.
+Category-loading failures stop creation with an explicit error. Browser-upload
+field limits scale with the available database category count, rather than
+limiting the form to one selection; normal request-size limits still apply.
+
+Admins can select up to five static JPEG, PNG or WebP images, at most 5 MiB and
+40 megapixels each. Select multiple files together and use the preview list's
+**Move up** / **Move down** buttons to choose display order; the first image is the
+main image. The buttons support keyboard operation and announce position changes.
+Selecting files again replaces the selection and resets ordering. Without
+JavaScript, images use file-selection order. The server validates ordering as an
+exact permutation of all uploaded files before forwarding them in that order.
+The backend decodes and normalizes uploads to WebP and stores
+the product, initial price and image records atomically. It removes newly written
+files if persistence fails. Image storage must be on a persistent backend volume.
+
+The frontend sends multipart form data to `POST {API_BASE_URL}/products` using the
+verified admin's bearer token. The backend persists the product and returns
+HTTP 201 with `{ "product": ... }`. Validation and service errors preserve entered
+text values; files must be selected again after errors. Uploads are parsed only
+after admin authorization, before CSRF checks so the hidden token can be read.
+Successful saves use a 303 redirect and a one-time confirmation so
+reloading the form does not create another product.
+
+The page inherits the shared header, menu, keyboard controls and light/dark
+theme from `views/main.njk`; all fields use shared form components.
+
+With JavaScript enabled, **Product details** and **Customer preview** tabs switch
+between editing and a customer-style product detail page. Switching tabs keeps
+all entered values, selected files and image order without submitting the form.
+Arrow Left/Right and Home/End operate the tabs; Enter/Space activate their native
+buttons. Validation responses always reopen Product details so errors are visible.
+
+The customer preview and live product page render the same
+`views/products/detail.njk` component, with identical customer-content sizing,
+typography, gallery, stock, price, quantity selector, description and categories
+grouped by department. The preview updates from the form without saving.
+Existing-product editing retains its editor bindings on this same component.
+Creation and editing keep their respective multipart and JSON API contracts
+and their documented image-upload limits.
+Its Add to basket control is marked unavailable and uses `type="button"` outside
+any basket form, so clicking it or pressing Enter/Space cannot send a basket request.
+It retains the customer button's visual styling; out-of-stock controls use the
+same disabled treatment as the real page.
+Clickable thumbnails show every selected image in the chosen order.
+Viewing another thumbnail does not change the saved order.
+Reordering or replacing uploads resets the gallery to the new main image.
+The product can be created from either tab, but previewing alone never saves it.
+Without JavaScript, the tabs and preview stay hidden and the form remains usable.
 
 ## Project structure
 
@@ -207,7 +285,8 @@ Closing it by its close button, the overlay or Escape restores the regions'
 previous inert state before returning focus to the menu toggle.
 Tab and Shift+Tab wrap within the open drawer, and the existing slide transitions
 respect reduced-motion preferences. "Shop all products" is a single navigation
-label without subtitle text.
+label without subtitle text. Product creation highlights only **Create product**;
+the catalogue and individual product pages highlight **Shop all products**.
 
 The burger menu also contains a keyboard-accessible **Dark mode** slider.
 Light mode is the default; dark mode uses a `#2B2B38` background and white text,
@@ -282,10 +361,13 @@ signatures, issuer `brilliant-backend`, audience `brilliant-client`, expiry and
 revocation. The frontend neither decodes an unverified identity nor needs the
 backend's `JWT_SECRET`. Backend-issued JWTs currently expire after 24 hours.
 
-Admin sign-in also uses `/auth/verify`, rather than the unsupported
-`/api/v1/auth/admin/login` endpoint. Only verified access level `1` grants admin
-access; a company email address alone is insufficient. Customer and admin sign-in
-use the same authentication cookie.
+Customers and admins use the same `/login` page, `/auth/verify` integration and
+authentication cookie. The dedicated `/admin/login` page and its credential flow
+have been removed. Only verified access level `1` grants admin access; a company
+email address alone is insufficient. Unauthorized product creation/editing requests
+redirect to the public `/home` page. Discount pages retain their separate
+admin-only access checks. Both roles use the CSRF-protected `POST /logout` flow,
+which returns to `/login`. `/` redirects to `/home`.
 
 MFA challenge flows are not supported. Customer and admin credential responses
 may omit the legacy `mfaEnabled` field or set it to `false`. A `true` or malformed
@@ -314,7 +396,7 @@ and sign-out. No token is stored in localStorage or rendered into HTML.
 
 ### Home page
 
-`GET /home` requires sign-in and displays up to three visible, published,
+`GET /home` is public and displays up to three visible, published,
 non-deleted products from the backend product API, ranked by `salesNo` descending,
 then product ID descending for equal sales totals (numeric portions compare
 numerically, so ID `10` ranks above `9`). The API must return a non-negative integer
