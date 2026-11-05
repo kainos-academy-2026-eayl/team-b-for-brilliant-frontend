@@ -136,7 +136,7 @@ describe('checkout recovery', () => {
         expect(res.text).toContain('value="08/29"');
         expect(res.text).not.toContain('value="1111222233334444"');
         expect(res.text).not.toContain('value="123"');
-        expect(res.text).toContain('Order totals are unavailable.');
+        expect(res.text).toContain('order total is unavailable');
         expect(res.text).toContain('id="pay-button"');
         expect(res.text).toMatch(/id="pay-button"[^>]*disabled/);
     });
@@ -171,7 +171,7 @@ describe('checkout recovery', () => {
         expect(res.text).toContain('value="08/29"');
         expect(res.text).not.toContain('value="1111222233334444"');
         expect(res.text).not.toContain('value="123"');
-        expect(res.text).toContain('Order totals are unavailable.');
+        expect(res.text).toContain('order total is unavailable');
         expect(res.text).toMatch(/id="pay-button"[^>]*disabled/);
     });
 });
