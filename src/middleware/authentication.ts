@@ -50,8 +50,7 @@ export function createAuthentication(client: TokenClient): RequestHandler {
         else clearAuthentication(req, res);
       } catch (error) {
         console.error('Token validation failed', error);
-        const loggingOut = req.method === 'POST'
-          && (req.path === '/logout' || req.path === '/admin/account/logout');
+        const loggingOut = req.method === 'POST' && req.path === '/logout';
         if (loggingOut) clearAuthentication(req, res);
         res.status(503).render('error', {
           message: loggingOut

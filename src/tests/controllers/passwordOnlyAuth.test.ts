@@ -7,7 +7,7 @@ import type { TokenClient } from '../../clients/tokenClient';
 const baseUrl = 'http://account-service.test';
 const flows = [
   { path: '/login', protectedPath: '/account', destination: '/home', status: 302, accessLevel: 0 },
-  { path: '/login', protectedPath: '/admin/account', destination: '/admin/account', status: 302, accessLevel: 1 },
+  { path: '/login', protectedPath: '/account', destination: '/account', status: 302, accessLevel: 1 },
   { path: '/register', protectedPath: '/register/details', destination: '/register/details', status: 303, accessLevel: 0 },
 ] as const;
 

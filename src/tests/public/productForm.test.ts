@@ -16,11 +16,17 @@ class Element {
   hidden = false;
   disabled = false;
   alt = '';
+  tagName = '';
   tabIndex = 0;
   focusCount = 0;
   files: { name: string }[] = [];
   form?: Element;
   children: Element[] = [];
+  selectedCategories: { dataset: { departmentId: string; departmentName: string; categoryName: string } }[] = [];
+  querySelectorAll(selector: string) {
+    if (selector !== 'input[name="categoryIDs"]:checked') throw new Error(`Unknown test selector: ${selector}`);
+    return this.selectedCategories;
+  }
   readonly listeners = new Map<string, (event: KeyEvent) => void>();
   private readonly attributes = new Map<string, string>();
   private classes = new Set<string>();
@@ -56,6 +62,8 @@ function loadForm(values: Record<string, string> = {}) {
     'product-preview-name', 'product-preview-price', 'product-preview-stock', 'product-preview-image',
     'product-preview-image-placeholder', 'product-preview-visibility',
     'product-preview-description-section', 'product-preview-description',
+    'product-preview-categories', 'product-preview-categories-section',
+    'product-preview-quantity', 'product-preview-basket',
   ];
   const elements = new Map(ids.map((id) => [id, new Element(id)]));
   const get = (id: string): Element => {
@@ -75,7 +83,11 @@ function loadForm(values: Record<string, string> = {}) {
   runInNewContext(script, {
     document: {
       getElementById: get,
-      createElement: () => new Element(),
+      createElement: (tag: string) => {
+        const element = new Element();
+        element.tagName = tag.toUpperCase();
+        return element;
+      },
     },
     URL: {
       createObjectURL: () => `blob:test-${urlIndex++}`,
@@ -87,6 +99,27 @@ function loadForm(values: Record<string, string> = {}) {
 }
 
 describe('live product preview', () => {
+  it('previews every selected database category and clears removed selections', () => {
+    const { get, form } = loadForm();
+    expect(get('product-preview-categories-section').hidden).toBe(true);
+    form.selectedCategories = [
+      { dataset: { departmentId: 'd1', departmentName: 'Beauty', categoryName: 'Skin' } },
+      { dataset: { departmentId: 'd1', departmentName: 'Beauty', categoryName: 'Lips' } },
+      { dataset: { departmentId: 'd2', departmentName: 'Home', categoryName: 'Gifts' } },
+    ];
+    form.fire('change');
+    expect(get('product-preview-categories-section').hidden).toBe(false);
+    const groups = get('product-preview-categories').children;
+    expect(groups.map((item) => item.tagName)).toEqual(['DT', 'DD', 'DT', 'DD']);
+    expect(groups[0]?.textContent).toBe('Beauty');
+    expect(groups[1]?.children[0]?.children.map((item) => item.textContent)).toEqual(['Skin', 'Lips']);
+    expect(groups[2]?.textContent).toBe('Home');
+    expect(groups[3]?.children[0]?.children.map((item) => item.textContent)).toEqual(['Gifts']);
+    form.selectedCategories = [];
+    form.fire('change');
+    expect(get('product-preview-categories-section').hidden).toBe(true);
+    expect(get('product-preview-categories').children).toHaveLength(0);
+  });
   it('initializes safe placeholders and opens Product details by default', () => {
     const { get } = loadForm();
     expect(get('product-preview').hidden).toBe(true);
@@ -193,6 +226,28 @@ describe('live product preview', () => {
     const { get } = loadForm({ quantity });
     expect(get('product-preview-stock').hidden).toBe(hidden);
     expect(get('product-preview-stock').classList.contains('stock--in')).toBe(inStock);
+  });
+
+  it('mirrors stock-limited basket quantities without giving preview controls a form or action', () => {
+    const { get, form } = loadForm({ quantity: '4' });
+    const quantity = get('product-preview-quantity');
+    expect(quantity.children.map((option) => option.value)).toEqual(['1', '2', '3', '4']);
+    expect(quantity.disabled).toBe(false);
+    quantity.value = '3';
+    form.fire('input');
+    expect(quantity.value).toBe('3');
+    get('quantity').value = '50';
+    form.fire('input');
+    expect(quantity.children).toHaveLength(10);
+    expect(quantity.form).toBeUndefined();
+    expect(get('product-preview-basket').form).toBeUndefined();
+    expect(get('product-preview-basket').listeners.has('click')).toBe(false);
+    get('quantity').value = '0';
+    form.fire('input');
+    expect(quantity.disabled).toBe(true);
+    expect(quantity.value).toBe('0');
+    expect(quantity.children.map((option) => option.value)).toEqual(['0']);
+    expect(get('product-preview-basket').disabled).toBe(true);
   });
 
   it('follows main-image reordering and clears revoked image URLs when files change', () => {

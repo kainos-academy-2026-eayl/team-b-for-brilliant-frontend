@@ -33,6 +33,9 @@
 <div class="profile-layout">
 <section class="card" aria-labelledby="profile-heading">
   <h1 id="profile-heading">Hello {{ profile.firstname }}!</h1>
+  {% if isAdmin %}
+    <p><a href="/products/add">Create product</a></p>
+  {% endif %}
 
   <img class="profile-avatar" src="{{ profile.pictureUrl or '/static/images/default-profile.svg' }}" alt="Your profile picture" width="112" height="112">
 
@@ -105,4 +108,3 @@
 </div>
 </div>
 {% endblock %}
-

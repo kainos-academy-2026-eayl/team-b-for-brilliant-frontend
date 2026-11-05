@@ -1,7 +1,9 @@
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createTestApp as createApp } from '../helpers/createTestApp';
 import type { AccountClient } from '../../clients/accountClient';
+import type { ProfileService } from '../../services/profileService';
+import { stubProfileService } from '../helpers/stubProfileService';
 
 const accountClient: AccountClient = {
   async verifyCredentials(_email, password) {
@@ -19,14 +21,15 @@ function extractToken(html: string): string {
   return match[1];
 }
 
-async function signIn(accessLevel: 0 | 1) {
-  const agent = request.agent(createApp({ accountClient, fetchProducts: async () => [] }, accessLevel));
+async function signIn(accessLevel: 0 | 1, profileService: ProfileService = stubProfileService) {
+  const app = createApp({ accountClient, fetchProducts: async () => [], profileService }, accessLevel);
+  const agent = request.agent(app);
   const token = extractToken((await agent.get('/login')).text);
   const response = await agent
     .post('/login')
     .type('form')
-    .send({ _csrf: token, email: 'user@example.com', password: 'correct', returnTo: '/admin/account' });
-  return { agent, response };
+    .send({ _csrf: token, email: 'user@example.com', password: 'correct', returnTo: '/account' });
+  return { app, agent, response };
 }
 
 describe('admin pages', () => {
@@ -39,10 +42,18 @@ describe('admin pages', () => {
       .expect(404);
   });
 
-  it.each(['/admin/account', '/products/add'])('redirects signed-out visitors from %s to a public home page', async (path) => {
+  it('removes the dedicated admin account and logout routes', async () => {
+    const agent = request.agent(createApp());
+    await agent.get('/admin/account').expect(404);
+    const page = await agent.get('/login');
+    await agent.post('/admin/account/logout').type('form')
+      .send({ _csrf: extractToken(page.text) }).expect(404);
+  });
+
+  it('redirects signed-out visitors from product creation to the public home page', async () => {
     const app = createApp({ fetchProducts: async () => [] });
-    await request(app).get(path).expect(302).expect('Location', '/home');
-    const home = await request(app).get(path).redirects(1).expect(200);
+    await request(app).get('/products/add').expect(302).expect('Location', '/home');
+    const home = await request(app).get('/products/add').redirects(1).expect(200);
     expect(home.text).toContain('Featured products');
     expect(home.text).toContain('href="/login"');
     expect(home.text).not.toContain('href="/products/add"');
@@ -52,41 +63,55 @@ describe('admin pages', () => {
     await request(createApp()).get('/').expect(302).expect('Location', '/home');
   });
 
-  it('redirects signed-out admin-account submissions home without signing in', async () => {
-    const agent = request.agent(createApp());
-    const page = await agent.get('/login');
-    await agent.post('/admin/account/logout').type('form')
-      .send({ _csrf: extractToken(page.text) }).expect(302).expect('Location', '/home');
-  });
-
-  it.each(['/admin/account', '/products/add'])('redirects verified customers from %s without granting admin access', async (path) => {
+  it('keeps product creation admin-only on the shared account flow', async () => {
     const { agent } = await signIn(0);
-    await agent.get(path).expect(302).expect('Location', '/home');
+    await agent.get('/products/add').expect(302).expect('Location', '/home');
     const home = await agent.get('/home').expect(200);
     expect(home.text).not.toContain('href="/products/add"');
-    await agent.post('/admin/account/logout').type('form')
-      .send({ _csrf: extractToken(home.text) }).expect(302).expect('Location', '/home');
     await agent.get('/login').expect(302).expect('Location', '/account');
   });
 
-  it('signs admins in through standard login, then logs out to the public home page', async () => {
-    const { agent, response } = await signIn(1);
+  it.each([0, 1] as const)('uses the same account page and logout for access level %s', async (accessLevel) => {
+    const { app, agent, response } = await signIn(accessLevel);
     expect(response.status).toBe(302);
-    expect(response.headers.location).toBe('/admin/account');
+    expect(response.headers.location).toBe('/account');
 
-    const account = await agent.get('/admin/account');
+    const account = await agent.get('/account');
     expect(account.status).toBe(200);
-    expect(account.text).toContain('action="/admin/account/logout"');
+    expect(account.text).toContain('action="/account"');
+    expect(account.text).toContain('action="/logout"');
+    expect(account.text).not.toContain('/admin/account');
+    expect(account.text).toContain('Hello Jane!');
+    expect(account.text.match(/<header\b/g)).toHaveLength(1);
+    expect(account.text.match(/id="site-menu"/g)).toHaveLength(1);
+    expect(account.text.includes('<p><a href="/products/add">Create product</a></p>')).toBe(accessLevel === 1);
+    await agent.get('/admin/account').expect(404);
+    await agent.post('/admin/account/logout').type('form')
+      .send({ _csrf: extractToken(account.text) }).expect(404);
 
     const logout = await agent
-      .post('/admin/account/logout')
+      .post('/logout')
       .type('form')
       .send({ _csrf: extractToken(account.text) });
-    expect(logout.headers.location).toBe('/home');
+    expect(logout.headers.location).toBe('/login');
 
-    await agent.get('/admin/account').expect(302).expect('Location', '/home');
-    const home = await agent.get('/home').expect(200);
-    expect(home.text).toContain('href="/login"');
-    expect(home.text).not.toContain('href="/products/add"');
+    await agent.get('/account').expect(302).expect('Location', '/login?returnTo=%2Faccount');
+    await request(app).get('/account').set('Cookie', 'access_token=user-token').expect(302);
+    await agent.get('/products/add').expect(302).expect('Location', '/home');
+  });
+
+  it('lets admins save their profile through the shared account endpoint', async () => {
+    const updateProfile = vi.fn<ProfileService['updateProfile']>(async (_token, input) => ({
+      ...await stubProfileService.getProfile('user-token'), ...input,
+    }));
+    const { agent } = await signIn(1, { ...stubProfileService, updateProfile });
+    const account = await agent.get('/account').expect(200);
+    const values = {
+      firstname: 'Admin', surname: 'User', addressLine1: '1 High Street',
+      addressLine2: '', postcode: 'BT7 1NT',
+    };
+    await agent.post('/account').type('form')
+      .send({ ...values, _csrf: extractToken(account.text) }).expect(302).expect('Location', '/account?saved=1');
+    expect(updateProfile).toHaveBeenCalledExactlyOnceWith('user-token', values);
   });
 });

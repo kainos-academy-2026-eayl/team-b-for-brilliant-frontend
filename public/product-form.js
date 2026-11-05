@@ -35,11 +35,52 @@ if (imageInput && orderInput && panel && list && status) {
     previewStock.textContent = inStock ? 'In stock' : 'Out of stock'
     previewStock.classList.toggle('stock--in', inStock)
     previewStock.classList.toggle('stock--out', validQuantity && !inStock)
+    const previewQuantity = document.getElementById('product-preview-quantity')
+    const previousQuantity = Number(previewQuantity.value)
+    const maxQuantity = inStock ? Math.min(Number(quantity), 10) : 0
+    previewQuantity.replaceChildren()
+    for (let value = inStock ? 1 : 0; value <= maxQuantity; value++) {
+      const option = document.createElement('option')
+      option.value = String(value)
+      option.textContent = String(value)
+      previewQuantity.append(option)
+    }
+    previewQuantity.value = inStock
+      ? String(Number.isInteger(previousQuantity) && previousQuantity >= 1 && previousQuantity <= maxQuantity ? previousQuantity : 1)
+      : '0'
+    previewQuantity.disabled = !inStock
+    document.getElementById('product-preview-basket').disabled = !inStock
     document.getElementById('product-preview-visibility').textContent = draft === 'true'
       ? 'Draft - hidden from the shop'
       : draft === 'false' ? 'Visible in the shop' : 'Select a draft status.'
     document.getElementById('product-preview-description-section').hidden = !description
     document.getElementById('product-preview-description').textContent = description
+    const selectedCategories = imageInput.form.querySelectorAll('input[name="categoryIDs"]:checked')
+    const previewCategories = document.getElementById('product-preview-categories')
+    previewCategories.replaceChildren()
+    document.getElementById('product-preview-categories-section').hidden = selectedCategories.length === 0
+    const departments = new Map()
+    for (const category of selectedCategories) {
+      const { departmentId, departmentName, categoryName } = category.dataset
+      if (departmentId === undefined || departmentName === undefined || categoryName === undefined) {
+        throw new Error('Category preview metadata is missing')
+      }
+      if (!departments.has(departmentId)) departments.set(departmentId, { name: departmentName, categories: [] })
+      departments.get(departmentId).categories.push(categoryName)
+    }
+    for (const department of departments.values()) {
+      const term = document.createElement('dt')
+      term.textContent = department.name
+      const definition = document.createElement('dd')
+      const categoryList = document.createElement('ul')
+      for (const name of department.categories) {
+        const item = document.createElement('li')
+        item.textContent = name
+        categoryList.append(item)
+      }
+      definition.append(categoryList)
+      previewCategories.append(term, definition)
+    }
     previewImage.alt = `${name}${images.length > 1 ? ` - image ${selectedPosition + 1} of ${images.length}` : ''}`
     document.getElementById('product-preview-image-frame').classList.toggle('product-detail__main-image', images.length > 0)
     if (selectedImage) {

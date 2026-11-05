@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createTestApp } from '../helpers/createTestApp';
 import { ProductSaveError, type createProduct } from '../../services/products';
 import type { AccountClient } from '../../clients/accountClient';
+import { CategoriesLoadError, type getCategories, type CategoryChoice } from '../../services/categories';
+import { stubProfileService } from '../helpers/stubProfileService';
 
 const form = {
   name: '  New product  ', description: ' Useful product ', quantity: '0',
@@ -27,8 +29,13 @@ function csrf(html: string): string {
   return token;
 }
 
-async function admin(saveProduct: typeof createProduct = vi.fn(async () => savedProduct)) {
-  const agent = request.agent(createTestApp({ saveProduct, accountClient, fetchProducts: async () => [] }, 1));
+async function admin(
+  saveProduct: typeof createProduct = vi.fn(async () => savedProduct),
+  fetchCategories: typeof getCategories = async () => [],
+) {
+  const agent = request.agent(createTestApp({
+    saveProduct, accountClient, fetchProducts: async () => [], fetchCategories, profileService: stubProfileService,
+  }, 1));
   const login = await agent.get('/login');
   await agent.post('/login').type('form').send({
     _csrf: csrf(login.text), email: 'admin@b-brilliant.com', password: 'correct',
@@ -40,6 +47,87 @@ async function admin(saveProduct: typeof createProduct = vi.fn(async () => saved
 afterEach(() => vi.restoreAllMocks());
 
 describe('admin product creation', () => {
+  const categories: CategoryChoice[] = Array.from({ length: 16 }, (_, index) => ({
+    categoryID: `existing-${index}`, name: `Database category ${index}`, description: null,
+    departmentID: 'department-1', departmentName: 'Beauty',
+  }));
+
+  it('renders existing database categories, including choices absent from the catalogue', async () => {
+    const fetchCategories = vi.fn<typeof getCategories>(async () => categories);
+    const { page } = await admin(undefined, fetchCategories);
+    expect(fetchCategories).toHaveBeenCalledWith('admin-token');
+    expect(page.text.match(/name="categoryIDs" type="checkbox"/g)).toHaveLength(16);
+    expect(page.text).toContain('Beauty / Database category 15');
+    expect(page.text).not.toContain('name="categoryName"');
+  });
+
+  it('accepts all available categories through multipart, without the old field-count restriction', async () => {
+    const saveProduct = vi.fn<typeof createProduct>(async () => savedProduct);
+    const { agent, token } = await admin(saveProduct, async () => categories);
+    const submission = agent.post('/products/add').field('_csrf', token).field('imageOrder', '[0,1,2,3,4]');
+    for (const [field, value] of Object.entries(form)) submission.field(field, value);
+    for (const category of categories) submission.field('categoryIDs', category.categoryID);
+    for (let index = 0; index < 5; index++) {
+      submission.attach('images', Buffer.from('image'), { filename: `${index}.png`, contentType: 'image/png' });
+    }
+    await submission.expect(303);
+    expect(saveProduct.mock.calls[0]?.[1].categoryIDs).toEqual(categories.map((category) => category.categoryID));
+    expect(saveProduct.mock.calls[0]?.[2]).toHaveLength(5);
+  });
+
+  it('retains multiple selections when other fields need correction', async () => {
+    const { agent, token } = await admin(undefined, async () => categories);
+    const response = await agent.post('/products/add').type('form').send({
+      ...form, price: 'invalid', categoryIDs: ['existing-0', 'existing-1'], _csrf: token,
+    }).expect(400);
+    expect(response.text).toMatch(/value="existing-0"[^>]+checked/);
+    expect(response.text).toMatch(/value="existing-1"[^>]+checked/);
+  });
+
+  it.each([['missing-category'], ['existing-0', 'existing-0']])('rejects unavailable or duplicated category choices: %s', async (...categoryIDs) => {
+    const saveProduct = vi.fn(async () => savedProduct);
+    const { agent, token } = await admin(saveProduct, async () => categories);
+    const response = await agent.post('/products/add').type('form')
+      .send({ ...form, categoryIDs, _csrf: token }).expect(400);
+    expect(response.text).toMatch(/<fieldset[^>]+aria-invalid="true"/);
+    expect(saveProduct).not.toHaveBeenCalled();
+  });
+
+  it('does not silently create an uncategorized product when category loading fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const fetchCategories = vi.fn<typeof getCategories>().mockResolvedValueOnce(categories)
+      .mockRejectedValue(new Error('Category API unavailable'));
+    const saveProduct = vi.fn(async () => savedProduct);
+    const { agent, token } = await admin(saveProduct, fetchCategories);
+    const response = await agent.post('/products/add').type('form')
+      .send({ ...form, categoryIDs: 'existing-0', _csrf: token }).expect(502);
+    expect(response.text).toContain('We could not load product categories right now.');
+    expect(saveProduct).not.toHaveBeenCalled();
+  });
+
+  it('keeps selected categories checked when the backend rejects a stale assignment', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const message = 'One or more selected categories are no longer available. Choose categories from the list.';
+    const { agent, token } = await admin(async () => {
+      throw new ProductSaveError(400, message, { categoryIDs: [message] });
+    }, async () => categories);
+    const response = await agent.post('/products/add').type('form')
+      .send({ ...form, categoryIDs: 'existing-0', _csrf: token }).expect(400);
+    expect(response.text).toMatch(/value="existing-0"[^>]+checked/);
+    expect(response.text).toMatch(/<fieldset[^>]+aria-invalid="true"/);
+    expect(response.text).toContain(message);
+  });
+
+  it.each([401, 403])('redirects home when the category API denies admin access with %s', async (status) => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const fetchCategories = vi.fn<typeof getCategories>().mockResolvedValueOnce(categories)
+      .mockRejectedValue(new CategoriesLoadError(status));
+    const saveProduct = vi.fn(async () => savedProduct);
+    const { agent } = await admin(saveProduct, fetchCategories);
+    await agent.get('/products/add').expect(302).expect('Location', '/home');
+    expect(saveProduct).not.toHaveBeenCalled();
+  });
+
   it('protects GET and POST from signed-out visitors', async () => {
     const saveProduct = vi.fn(async () => savedProduct);
     const agent = request.agent(createTestApp({ saveProduct }));
@@ -85,7 +173,7 @@ describe('admin product creation', () => {
     expect(page.text).toContain('class="theme-switch"');
     expect(page.text).toContain('id="description" name="description"');
     expect(page.text).toContain('aria-describedby="weight-hint weight-error"');
-    expect(page.text).toContain('<main id="main" class="product-create-main">');
+    expect(page.text).toContain('<main id="main" class="product-customer-main">');
     expect(page.text).toContain('id="product-preview" aria-labelledby="product-preview-heading" hidden');
     expect(page.text.indexOf('id="product-create-form"')).toBeLessThan(page.text.indexOf('id="product-preview"'));
     expect(page.text).toContain('id="product-preview-name">Product name</h3>');
@@ -97,13 +185,30 @@ describe('admin product creation', () => {
     expect(page.text).toContain('id="product-preview-thumbnails" role="group" aria-label="Product images" hidden');
     expect(page.text).toContain('form="product-create-fields">Create product</button>');
     expect(page.text).toContain('.product-detail__thumbnail');
+    expect(page.text).toContain('<button type="button" class="button" id="product-preview-basket" aria-disabled="true"');
+    expect(page.text).toContain('id="product-preview-quantity" name="quantity" disabled');
+    expect(page.text).toContain('Add to basket</button>');
+    expect(page.text).not.toContain('action="/basket/items"');
+    expect(page.text).toContain('class="product-detail__classification" id="product-preview-categories"');
     expect(page.text).toContain('.product__price--unavailable');
     expect(page.text).toMatch(/\.product__price\s*\{[^}]*overflow-wrap:\s*anywhere/);
     expect(page.text).not.toContain('{% include');
-    const account = await agent.get('/admin/account');
+    expect(page.text).not.toContain('/admin/account');
+    const account = await agent.get('/account');
     expect(account.text).toContain('href="/products/add"');
     expect(account.text).toContain('/static/theme.js');
   });
+
+  it.each(['/products/add', '/products/add/', '/products/add?tab=preview'])(
+    'highlights Create product rather than Shop all products on %s',
+    async (path) => {
+      const { agent } = await admin();
+      const response = await agent.get(path).expect(200);
+      expect(response.text.match(/<a\b[^>]*\baria-current="[^"]+"[^>]*>/g))
+        .toEqual(['<a href="/products/add" aria-current="page">']);
+      expect(response.text).toContain('<a href="/products">Shop all products</a>');
+    },
+  );
 
   it('rejects submissions without CSRF tokens before writing', async () => {
     const saveProduct = vi.fn(async () => savedProduct);
@@ -212,6 +317,7 @@ describe('admin product creation', () => {
     expect(saveProduct).toHaveBeenCalledExactlyOnceWith('admin-token', {
       name: 'New product', description: 'Useful product', quantity: 0,
       weight: 1.5, draft: true, price: '19.99',
+      categoryIDs: [],
     }, []);
     const confirmation = await agent.get('/products/add').expect(200);
     expect(confirmation.text).toContain('Product created successfully.');

@@ -1,0 +1,98 @@
+{% macro renderProductDetail(product, preview=false, csrfToken='') %}
+{% set images = product.productImages or [] %}
+{% set categories = product.categories or [] %}
+{% set departments = product.departments or [] %}
+{% set quantity = product.quantity or 0 %}
+{% set imageID = 'product-preview-image' if preview else 'product-main-image' %}
+{% set quantityID = 'product-preview-quantity' if preview else 'product-quantity' %}
+<div class="product-customer-view">
+  <a class="products-back" href="/products">Back to products</a>
+  <article class="product-detail">
+    <div class="product-detail__images{% if images.length > 1 %} product-detail__images--gallery{% endif %}"{% if preview %} id="product-preview-gallery"{% endif %}>
+      {% if images.length > 1 or preview %}
+        <div class="product-detail__thumbnails"{% if preview %} id="product-preview-thumbnails"{% endif %} role="group" aria-label="Product images"{% if images.length <= 1 %} hidden{% endif %}>
+          {% for image in images %}
+            <button type="button" class="product-detail__thumbnail" aria-label="View image {{ loop.index }} of {{ images.length }} for {{ product.name }}" aria-controls="{{ imageID }}" aria-pressed="{{ 'true' if loop.first else 'false' }}" data-image-src="{{ image.imageUrl }}" data-image-alt="{{ product.name }} - image {{ loop.index }} of {{ images.length }}">
+              <img src="{{ image.imageUrl }}" alt="">
+            </button>
+          {% endfor %}
+        </div>
+      {% endif %}
+      <div class="product__image{% if images.length %} product-detail__main-image{% endif %}"{% if preview %} id="product-preview-image-frame"{% endif %}>
+        {% if images.length or preview %}
+          <img id="{{ imageID }}"{% if images.length %} src="{{ images[0].imageUrl }}" alt="{{ product.name }}{% if images.length > 1 %} - image 1 of {{ images.length }}{% endif %}"{% else %} alt="" hidden{% endif %}>
+        {% endif %}
+        {% if not images.length or preview %}
+          <span{% if preview %} id="product-preview-image-placeholder"{% endif %}{% if images.length %} hidden{% endif %}>No image available</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="product-detail__body">
+      {% if preview %}
+        <h3 class="product-detail__name" id="product-preview-name">Product name</h3>
+      {% else %}
+        <h1 class="product-detail__name">{{ product.name }}</h1>
+      {% endif %}
+      {% if departments.length and not categories.length %}
+        <dl class="product-detail__classification">
+          <dt>Departments</dt>
+          <dd><ul>{% for department in departments %}<li>{{ department.name }}</li>{% endfor %}</ul></dd>
+        </dl>
+      {% endif %}
+      <span class="stock {{ 'stock--in' if quantity > 0 else 'stock--out' }}"{% if preview %} id="product-preview-stock" hidden{% endif %}>{{ 'In stock' if quantity > 0 else 'Out of stock' }}</span>
+      {% if product.currentPrice %}
+        <p class="product__price">£{{ product.currentPrice }}</p>
+      {% else %}
+        <p class="product__price product__price--unavailable"{% if preview %} id="product-preview-price"{% endif %}>Price unavailable</p>
+      {% endif %}
+      {% if preview %}
+        <div class="product-detail__basket">
+      {% else %}
+        <form method="post" action="/basket/items" class="product-detail__basket">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <input type="hidden" name="productID" value="{{ product.productID }}">
+      {% endif %}
+        <div class="form-field">
+          <label for="{{ quantityID }}">Quantity</label>
+          <select id="{{ quantityID }}" name="quantity"{% if quantity <= 0 %} disabled{% endif %}>
+            {% if quantity > 0 %}
+              {% set maxQuantity = 10 if quantity > 10 else quantity %}
+              {% for value in range(1, maxQuantity + 1) %}
+                <option value="{{ value }}">{{ value }}</option>
+              {% endfor %}
+            {% else %}
+              <option value="0">0</option>
+            {% endif %}
+          </select>
+        </div>
+        {% if preview %}
+          <button type="button" class="button" id="product-preview-basket" aria-disabled="true" aria-describedby="product-preview-notice" title="Unavailable in preview"{% if quantity <= 0 %} disabled{% endif %}>Add to basket</button>
+        {% else %}
+          <button type="submit" class="button"{% if quantity <= 0 %} disabled{% endif %}>Add to basket</button>
+        {% endif %}
+      {% if preview %}</div>{% else %}</form>{% endif %}
+      {% if product.description or preview %}
+        <div class="product-detail__optional-section"{% if preview %} id="product-preview-description-section"{% if not product.description %} hidden{% endif %}{% endif %}>
+          {% if preview %}<h4 class="product-detail__section-heading">Description</h4>{% else %}<h2>Description</h2>{% endif %}
+          <p class="product-detail__description"{% if preview %} id="product-preview-description"{% endif %}>{{ product.description }}</p>
+        </div>
+      {% endif %}
+      {% if categories.length or preview %}
+        <div class="product-detail__optional-section"{% if preview %} id="product-preview-categories-section"{% if not categories.length %} hidden{% endif %}{% endif %}>
+          {% if preview %}<h4 class="product-detail__section-heading">Categories</h4>{% else %}<h2>Categories</h2>{% endif %}
+          <dl class="product-detail__classification"{% if preview %} id="product-preview-categories"{% endif %}>
+            {% for departmentID, group in categories | groupby('departmentID') %}
+              {% set departmentName = 'Other categories' %}
+              {% for department in departments %}
+                {% if department.departmentID == departmentID %}{% set departmentName = department.name %}{% endif %}
+              {% endfor %}
+              <dt>{{ departmentName }}</dt>
+              <dd><ul>{% for category in group %}<li>{{ category.name }}</li>{% endfor %}</ul></dd>
+            {% endfor %}
+          </dl>
+        </div>
+      {% endif %}
+    </div>
+  </article>
+</div>
+{% endmacro %}

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createProduct, ProductSaveError } from '../../services/products';
 
 const input = {
+  categoryIDs: ['category-1', 'category-2'],
   name: 'New product', description: null, quantity: 0, weight: 1.5, draft: true, price: '19.99',
 };
 const product = {
@@ -30,6 +31,7 @@ describe('createProduct API service', () => {
     expect(options.body.get('quantity')).toBe('0');
     expect(options.body.get('description')).toBe('');
     expect(options.body.get('draft')).toBe('true');
+    expect(options.body.get('categoryIDs')).toBe('["category-1","category-2"]');
     expect(options.body.has('visible')).toBe(false);
     const image = options.body.get('images');
     if (!(image instanceof File)) throw new Error('Expected an uploaded file');

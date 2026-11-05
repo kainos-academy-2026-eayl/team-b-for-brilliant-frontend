@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
 export const NewProductFormSchema = z.object({
+  categoryIDs: z.union([
+    z.string().min(1, 'Select an existing category.'),
+    z.array(z.string().min(1, 'Select existing categories.')),
+  ]).optional().transform((value) => value === undefined ? [] : typeof value === 'string' ? [value] : value)
+    .refine((ids) => new Set(ids).size === ids.length, 'Select each category only once.'),
   name: z.string('Enter a product name.').trim().min(1, 'Enter a product name.'),
   description: z.string('Enter a description as text.').trim().default('')
     .transform((value) => value || null),

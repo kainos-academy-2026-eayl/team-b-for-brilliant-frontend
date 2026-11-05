@@ -124,8 +124,9 @@ values. Registration does not promise a verification email.
 
 ## Admin product creation
 
-Admins sign in through the standard `/login` page and can open **Create product** in the shared menu or their admin account
-page at `/admin/account`. `/products/add` requires a verified admin identity
+Admins sign in through the standard `/login` page. Both admins and customers use
+the shared `/account` page. Admins can open **Create product** from that page or
+the shared menu. `/products/add` requires a verified admin identity
 (`accessLevel: 1`) for both viewing and submitting the form.
 Visitors without verified admin access are redirected to the public `/home` page
 without loading the form or saving a product. Backend permission failures during
@@ -138,7 +139,20 @@ number from 0 to 2,147,483,647; weight must be a finite nonnegative decimal.
 Visibility is set by the backend from draft status: drafts are hidden and
 non-drafts are visible. New products default to draft. There is no separate
 visibility input, and submitted visibility values are ignored.
-Categories are not set by this flow.
+Categories are optional. The form loads all existing categories directly from
+the database-backed admin `GET /categories` API, including categories not yet
+assigned to a product. Check any number of choices; there is no per-product
+category count cap or facility for creating new categories. Department names
+disambiguate labels. Selected categories appear in Customer preview and remain
+selected after validation or save errors.
+
+The frontend validates selected IDs against the current database choices and
+sends them as a JSON array in the multipart `categoryIDs` field. The backend
+atomically connects those existing records through `ProductCategories`, without
+creating category records. Unknown/deleted or duplicate IDs are rejected.
+Category-loading failures stop creation with an explicit error. Browser-upload
+field limits scale with the available database category count, rather than
+limiting the form to one selection; normal request-size limits still apply.
 
 Admins can select up to five static JPEG, PNG or WebP images, at most 5 MiB and
 40 megapixels each. Select multiple files together and use the preview list's
@@ -168,10 +182,16 @@ all entered values, selected files and image order without submitting the form.
 Arrow Left/Right and Home/End operate the tabs; Enter/Space activate their native
 buttons. Validation responses always reopen Product details so errors are visible.
 
-The customer preview updates the name, price, stock, draft visibility and
-description. Its clickable image thumbnails show every selected image in the
-chosen order, using the same responsive gallery/detail styles as the customer
-product page. Viewing another thumbnail does not change the saved order.
+The customer preview and live product page render the same
+`views/products/detail.njk` component, with identical customer-content sizing,
+typography, gallery, stock, price, quantity selector, description and categories
+grouped by department. The preview updates from the form without saving.
+Its Add to basket control is marked unavailable and uses `type="button"` outside
+any basket form, so clicking it or pressing Enter/Space cannot send a basket request.
+It retains the customer button's visual styling; out-of-stock controls use the
+same disabled treatment as the real page.
+Clickable thumbnails show every selected image in the chosen order.
+Viewing another thumbnail does not change the saved order.
 Reordering or replacing uploads resets the gallery to the new main image.
 The product can be created from either tab, but previewing alone never saves it.
 Without JavaScript, the tabs and preview stay hidden and the form remains usable.
@@ -217,7 +237,8 @@ Closing it by its close button, the overlay or Escape restores the regions'
 previous inert state before returning focus to the menu toggle.
 Tab and Shift+Tab wrap within the open drawer, and the existing slide transitions
 respect reduced-motion preferences. "Shop all products" is a single navigation
-label without subtitle text.
+label without subtitle text. Product creation highlights only **Create product**;
+the catalogue and individual product pages highlight **Shop all products**.
 
 The burger menu also contains a keyboard-accessible **Dark mode** slider.
 Light mode is the default; dark mode uses a `#2B2B38` background and white text,
@@ -296,7 +317,8 @@ Customers and admins use the same `/login` page, `/auth/verify` integration and
 authentication cookie. The dedicated `/admin/login` page and its credential flow
 have been removed. Only verified access level `1` grants admin access; a company
 email address alone is insufficient. Unauthorized admin-page requests redirect to
-the public `/home` page, as does admin-account logout. `/` redirects to `/home`.
+the public `/home` page. Both roles use the CSRF-protected `POST /logout` flow,
+which returns to `/login`. `/` redirects to `/home`.
 
 MFA challenge flows are not supported. Customer and admin credential responses
 may omit the legacy `mfaEnabled` field or set it to `false`. A `true` or malformed

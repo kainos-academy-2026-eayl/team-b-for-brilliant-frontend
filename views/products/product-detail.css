@@ -1,3 +1,28 @@
+.product-customer-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 4vw, 2rem) 3rem;
+}
+
+.product-customer-view {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  color: var(--colour-text);
+}
+
+.products-back {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  color: var(--colour-brand-ink);
+  font-weight: 600;
+  text-underline-offset: 0.2em;
+}
+
+.products-back:focus-visible {
+  outline: 3px solid var(--colour-brand-ink);
+  outline-offset: 4px;
+}
+
 .product-detail {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
@@ -87,6 +112,16 @@
   letter-spacing: -0.035em;
 }
 
+.product-detail__name::after {
+  display: block;
+  width: 3.5rem;
+  height: 0.25rem;
+  margin-top: 0.75rem;
+  background: var(--colour-accent);
+  border-radius: 999px;
+  content: "";
+}
+
 .product-detail__body .stock {
   font-size: 0.8125rem;
 }
@@ -116,6 +151,116 @@
   color: var(--colour-muted);
   line-height: 1.75;
   white-space: pre-line;
+}
+
+.product-detail__optional-section {
+  display: contents;
+}
+
+.product-detail__classification {
+  margin: 0 0 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--colour-border);
+  border-radius: calc(var(--radius) / 2);
+  background: var(--colour-brand-soft);
+  overflow-wrap: anywhere;
+}
+
+.product-detail__classification dt {
+  color: var(--colour-brand-ink);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.product-detail__description + .product-detail__classification {
+  margin-top: 1.5rem;
+}
+
+.product-detail__classification dd {
+  margin: 0.25rem 0 1rem;
+}
+
+.product-detail__classification dd:last-child {
+  margin-bottom: 0;
+}
+
+.product-detail__classification ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product-detail__basket {
+  margin: 1.5rem 0;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--colour-border);
+  border-bottom: 1px solid var(--colour-border);
+}
+
+.product-detail__basket .form-field {
+  max-width: 8rem;
+  margin-bottom: 1rem;
+}
+
+.product-detail__basket label {
+  margin-bottom: 0.5rem;
+  font-size: 0.9375rem;
+}
+
+.product-detail__basket select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+  color: var(--colour-text);
+  background: var(--colour-surface);
+  border: 1px solid var(--colour-border);
+  border-radius: calc(var(--radius) / 2);
+  cursor: pointer;
+}
+
+.product-detail__basket select:hover:not(:disabled) {
+  border-color: var(--colour-brand-ink);
+}
+
+.product-detail__basket .button {
+  min-height: 48px;
+  padding: 0.875rem 1.25rem;
+  border: 1px solid var(--colour-accent);
+  border-radius: calc(var(--radius) / 2);
+  color: var(--color-on-primary);
+  background: var(--color-action-bg);
+  line-height: 1.5;
+}
+
+.product-detail__basket .button:hover:not(:disabled) {
+  color: var(--color-on-primary);
+  background: var(--color-action-hover);
+}
+
+.product-detail__basket .button:active:not(:disabled) {
+  background: var(--color-action-hover);
+}
+
+.product-detail__basket select:focus-visible,
+.product-detail__basket .button:focus-visible {
+  outline: 3px solid var(--colour-brand-ink);
+  outline-offset: 3px;
+}
+
+.product-detail__basket select:disabled,
+.product-detail__basket .button:disabled {
+  color: var(--colour-muted);
+  background: var(--colour-border);
+  border-color: var(--colour-border);
+  cursor: not-allowed;
+}
+
+.product-detail__basket .button[aria-disabled="true"] {
+  cursor: not-allowed;
 }
 
 @media (max-width: 700px) {

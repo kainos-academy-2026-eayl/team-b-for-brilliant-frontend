@@ -1,8 +1,26 @@
 import request from 'supertest'
 import { describe, expect, it } from 'vitest'
 import { createApp } from '../../app'
+import nunjucks from 'nunjucks'
 
 describe('shared navigation', () => {
+  it.each([
+    ['/products/add', '/products/add', 'page'],
+    ['/products/add/', '/products/add', 'page'],
+    ['/products', '/products', 'page'],
+    ['/products/', '/products', 'location'],
+    ['/products/product-1', '/products', 'location'],
+    ['/products/additional', '/products', 'location'],
+    ['/account', '/account', 'page'],
+  ])('highlights only the matching menu entry on %s', (currentPath, destination, current) => {
+    const environment = new nunjucks.Environment(new nunjucks.FileSystemLoader('views'), { autoescape: true })
+    const html = environment.render('main.njk', {
+      currentPath, isAdmin: true, isSignedIn: true, csrfToken: 'test-token',
+    })
+    const highlighted = html.match(/<a\b[^>]*\baria-current="[^"]+"[^>]*>/g) ?? []
+    expect(highlighted).toEqual([`<a href="${destination}" aria-current="${current}">`])
+  })
+
   it('renders one menu with a single shop label and loads the drawer script', async () => {
     const response = await request(createApp()).get('/login')
 

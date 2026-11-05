@@ -6,7 +6,6 @@ import {
   createAccountClient,
 } from './clients/accountClient';
 import { createAuthRouter } from './controllers/auth-controllers';
-import { adminAccountRouter } from './controllers/adminAccount';
 import { createBasketRouter } from './controllers/basket';
 import { createDiscountsRouter } from './controllers/discounts';
 import { createImagesRouter } from './controllers/images';
@@ -48,6 +47,8 @@ import {
 } from './services/profileService';
 import { createRegisterService } from './services/registerService';
 import type { getSecurityQuestions, saveRegistrationDetails } from './services/registrationDetails';
+import { getCategories } from './services/categories';
+import { loadProductCategories } from './middleware/productCategories';
 
 interface AppOptions {
   tokenClient?: TokenClient;
@@ -63,6 +64,7 @@ interface AppOptions {
   fetchDiscounts?: (token?: string) => Promise<Discount[]>;
   saveDiscount?: typeof createDiscount;
   saveProduct?: typeof createProduct;
+  fetchCategories?: typeof getCategories;
 }
 
 export function createApp(options: AppOptions = {}): Express {
@@ -94,7 +96,8 @@ export function createApp(options: AppOptions = {}): Express {
     res.locals.currentPath = req.path;
     next();
   });
-  app.post('/products/add', requireAdmin, parseProductUpload);
+  const fetchCategories = options.fetchCategories ?? getCategories;
+  app.post('/products/add', requireAdmin, loadProductCategories(fetchCategories), parseProductUpload);
   app.use(csrfProtection);
 
   app.get('/health', (_req: Request, res: Response) => {
@@ -112,7 +115,7 @@ export function createApp(options: AppOptions = {}): Express {
     res.redirect('/home');
   });
 
-  app.use('/products/add', createProductCreationRouter(options.saveProduct ?? createProduct));
+  app.use('/products/add', createProductCreationRouter(options.saveProduct ?? createProduct, fetchCategories));
   app.use(
     '/products',
     createProductsRouter(
@@ -158,7 +161,6 @@ export function createApp(options: AppOptions = {}): Express {
     requireAuth,
     createBasketRouter(options.basketService ?? createBasketService()),
   );
-  app.use('/admin/account', requireAdmin, adminAccountRouter);
   const registerService = createRegisterService(accountClient);
   app.use(createAccountRouter(authService, registerService));
   app.use('/register/details', createRegistrationDetailsRouter(

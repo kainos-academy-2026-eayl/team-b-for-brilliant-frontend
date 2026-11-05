@@ -436,10 +436,6 @@ main {
     color: var(--color-muted);
 }
 
-.product-create-main {
-    max-width: 70rem;
-}
-
 .product-editor > * {
     min-width: 0;
 }
@@ -524,6 +520,40 @@ main {
 
 .form-field textarea {
     resize: vertical;
+}
+
+.category-options {
+    min-width: 0;
+    margin-inline: 0;
+    padding: 0;
+    border: 0;
+}
+
+.category-options legend {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.category-options[aria-invalid='true'] legend {
+    color: var(--color-error-text);
+}
+
+.category-options .category-options__option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem;
+    font-weight: 400;
+    overflow-wrap: anywhere;
+}
+
+.category-options input[type='checkbox'] {
+    flex-shrink: 0;
+    width: 1.15rem;
+    height: 1.15rem;
+    margin: 0.15rem 0 0;
+    padding: 0;
+    accent-color: var(--color-secondary);
 }
 
 .form-field input[type='file']::file-selector-button {

@@ -16,6 +16,7 @@ export function createTestApp(
     },
   };
   return createApp({
+    fetchCategories: async () => [],
     ...options,
     tokenClient: options.tokenClient ?? tokenClient,
     ...(accountClient ? {

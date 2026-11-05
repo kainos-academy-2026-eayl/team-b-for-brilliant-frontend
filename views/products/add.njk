@@ -1,4 +1,5 @@
 {% extends "main.njk" %}
+{% from "products/detail.njk" import renderProductDetail %}
 
 {% block title %}Create product | B-Brilliant{% endblock %}
 
@@ -9,7 +10,7 @@
   </style>
 {% endblock %}
 
-{% block main_class %}product-create-main{% endblock %}
+{% block main_class %}product-customer-main{% endblock %}
 
 {% block content %}
 <div class="product-editor">
@@ -20,7 +21,7 @@
   </div>
   <section class="card product-editor__details product-editor__panel" id="product-create-form">
     <h2>Product details</h2>
-    <p class="card-subtitle">All fields except description and images are required.</p>
+    <p class="card-subtitle">All fields except description, categories and images are required.</p>
 
     {% if productCreated %}
       <p class="alert alert-success" role="status">Product created successfully.</p>
@@ -81,6 +82,20 @@
         <p id="draft-error" class="field-error">{{ errors.draft[0] }}</p>
       </div>
 
+      <fieldset class="form-field category-options" aria-describedby="categoryIDs-hint categoryIDs-error"{% if errors.categoryIDs %} aria-invalid="true"{% endif %}>
+        <legend>Categories (optional)</legend>
+        <p id="categoryIDs-hint" class="form-message">Select as many categories as you need. Only existing categories are listed.</p>
+        <p id="categoryIDs-error" class="field-error">{{ errors.categoryIDs[0] }}</p>
+        {% for category in categories %}
+          <label class="category-options__option" for="category-{{ loop.index }}">
+            <input id="category-{{ loop.index }}" name="categoryIDs" type="checkbox" value="{{ category.categoryID }}" data-category-name="{{ category.name }}" data-department-id="{{ category.departmentID }}" data-department-name="{{ category.departmentName }}"{% if category.categoryID in selectedCategoryIDs %} checked{% endif %}>
+            <span>{{ category.departmentName }} / {{ category.name }}</span>
+          </label>
+        {% else %}
+          <p class="form-message">No categories are available.</p>
+        {% endfor %}
+      </fieldset>
+
       <div class="form-field">
         <label for="images">Product images (optional)</label>
         <input id="image-order" name="imageOrder" type="hidden" value="">
@@ -98,33 +113,16 @@
 
       <button type="submit" class="button">Create product</button>
     </form>
-    <p class="card-footer"><a href="/admin/account">Cancel and return to your account</a></p>
+    <p class="card-footer"><a href="/account">Cancel and return to your account</a></p>
   </section>
   <section class="product-preview product-editor__panel" id="product-preview" aria-labelledby="product-preview-heading" hidden>
     <h2 id="product-preview-heading">Customer preview</h2>
-    <p class="form-message">Preview only. This product has not been created.</p>
+    <p class="form-message" id="product-preview-notice">Preview only. This product has not been created. Add to basket is unavailable.</p>
     <p class="form-message" id="product-preview-visibility"></p>
-    <article class="product-detail">
-      <div class="product-detail__images" id="product-preview-gallery">
-        <div class="product-detail__thumbnails" id="product-preview-thumbnails" role="group" aria-label="Product images" hidden></div>
-        <div class="product__image" id="product-preview-image-frame">
-          <img id="product-preview-image" alt="" hidden>
-          <span id="product-preview-image-placeholder">No image available</span>
-        </div>
-      </div>
-      <div class="product-detail__body">
-        <h3 class="product-detail__name" id="product-preview-name">Product name</h3>
-        <span class="stock" id="product-preview-stock" hidden></span>
-        <p class="product__price product__price--unavailable" id="product-preview-price">Price unavailable</p>
-        <section id="product-preview-description-section" aria-labelledby="product-preview-description-heading" hidden>
-          <h4 class="product-detail__section-heading" id="product-preview-description-heading">Description</h4>
-          <p class="product-detail__description" id="product-preview-description"></p>
-        </section>
-      </div>
-    </article>
+    {{ renderProductDetail({}, true) }}
     <div class="product-editor__actions">
       <button type="submit" class="button" form="product-create-fields">Create product</button>
-      <p class="card-footer"><a href="/admin/account">Cancel and return to your account</a></p>
+      <p class="card-footer"><a href="/account">Cancel and return to your account</a></p>
     </div>
   </section>
 </div>

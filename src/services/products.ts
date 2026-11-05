@@ -37,7 +37,7 @@ export async function createProduct(
 ): Promise<Product> {
   const body = new FormData();
   for (const [field, value] of Object.entries(product)) {
-    body.append(field, value === null ? '' : String(value));
+    body.append(field, Array.isArray(value) ? JSON.stringify(value) : value === null ? '' : String(value));
   }
   for (const image of images) {
     body.append('images', new Blob([new Uint8Array(image.buffer)], { type: image.mimetype }), image.originalname);

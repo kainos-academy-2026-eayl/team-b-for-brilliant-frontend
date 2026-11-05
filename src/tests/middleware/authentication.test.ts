@@ -101,7 +101,7 @@ describe('JWT browser authentication', () => {
       async getIdentity() { return null; },
       async logout() {},
     };
-    const response = await request(createApp({ tokenClient })).get('/admin/account?accessLevel=1')
+    const response = await request(createApp({ tokenClient })).get('/products/add?accessLevel=1')
       .set('Cookie', 'access_token=forged; customerId=c1; isAdmin=true').expect(302);
     expect(response.headers.location).toBe('/home');
     expect(cookies(response).some((cookie) => cookie.startsWith('access_token=;'))).toBe(true);
@@ -109,7 +109,7 @@ describe('JWT browser authentication', () => {
 
   it('does not let a verified customer access admin pages', async () => {
     const { agent } = await signIn(createTestApp({ accountClient }));
-    await agent.get('/admin/account').expect(302)
+    await agent.get('/products/add').expect(302)
       .expect('Location', '/home');
   });
 
@@ -126,7 +126,7 @@ describe('JWT browser authentication', () => {
     await agent.post('/login').type('form').send({
       _csrf: csrf(page.text), email: 'user@b-brilliant.com', password: 'password', accessLevel: 1,
     }).expect(302);
-    await agent.get('/admin/account').expect(302).expect('Location', '/home');
+    await agent.get('/products/add').expect(302).expect('Location', '/home');
   });
 
   it('checks identity on every authenticated request and rejects a revoked token', async () => {
