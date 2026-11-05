@@ -29,6 +29,7 @@ async function failedAutomaticSignIn() {
   const page = await agent.get('/register').expect(200);
   const response = await agent.post('/register').type('form').send({
     _csrf: csrf(page.text), email: 'Mixed.Case@Example.com', password: 'Password123',
+    confirmPassword: 'Password123',
   }).expect(401);
   return { agent, client, save, response };
 }

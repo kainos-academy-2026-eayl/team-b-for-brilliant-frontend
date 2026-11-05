@@ -28,6 +28,7 @@ async function signedIn(save = vi.fn<typeof saveRegistrationDetails>().mockResol
   const register = await agent.get('/register').expect(200);
   await agent.post('/register').type('form').send({
     _csrf: token(register.text), email: 'new@example.com', password: 'password123',
+    confirmPassword: 'password123',
   }).expect(303).expect('Location', '/register/details');
   const page = await agent.get('/register/details').expect(200);
   return { agent, page, save, csrf: token(page.text) };
