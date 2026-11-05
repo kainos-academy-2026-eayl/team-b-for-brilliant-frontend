@@ -9,7 +9,7 @@ export const parseProductUpload: RequestHandler = (req, res, next) => {
   const fields = 8 + req.productCategories.length;
   const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024, files: 5, fields, fieldSize: 10 * 1024, parts: fields + 5 },
+  limits: { fileSize: 5 * 1024 * 1024, files: 5, fields, fieldSize: 10 * 1024, parts: fields + 6 },
   fileFilter(_req, file, callback) {
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
       callback(new Error('Upload JPEG, PNG or WebP images only.'));
