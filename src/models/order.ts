@@ -11,4 +11,5 @@ export interface Order {
   placedAt: string
   items: OrderItem[]
   total: string
+  canReorder: boolean;
 }

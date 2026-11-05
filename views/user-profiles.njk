@@ -98,6 +98,9 @@
           {% endfor %}
         </ul>
         <p><strong>Total: £{{ order.total }}</strong></p>
+          {% if order.canReorder %}
+          <p class="basket-actions"><a class="button" href="/checkout?reorder={{ order.orderID }}">Reorder</a></p>
+        {% endif %}
       </article>
     {% endfor %}
   {% endif %}

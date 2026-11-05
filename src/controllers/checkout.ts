@@ -9,6 +9,8 @@ import {
     type DeliveryDetails,
     type PlacedOrder,
     type Quote,
+    type ReorderItem,
+    type UnavailableItem,
 } from '../services/checkout';
 import type { ProfileService } from '../services/profileService';
 
@@ -65,9 +67,14 @@ interface PageView {
     formError: string | null;
 }
 
+interface ReorderState {
+    orderID: string;
+    unavailableItems: UnavailableItem[];
+}
+
 type CheckoutContext =
-    | { items: BasketItem[]; profile: Profile; available: true }
-    | { items: BasketItem[]; profile: null; available: false };
+    | { items: BasketItem[]; profile: Profile; available: true; reorder?: ReorderState }
+    | { items: BasketItem[]; profile: null; available: false; reorder?: ReorderState };
 type AvailableCheckoutContext = Extract<CheckoutContext, { available: true }>;
 
 function isFieldName(name: string): name is FieldName {
@@ -208,6 +215,28 @@ function canCheckOut(items: BasketItem[]): boolean {
     return items.length > 0 && items.every((item) => item.isQuantityAvailable);
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function readReorderID(value: unknown): string | undefined {
+    return typeof value === 'string' && UUID.test(value) ? value : undefined;
+}
+
+// The checkout page lists items in the basket's shape, so reordered items are mapped to it
+function toBasketItem(item: ReorderItem): BasketItem {
+    return {
+        basketItemID: item.productID,
+        productID: item.productID,
+        productName: item.productName,
+        imageUrl: item.imageUrl,
+        unitPrice: item.unitPrice,
+        lineTotal: item.lineTotal,
+        quantityInBasket: item.quantity,
+        stockAvailable: item.quantity,
+        isQuantityAvailable: true,
+        lowStock: false,
+    };
+}
+
 type Handler = (req: Request, res: Response, token: string) => Promise<void>;
 
 export function createCheckoutRouter(
@@ -226,6 +255,10 @@ export function createCheckoutRouter(
     function handleFailure(error: unknown, req: Request, res: Response) {
         if (statusOf(error) === 401) {
             signInAgain(req, res);
+            return;
+        }
+        if (error instanceof CheckoutError && error.status === 404) {
+            res.status(404).render('error.njk', { message: 'We could not find that order.' });
             return;
         }
         // Only the message is logged, never the form contents, so card details cannot leak
@@ -250,7 +283,23 @@ export function createCheckoutRouter(
         };
     }
 
-    async function loadContext(token: string): Promise<AvailableCheckoutContext> {
+    async function loadContext(
+        token: string,
+        reorderOrderID?: string,
+    ): Promise<AvailableCheckoutContext> {
+        if (reorderOrderID) {
+            const [session, profile] = await Promise.all([
+                checkout.getReorderSession(token, reorderOrderID, ''),
+                profiles.getProfile(token),
+            ]);
+            return {
+                items: session.items.filter((item) => item.available).map(toBasketItem),
+                profile,
+                available: true,
+                reorder: { orderID: reorderOrderID, unavailableItems: session.unavailableItems },
+            };
+        }
+
         const [{ items }, profile] = await Promise.all([
             basket.getBasket(token),
             profiles.getProfile(token),
@@ -262,13 +311,21 @@ export function createCheckoutRouter(
     async function quoteFor(
         token: string,
         discountCode: string,
+        reorderOrderID?: string,
     ): Promise<{ quote: Quote | null; discountError: string | null; failure: unknown | null }> {
+        async function fetchQuote(code: string): Promise<Quote> {
+            if (!reorderOrderID) return checkout.getQuote(token, code);
+            const { totals } = await checkout.getReorderSession(token, reorderOrderID, code);
+            if (!totals) throw new Error('No items from the reordered order are available');
+            return totals;
+        }
+
         let discountError: string | null = null;
 
         if (discountCode) {
             try {
                 return {
-                    quote: await checkout.getQuote(token, discountCode),
+                    quote: await fetchQuote(discountCode),
                     discountError: null,
                     failure: null,
                 };
@@ -283,7 +340,7 @@ export function createCheckoutRouter(
 
         try {
             return {
-                quote: await checkout.getQuote(token, ''),
+                quote: await fetchQuote(''),
                 discountError,
                 failure: null,
             };
@@ -300,15 +357,20 @@ export function createCheckoutRouter(
         status: number,
         view: PageView,
     ) {
-        const quoteResult = context.available
-            ? await quoteFor(token, view.values.discountCode)
-            : { quote: null, discountError: null, failure: null };
+        const noItemsAvailable =
+            context.available && Boolean(context.reorder) && context.items.length === 0;
+        const quoteResult =
+            context.available && !noItemsAvailable
+                ? await quoteFor(token, view.values.discountCode, context.reorder?.orderID)
+                : { quote: null, discountError: null, failure: null };
         const { quote, discountError, failure } = quoteResult;
-        const quoteError = context.available
-            ? quote
-                ? null
-                : 'Your order total is unavailable. Try again before paying.'
-            : 'Your checkout details could not be loaded, so your order total is unavailable.';
+        const quoteError = noItemsAvailable
+            ? null
+            : context.available
+              ? quote
+                  ? null
+                  : 'Your order total is unavailable. Try again before paying.'
+              : 'Your checkout details could not be loaded, so your order total is unavailable.';
 
         if (failure) {
             console.error(
@@ -330,6 +392,10 @@ export function createCheckoutRouter(
                 !discountError,
             quotedDiscountCode: quote && !discountError ? view.values.discountCode : '',
             contextAvailable: context.available,
+            isReorder: Boolean(context.reorder),
+            reorderOrderID: context.reorder?.orderID ?? '',
+            unavailableItems: context.reorder?.unavailableItems ?? [],
+            noItemsAvailable,
             hasSavedAddress: context.available
                 ? hasSavedAddress(context.profile)
                 : view.values.addressChoice === 'saved',
@@ -353,11 +419,12 @@ export function createCheckoutRouter(
         token: string,
     ): Promise<{ context: AvailableCheckoutContext; values: FormValues } | null> {
         const submittedValues = readForm(req.body);
+        const reorderOrderID = readReorderID(req.body?.reorderOrderID);
         try {
-            const context = await loadContext(token);
+            const context = await loadContext(token, reorderOrderID);
             return { context, values: readForm(req.body, context.profile) };
         } catch (error) {
-            if (statusOf(error) === 401) throw error;
+            if (statusOf(error) === 401 || (reorderOrderID && statusOf(error) === 404)) throw error;
 
             console.error(
                 'Checkout details could not be loaded',
@@ -366,7 +433,14 @@ export function createCheckoutRouter(
             await renderPage(
                 res,
                 token,
-                { items: [], profile: null, available: false },
+                {
+                    items: [],
+                    profile: null,
+                    available: false,
+                    ...(reorderOrderID && {
+                        reorder: { orderID: reorderOrderID, unavailableItems: [] },
+                    }),
+                },
                 502,
                 { values: submittedValues, errors: {}, formError: GENERIC_ERROR },
             );
@@ -376,9 +450,9 @@ export function createCheckoutRouter(
 
     router.get(
         '/',
-        guarded(async (_req, res, token) => {
-            const context = await loadContext(token);
-            if (!canCheckOut(context.items)) {
+        guarded(async (req, res, token) => {
+            const context = await loadContext(token, readReorderID(req.query.reorder));
+            if (!context.reorder && !canCheckOut(context.items)) {
                 res.redirect('/basket');
                 return;
             }
@@ -397,7 +471,7 @@ export function createCheckoutRouter(
             const loaded = await loadPostContext(req, res, token);
             if (!loaded) return;
             const { context, values } = loaded;
-            if (!canCheckOut(context.items)) {
+            if (!context.reorder && !canCheckOut(context.items)) {
                 res.redirect('/basket');
                 return;
             }
@@ -415,8 +489,16 @@ export function createCheckoutRouter(
             const loaded = await loadPostContext(req, res, token);
             if (!loaded) return;
             const { context, values } = loaded;
-            if (!canCheckOut(context.items)) {
+            if (!context.reorder && !canCheckOut(context.items)) {
                 res.redirect('/basket');
+                return;
+            }
+            if (context.items.length === 0) {
+                await renderPage(res, token, context, 409, {
+                    values,
+                    errors: {},
+                    formError: 'None of the items from that order are available.',
+                });
                 return;
             }
 
@@ -445,6 +527,7 @@ export function createCheckoutRouter(
                     delivery: deliveryFor(values, context.profile),
                     discountCode: values.discountCode,
                     card: { cardNumber: values.cardNumber, expiry: values.expiry, cvv: values.cvv },
+                    ...(context.reorder && { reorderOrderID: context.reorder.orderID }),
                 });
             } catch (error) {
                 if (statusOf(error) === 401) throw error;
