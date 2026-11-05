@@ -133,39 +133,6 @@ never trust a customer ID submitted by the browser. The form includes a CSRF
 token and displays validation or service errors without discarding entered
 values. Registration does not promise a verification email.
 
-## Admin product editing
-
-Admins and customers browse the same `/products` page, with the same search
-and category-filter controls. Customers see only visible, published,
-non-deleted products. Admins also see non-deleted drafts, labelled "Draft",
-including draft-only category choices. Draft detail pages are admin-only.
-Selecting a product opens its customer-facing detail page for everyone.
-Only signed-in admins see the "Edit product" link on that page, which opens
-the protected editor. Customers cannot access editing directly.
-The editor supports name, description, price, stock, weight, publication,
-categories and image management. Customer preview uses the same product
-article as the customer detail page; switching views never saves or purchases.
-Publication is one required radio choice: "Visible to customers" or "Draft".
-The server derives complementary `visible`/`draft` flags, and the backend
-rejects combinations where both are true or both are false. Legacy hidden or
-inconsistent records are presented as drafts until saved with one choice.
-
-Saving is CSRF-protected and forwards the verified admin bearer token to
-`PUT {API_BASE_URL}/admin/products/:productID`. Loading uses the corresponding
-admin GET endpoint, including all category/department choices. Deploy the
-matching backend changes before using saving. A price is required (0.00 to
-99999999.99); changed prices append to price history rather than overwriting it.
-The image list combines existing images and new PNG/JPEG/GIF/WebP uploads.
-Add images without replacing existing ones, remove any image (including all
-images), and use "Move earlier"/"Move later" to set the display order. The first
-image is used as the main image and catalogue thumbnail. Keep up to five images
-in total; new uploads must total at most 5 MB. Preview and saving use that same
-ordered list. Image changes require JavaScript; details can also be saved
-without JavaScript, leaving images unchanged.
-Validation or API errors keep browser edits available for retry; a successful
-save reloads persisted data with a confirmation. Refreshing before saving
-discards edits. Backend image storage must be on a persistent volume.
-
 ## Project structure
 
 ```
@@ -372,10 +339,8 @@ that unfiltered catalogue. Prices are fetched only for the search results.
 
 Between the price and description, detail pages show a quantity dropdown from
 1 to the available stock (capped at 10) and an "Add to basket" button underneath. Out-of-stock
-products show quantity 0 with both controls disabled. The customer form submits
-the product ID, selected quantity and CSRF token to `POST /basket/items`;
-the basket service uses the verified customer's access token. The admin customer
-preview keeps the same controls visually, but its button cannot submit a purchase.
+products show quantity 0 with both controls disabled. These controls are UI-only:
+the button does not yet save items or call a basket API.
 
 ### Product images
 

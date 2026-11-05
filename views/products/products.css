@@ -487,8 +487,7 @@ h1::after {
   font-weight: 400;
 }
 
-.stock,
-.product__draft {
+.stock {
   display: inline-flex;
   align-self: flex-start;
   align-items: center;
@@ -498,12 +497,6 @@ h1::after {
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.01em;
-}
-
-.product__draft {
-  color: var(--colour-brand-ink);
-  background: var(--colour-brand-soft);
-  border: 1px solid var(--colour-brand);
 }
 
 .stock--in {

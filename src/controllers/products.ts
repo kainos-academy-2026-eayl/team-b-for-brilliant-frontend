@@ -3,14 +3,11 @@ import type { Product, ProductWithPrice } from '../models/product';
 import { getProducts, getProductWithPrice, type ProductFilters } from '../services/products';
 
 export function createProductsRouter(
-  fetchProducts: (filters?: ProductFilters, adminToken?: string) => Promise<ProductWithPrice[]>,
+  fetchProducts: (filters?: ProductFilters) => Promise<ProductWithPrice[]>,
   fetchProduct: (
     productID: string,
-    adminToken?: string,
-  ) => Promise<ProductWithPrice | null> = (productID, adminToken) =>
-    getProductWithPrice(productID, undefined, undefined, adminToken),
-  fetchCategoryProducts: (adminToken?: string) => Promise<Product[]> = (adminToken) =>
-    getProducts(undefined, undefined, undefined, adminToken),
+  ) => Promise<ProductWithPrice | null> = getProductWithPrice,
+  fetchCategoryProducts: () => Promise<Product[]> = getProducts,
 ): Router {
   const router = Router();
 
@@ -41,11 +38,10 @@ export function createProductsRouter(
       const filters: ProductFilters = {};
       if (searchQuery) filters.q = searchQuery;
       if (categoryFilter) filters.category = categoryFilter;
-      const adminToken = req.auth?.accessLevel === 1 ? req.auth.accessToken : undefined;
-      const products = adminToken ? await fetchProducts(filters, adminToken) : await fetchProducts(filters);
+      const products = await fetchProducts(filters);
       // Use the full catalogue for dropdown options, without fetching its prices again.
       const categoryProducts = searchQuery || categoryFilter
-        ? adminToken ? await fetchCategoryProducts(adminToken) : await fetchCategoryProducts()
+        ? await fetchCategoryProducts()
         : products;
       // Keep each category ID once, even when several products share it.
       const uniqueCategories = Array.from(
@@ -95,10 +91,7 @@ export function createProductsRouter(
     // Fetch current stock and price rather than reuse a cached detail page.
     res.set('Cache-Control', 'no-store');
     try {
-      const adminToken = req.auth?.accessLevel === 1 ? req.auth.accessToken : undefined;
-      const product = adminToken
-        ? await fetchProduct(req.params.productID, adminToken)
-        : await fetchProduct(req.params.productID);
+      const product = await fetchProduct(req.params.productID);
       if (product === null) {
         res.status(404).render('products/not-found.njk');
         return;
