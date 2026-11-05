@@ -1,0 +1,133 @@
+{% extends "main.njk" %}
+{% from "products/detail.njk" import renderProductDetail %}
+
+{% block title %}Create product | B-Brilliant{% endblock %}
+
+{% block head %}
+  <style>
+    {% include "products/product-card.css" %}
+    {% include "products/product-detail.css" %}
+  </style>
+{% endblock %}
+
+{% block main_class %}product-customer-main{% endblock %}
+
+{% block content %}
+<div class="product-editor">
+  <h1 class="product-editor__heading">Create product</h1>
+  <div class="product-editor__tabs" id="product-editor-tabs" role="tablist" aria-label="Create product view" hidden>
+    <button class="button" type="button" id="product-details-tab" role="tab" aria-controls="product-create-form" aria-selected="true">Product details</button>
+    <button class="button" type="button" id="product-preview-tab" role="tab" aria-controls="product-preview" aria-selected="false" tabindex="-1">Customer preview</button>
+  </div>
+  <section class="card product-editor__details product-editor__panel" id="product-create-form">
+    <h2>Product details</h2>
+    <p class="card-subtitle">All fields except description, categories and images are required.</p>
+
+    {% if productCreated %}
+      <p class="alert alert-success" role="status">Product created successfully.</p>
+    {% endif %}
+    {% if formError %}
+      <p class="alert" role="alert">{{ formError }}</p>
+    {% elif hasErrors %}
+      <p class="alert" role="alert">Please fix the problems below and try again.</p>
+    {% endif %}
+    {% if formError or hasErrors %}
+      <p class="form-message">If you selected images, select them again before retrying.</p>
+    {% endif %}
+
+    <form id="product-create-fields" method="post" action="/products/add" enctype="multipart/form-data" novalidate>
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+      <div class="form-field">
+        <label for="name">Product name</label>
+        <input id="name" name="name" type="text" required value="{{ values.name }}" aria-describedby="name-error"{% if errors.name %} aria-invalid="true"{% endif %}>
+        <p id="name-error" class="field-error">{{ errors.name[0] }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="description">Description (optional)</label>
+        <textarea id="description" name="description" rows="5" aria-describedby="description-error"{% if errors.description %} aria-invalid="true"{% endif %}>{{ values.description }}</textarea>
+        <p id="description-error" class="field-error">{{ errors.description[0] }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="price">Price (&pound;)</label>
+        <input id="price" name="price" type="text" inputmode="decimal" required value="{{ values.price }}" aria-describedby="price-hint price-error"{% if errors.price %} aria-invalid="true"{% endif %}>
+        <p id="price-hint" class="form-message">Enter a price from 0 to 99999999.99, with up to 2 decimal places, for example 19.99.</p>
+        <p id="price-error" class="field-error">{{ errors.price[0] }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="quantity">Quantity</label>
+        <input id="quantity" name="quantity" type="text" inputmode="numeric" required value="{{ values.quantity }}" aria-describedby="quantity-hint quantity-error"{% if errors.quantity %} aria-invalid="true"{% endif %}>
+        <p id="quantity-hint" class="form-message">Enter a whole number from 0 to 2147483647.</p>
+        <p id="quantity-error" class="field-error">{{ errors.quantity[0] }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="weight">Weight</label>
+        <input id="weight" name="weight" type="text" inputmode="decimal" required value="{{ values.weight }}" aria-describedby="weight-hint weight-error"{% if errors.weight %} aria-invalid="true"{% endif %}>
+        <p id="weight-hint" class="form-message">Enter a number greater than or equal to 0.</p>
+        <p id="weight-error" class="field-error">{{ errors.weight[0] }}</p>
+      </div>
+
+      <div class="form-field">
+        <label for="draft">Draft status</label>
+        <select id="draft" name="draft" required aria-describedby="draft-hint draft-error"{% if errors.draft %} aria-invalid="true"{% endif %}>
+          <option value="">Select a draft status</option>
+          <option value="true"{% if values.draft == 'true' %} selected{% endif %}>Draft</option>
+          <option value="false"{% if values.draft == 'false' %} selected{% endif %}>Not a draft</option>
+        </select>
+        <p id="draft-hint" class="form-message">Draft products are hidden from the shop. Products that are not drafts are visible. New products default to draft.</p>
+        <p id="draft-error" class="field-error">{{ errors.draft[0] }}</p>
+      </div>
+
+      <fieldset class="form-field category-options" aria-describedby="categoryIDs-hint categoryIDs-error"{% if errors.categoryIDs %} aria-invalid="true"{% endif %}>
+        <legend>Categories (optional)</legend>
+        <p id="categoryIDs-hint" class="form-message">Select as many categories as you need. Only existing categories are listed.</p>
+        <p id="categoryIDs-error" class="field-error">{{ errors.categoryIDs[0] }}</p>
+        {% for category in categories %}
+          <label class="category-options__option" for="category-{{ loop.index }}">
+            <input id="category-{{ loop.index }}" name="categoryIDs" type="checkbox" value="{{ category.categoryID }}" data-category-name="{{ category.name }}" data-department-id="{{ category.departmentID }}" data-department-name="{{ category.departmentName }}"{% if category.categoryID in selectedCategoryIDs %} checked{% endif %}>
+            <span>{{ category.departmentName }} / {{ category.name }}</span>
+          </label>
+        {% else %}
+          <p class="form-message">No categories are available.</p>
+        {% endfor %}
+      </fieldset>
+
+      <div class="form-field">
+        <label for="images">Product images (optional)</label>
+        <input id="image-order" name="imageOrder" type="hidden" value="">
+        <input id="images" name="images" type="file" accept="image/jpeg,image/png,image/webp" multiple aria-describedby="images-hint images-error"{% if errors.images %} aria-invalid="true"{% endif %}>
+        <p id="images-hint" class="form-message">Choose up to 5 JPEG, PNG or WebP images, up to 5 MiB and 40 megapixels each. Select multiple files together, then use Move up and Move down to set their order. The first is the main image. Choosing files again replaces the selection.</p>
+        <p id="images-error" class="field-error">{{ errors.images[0] }}</p>
+        <noscript><p class="form-message">Without JavaScript, images are saved in file-selection order.</p></noscript>
+      </div>
+
+      <div id="image-order-panel" hidden>
+        <h3 id="image-order-heading">Image order</h3>
+        <ol id="image-order-list" class="image-order" aria-labelledby="image-order-heading"></ol>
+      </div>
+      <p id="image-order-status" class="form-message" role="status" aria-live="polite" aria-atomic="true"></p>
+
+      <button type="submit" class="button">Create product</button>
+    </form>
+    <p class="card-footer"><a href="/account">Cancel and return to your account</a></p>
+  </section>
+  <section class="product-preview product-editor__panel" id="product-preview" aria-labelledby="product-preview-heading" hidden>
+    <h2 id="product-preview-heading">Customer preview</h2>
+    <p class="form-message" id="product-preview-notice">Preview only. This product has not been created. Add to basket is unavailable.</p>
+    <p class="form-message" id="product-preview-visibility"></p>
+    {{ renderProductDetail({}, true) }}
+    <div class="product-editor__actions">
+      <button type="submit" class="button" form="product-create-fields">Create product</button>
+      <p class="card-footer"><a href="/account">Cancel and return to your account</a></p>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/product-form.js" defer></script>
+{% endblock %}

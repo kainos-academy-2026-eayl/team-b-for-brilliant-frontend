@@ -205,8 +205,8 @@ describe('product editor template', () => {
       isProductPreview: true,
     })
     expect(preview).toContain('<div class="product-detail__basket">')
-    expect(preview).toContain(
-      '<button type="button" class="button">Add to basket</button>',
+    expect(preview).toMatch(
+      /<button type="button" class="button"[^>]*aria-disabled="true"[^>]*>Add to basket<\/button>/,
     )
     expect(preview).not.toContain('<form')
     expect(preview).not.toContain('name="productID"')

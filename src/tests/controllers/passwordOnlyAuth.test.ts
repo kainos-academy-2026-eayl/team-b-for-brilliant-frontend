@@ -2,14 +2,12 @@ import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app';
 import { createAccountClient } from '../../clients/accountClient';
-import { createAdminClient } from '../../clients/adminClient';
 import type { TokenClient } from '../../clients/tokenClient';
-import { createAdminAuthService } from '../../services/adminAuthService';
 
 const baseUrl = 'http://account-service.test';
 const flows = [
-  { path: '/login', protectedPath: '/home', destination: '/home', status: 302, accessLevel: 0 },
-  { path: '/admin/login', protectedPath: '/admin/account', destination: '/admin/account', status: 302, accessLevel: 1 },
+  { path: '/login', protectedPath: '/account', destination: '/home', status: 302, accessLevel: 0 },
+  { path: '/login', protectedPath: '/account', destination: '/account', status: 302, accessLevel: 1 },
   { path: '/register', protectedPath: '/register/details', destination: '/register/details', status: 303, accessLevel: 0 },
 ] as const;
 
@@ -39,7 +37,6 @@ function setup(accessLevel: 0 | 1, mfaEnabled: unknown) {
     .mockResolvedValue({ customerId: 'c1', accessLevel });
   const agent = request.agent(createApp({
     accountClient: createAccountClient(baseUrl),
-    adminAuthService: createAdminAuthService(createAdminClient(baseUrl)),
     tokenClient: { getIdentity, logout: vi.fn<TokenClient['logout']>() },
   }));
   return { agent, getIdentity, fetchMock };
@@ -50,13 +47,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe.each(flows)('password-only authentication through $path', (flow) => {
+describe.each(flows)('password-only authentication through $path with access level $accessLevel', (flow) => {
   it.each([undefined, false])('accepts a completed response with mfaEnabled=%s', async (flag) => {
     const { agent, getIdentity } = setup(flow.accessLevel, flag);
     const page = await agent.get(flow.path).expect(200);
     const response = await agent.post(flow.path).type('form').send({
       _csrf: csrf(page.text), email: 'user@b-brilliant.com', password: 'password',
       ...(flow.path === '/register' ? { confirmPassword: 'password' } : {}),
+      returnTo: flow.destination,
     }).expect(flow.status).expect('Location', flow.destination);
 
     expect(getIdentity).toHaveBeenCalledExactlyOnceWith('backend-jwt');

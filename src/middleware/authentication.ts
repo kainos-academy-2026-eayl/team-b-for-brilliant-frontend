@@ -21,11 +21,9 @@ export async function signIn(
   res: Response,
   accessToken: string,
   customerId?: string,
-  adminOnly = false,
 ): Promise<void> {
   const identity = await req.tokenClient.getIdentity(accessToken);
-  if (!identity || (customerId && identity.customerId !== customerId)
-    || (adminOnly && identity.accessLevel !== 1)) {
+  if (!identity || (customerId && identity.customerId !== customerId)) {
     throw new Error('Backend returned an invalid access token or identity');
   }
   req.auth = { ...identity, accessToken };
@@ -52,8 +50,7 @@ export function createAuthentication(client: TokenClient): RequestHandler {
         else clearAuthentication(req, res);
       } catch (error) {
         console.error('Token validation failed', error);
-        const loggingOut = req.method === 'POST'
-          && (req.path === '/logout' || req.path === '/admin/account/logout');
+        const loggingOut = req.method === 'POST' && req.path === '/logout';
         if (loggingOut) clearAuthentication(req, res);
         res.status(503).render('error', {
           message: loggingOut

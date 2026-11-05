@@ -90,7 +90,7 @@ describe('JWT browser authentication', () => {
   });
 
   it('clears the old Express session cookie without trusting it', async () => {
-    const response = await request(createApp()).get('/home')
+    const response = await request(createApp()).get('/basket')
       .set('Cookie', 'connect.sid=old-session').expect(302);
     expect(response.headers.location).toContain('/login');
     expect(cookies(response).some((cookie) => cookie.startsWith('connect.sid=;'))).toBe(true);
@@ -101,36 +101,32 @@ describe('JWT browser authentication', () => {
       async getIdentity() { return null; },
       async logout() {},
     };
-    const response = await request(createApp({ tokenClient })).get('/admin/account?accessLevel=1')
+    const response = await request(createApp({ tokenClient })).get('/products/add?accessLevel=1')
       .set('Cookie', 'access_token=forged; customerId=c1; isAdmin=true').expect(302);
-    expect(response.headers.location).toContain('/admin/login');
+    expect(response.headers.location).toBe('/home');
     expect(cookies(response).some((cookie) => cookie.startsWith('access_token=;'))).toBe(true);
   });
 
   it('does not let a verified customer access admin pages', async () => {
     const { agent } = await signIn(createTestApp({ accountClient }));
-    await agent.get('/admin/account').expect(302)
-      .expect('Location', '/admin/login?next=%2Fadmin%2Faccount');
+    await agent.get('/products/add').expect(302)
+      .expect('Location', '/home');
   });
 
-  it('requires verified admin access even when the admin login service reports success', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('requires verified admin access regardless of the sign-in email or submitted role', async () => {
     const tokenClient: TokenClient = {
       async getIdentity() { return { customerId: 'c1', accessLevel: 0 }; },
       async logout() {},
     };
     const agent = request.agent(createApp({
       tokenClient,
-      adminAuthService: {
-        async login() { return { status: 'success', accessToken: 'customer-jwt' }; },
-      },
+      accountClient,
     }));
-    const page = await agent.get('/admin/login');
-    const response = await agent.post('/admin/login').type('form').send({
-      _csrf: csrf(page.text), email: 'user@b-brilliant.com', password: 'password',
-    }).expect(503);
-    expect(cookies(response).some((cookie) => cookie.startsWith('access_token='))).toBe(false);
-    await agent.get('/admin/account').expect(302);
+    const page = await agent.get('/login');
+    await agent.post('/login').type('form').send({
+      _csrf: csrf(page.text), email: 'user@b-brilliant.com', password: 'password', accessLevel: 1,
+    }).expect(302);
+    await agent.get('/products/add').expect(302).expect('Location', '/home');
   });
 
   it('checks identity on every authenticated request and rejects a revoked token', async () => {
@@ -140,7 +136,7 @@ describe('JWT browser authentication', () => {
       accountClient, tokenClient: { getIdentity, logout: vi.fn() },
     }));
     getIdentity.mockResolvedValue(null);
-    await agent.get('/home').expect(302).expect('Location', '/login?returnTo=%2Fhome');
+    await agent.get('/basket').expect(302).expect('Location', '/login?returnTo=%2Fbasket');
     expect(getIdentity).toHaveBeenCalledTimes(2);
     expect(getIdentity).toHaveBeenLastCalledWith('backend-jwt');
   });
@@ -157,7 +153,7 @@ describe('JWT browser authentication', () => {
       _csrf: csrf(page.text), email: 'user@example.com', password: 'password',
     }).expect(503);
     expect(cookies(response).some((cookie) => cookie.startsWith('access_token='))).toBe(false);
-    await agent.get('/home').expect(302);
+    await agent.get('/basket').expect(302);
   });
 
 
@@ -166,8 +162,8 @@ describe('JWT browser authentication', () => {
     const { agent } = await signIn(app);
     const page = await agent.get('/forgot-password');
     await agent.post('/logout').type('form').send({ _csrf: csrf(page.text) }).expect(302);
-    await request(app).get('/home').set('Cookie', 'access_token=backend-jwt').expect(302);
-    await agent.get('/home').expect(302);
+    await request(app).get('/basket').set('Cookie', 'access_token=backend-jwt').expect(302);
+    await agent.get('/basket').expect(302);
   });
 
   it.each(['validation', 'revocation'])('clears local authentication on logout during %s failure', async (failure) => {
@@ -186,7 +182,7 @@ describe('JWT browser authentication', () => {
     }).expect(503);
     expect(result.text).toContain('could not revoke your token');
     expect(cookies(result).some((cookie) => cookie.startsWith('access_token=;'))).toBe(true);
-    await agent.get('/home').expect(302);
+    await agent.get('/basket').expect(302);
   });
 
   it('fails closed with an explicit 503 when token validation is unavailable', async () => {

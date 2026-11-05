@@ -5,19 +5,13 @@ import {
   type AccountClient,
   createAccountClient,
 } from './clients/accountClient';
-import { createAdminClient } from './clients/adminClient';
-import { createAdminLoginRouter } from './controllers/adminLogin';
-import {
-  type AdminAuthService,
-  createAdminAuthService,
-} from './services/adminAuthService';
 import { createAuthRouter } from './controllers/auth-controllers';
-import { adminAccountRouter } from './controllers/adminAccount';
 import { createBasketRouter } from './controllers/basket';
 import { createCheckoutRouter } from './controllers/checkout';
 import { createDiscountsRouter } from './controllers/discounts';
 import { createImagesRouter } from './controllers/images';
 import { createProductsRouter } from './controllers/products';
+import { createProductCreationRouter } from './controllers/createProduct';
 import { createProfileRouter } from './controllers/profile';
 import { createAccountRouter } from './controllers/register';
 import { createRegistrationDetailsRouter } from './controllers/registrationDetails';
@@ -31,6 +25,7 @@ import {
   type LoginThrottle,
 } from './middleware/loginThrottle';
 import { requireAdmin, requireAdminRole } from './middleware/requireAdmin';
+import { parseProductUpload } from './middleware/productUpload';
 import { requireAuth } from './middleware/requireAuth';
 import type { Discount } from './models/discount';
 import type { ProductWithPrice } from './models/product';
@@ -47,6 +42,7 @@ import {
 import { fetchImage, type ProxiedImage } from './services/images';
 import {
   getApiBaseUrl,
+  createProduct,
   getProducts,
   getProductsWithPrices,
   getProductWithPrice,
@@ -60,6 +56,8 @@ import { createRegisterService } from './services/registerService';
 import type { getSecurityQuestions, saveRegistrationDetails } from './services/registrationDetails';
 import { createProductEditorRouter } from './controllers/productEditor';
 import { createProductEditorService, type ProductEditorService } from './services/productEditor';
+import { getCategories } from './services/categories';
+import { loadProductCategories } from './middleware/productCategories';
 
 interface AppOptions {
   tokenClient?: TokenClient;
@@ -70,7 +68,6 @@ interface AppOptions {
   basketService?: BasketService;
   checkoutService?: CheckoutService;
   throttle?: LoginThrottle;
-  adminAuthService?: AdminAuthService;
   fetchProducts?: (filters?: ProductFilters, adminToken?: string) => Promise<ProductWithPrice[]>;
   fetchProduct?: (productID: string, adminToken?: string) => Promise<ProductWithPrice | null>;
   fetchProxiedImage?: (fileName: string) => Promise<ProxiedImage | null>;
@@ -79,6 +76,8 @@ interface AppOptions {
   saveDiscount?: typeof createDiscount;
   activateDiscount?: typeof activateDiscount;
   deactivateDiscount?: typeof deactivateDiscount;
+  saveProduct?: typeof createProduct;
+  fetchCategories?: typeof getCategories;
 }
 
 export function createApp(options: AppOptions = {}): Express {
@@ -107,7 +106,6 @@ export function createApp(options: AppOptions = {}): Express {
   );
   app.use(express.urlencoded({ extended: false, limit: '10kb' }));
   app.use(createBrowserState());
-  app.use(csrfProtection);
   app.use(createAuthentication(options.tokenClient ?? createTokenClient(getApiBaseUrl())));
   app.use((req, res, next) => {
     res.locals.isSignedIn = Boolean(req.auth);
@@ -116,6 +114,9 @@ export function createApp(options: AppOptions = {}): Express {
     res.locals.currentPath = req.path;
     next();
   });
+  const fetchCategories = options.fetchCategories ?? getCategories;
+  app.post('/products/add', requireAdmin, loadProductCategories(fetchCategories), parseProductUpload);
+  app.use(csrfProtection);
 
   app.get('/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', uptime: process.uptime() });
@@ -123,16 +124,16 @@ export function createApp(options: AppOptions = {}): Express {
 
   app.use(
     '/home',
-    requireAuth,
     createHomeRouter(options.fetchProducts ?? getProductsWithPrices),
   );
 
   app.use('/verify-email', verifyEmailRouter);
 
   app.get('/', (_req: Request, res: Response) => {
-    res.redirect('/login');
+    res.redirect('/home');
   });
 
+  app.use('/products/add', createProductCreationRouter(options.saveProduct ?? createProduct, fetchCategories));
   const productEditorService = options.productEditorService ?? createProductEditorService();
   const fetchProducts = options.fetchProducts;
   app.use('/products', createProductEditorRouter(productEditorService));
@@ -201,16 +202,6 @@ export function createApp(options: AppOptions = {}): Express {
       options.checkoutService ?? createCheckoutService(),
     ),
   );
-  app.use(
-    '/admin/login',
-    createAdminLoginRouter(
-      options.adminAuthService ??
-      createAdminAuthService(
-        createAdminClient(getApiBaseUrl()),
-      ),
-    ),
-  );
-  app.use('/admin/account', requireAdmin, adminAccountRouter);
   const registerService = createRegisterService(accountClient);
   app.use(createAccountRouter(authService, registerService));
   app.use('/register/details', createRegistrationDetailsRouter(
