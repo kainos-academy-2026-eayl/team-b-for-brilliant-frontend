@@ -71,6 +71,7 @@ function createFakeService(overrides: Partial<ProfileService> = {}) {
           orderID: 'order-abc',
           placedAt: '2026-10-20T09:30:00.000Z',
           total: '21.99',
+          canReorder: false,
           items: [
             {
               productID: 'p1',

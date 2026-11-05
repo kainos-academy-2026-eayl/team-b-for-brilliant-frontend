@@ -51,6 +51,7 @@ function toOrderView(order: Order) {
     placedOn: dateFormat.format(new Date(order.placedAt)),
     total: order.total,
     items: order.items,
+    canReorder: order.canReorder,
   }
 }
 
