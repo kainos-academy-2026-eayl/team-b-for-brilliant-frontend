@@ -159,3 +159,35 @@ describe('discounts access control', () => {
     expect(res.text).not.toContain('>Discounts</a>');
   });
 });
+
+describe('adding a discount', () => {
+  it('saves using the signed-in admin access token', async () => {
+    const saveDiscount = vi.fn(async () => {});
+    const agent = request.agent(
+      createApp({
+        fetchDiscounts: async () => discounts,
+        saveDiscount,
+        tokenClient: adminTokenClient,
+      }),
+    );
+    agent.set('Cookie', 'access_token=admin-token');
+    const page = await agent.get('/discounts/add');
+    const res = await agent
+      .post('/discounts/add')
+      .type('form')
+      .send({
+        _csrf: extractToken(page.text),
+        code: 'SAVE10',
+        type: 'percentage',
+        value: '10',
+        expiryDate: day(10),
+      });
+    expect(res.status).toBe(303);
+    expect(saveDiscount).toHaveBeenCalledWith('admin-token', {
+      code: 'SAVE10',
+      type: 'percentage',
+      value: '10',
+      expiryDate: day(10),
+    });
+  });
+});
