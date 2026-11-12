@@ -10,3 +10,9 @@ reference/
 MISSION.md
 NOTES.md
 assets/
+
+# Terraform local artifacts and state may contain sensitive values.
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
