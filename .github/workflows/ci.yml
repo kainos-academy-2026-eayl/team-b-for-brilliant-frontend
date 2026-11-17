@@ -20,9 +20,23 @@ jobs:
       - run: npm run format
       - run: npm test
 
+  build:
+    name: Build
+    needs: lint-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
   docker-compose:
     name: Docker Compose
-    needs: lint-test
+    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -59,6 +73,19 @@ jobs:
 
       - name: Build backend
         run: npm run build
+
+      - name: Generate missing CI signing keys
+        run: |
+          if [ -z "$JWT_SECRET" ]; then
+            JWT_SECRET=$(openssl rand -hex 32)
+            printf '::add-mask::%s\n' "$JWT_SECRET"
+            printf 'JWT_SECRET=%s\n' "$JWT_SECRET" >> "$GITHUB_ENV"
+          fi
+          if [ -z "$COOKIE_SECRET" ]; then
+            COOKIE_SECRET=$(openssl rand -hex 32)
+            printf '::add-mask::%s\n' "$COOKIE_SECRET"
+            printf 'COOKIE_SECRET=%s\n' "$COOKIE_SECRET" >> "$GITHUB_ENV"
+          fi
 
       - name: Build and start services
         run: docker compose up --build --wait --wait-timeout 120

@@ -78,20 +78,25 @@ Before pushing, run `npm run format`, `npm run lint`, `npm run typecheck`, and `
 
 ## Docker Compose CI
 
-CI runs `lint-test` -> `docker-compose`, with the Compose job requiring
-the lint, formatting, type-checking, and tests to succeed.
+CI runs `lint-test` -> `build` -> `docker-compose`, with each job requiring
+the previous job to succeed. The `build` job type-checks and bundles the frontend.
 
-After the `lint-test` job succeeds, the `docker-compose` job checks out both
+After the `build` job succeeds, the `docker-compose` job checks out both
 repositories into sibling folders, builds the backend bundle, and runs the
 backend repository's Compose configuration. Compose builds the frontend from
 this checkout. The job checks frontend health and cleans up containers and
 volumes afterward.
 
-Configure `JWT_SECRET` and `COOKIE_SECRET` as Actions secrets in this frontend
-repository, using dedicated CI values of at least 32 bytes, not production
-secrets. If the backend repository is private, also configure
+`JWT_SECRET` and `COOKIE_SECRET` Actions secrets are optional. If either is empty,
+the job generates a random, disposable signing key for that variable before
+starting Compose and masks it in the logs. Configured values are preserved;
+use dedicated CI values of at least 32 bytes, never production secrets.
+
+If the backend repository is private, configure
 `BACKEND_REPO_TOKEN` with read-only Contents access to the backend repository.
 Secrets are normally unavailable to workflows triggered by fork pull requests.
+Generated signing keys do not grant repository access: without checkout
+credentials, a private backend checkout will still fail.
 
 ## Registration integration
 
