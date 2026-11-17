@@ -7,7 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  lint-test:
+    name: Lint and Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -17,4 +18,59 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run format
+      - run: npm run typecheck
       - run: npm test
+
+  docker-compose:
+    name: Docker Compose
+    needs: lint-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: team-b-for-brilliant-backend
+    env:
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+
+    steps:
+      - name: Checkout frontend
+        uses: actions/checkout@v5
+        with:
+          path: team-b-for-brilliant-frontend
+
+      - name: Checkout backend
+        uses: actions/checkout@v5
+        with:
+          repository: kainos-academy-2026-eayl/team-b-for-brilliant-backend
+          token: ${{ secrets.BACKEND_REPO_TOKEN || github.token }}
+          path: team-b-for-brilliant-backend
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: team-b-for-brilliant-backend/.nvmrc
+          cache: npm
+          cache-dependency-path: team-b-for-brilliant-backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Build backend
+        run: npm run build
+
+      - name: Build and start services
+        run: docker compose up --build --wait --wait-timeout 120
+
+      - name: Check frontend health
+        run: curl --fail --retry 10 --retry-connrefused --retry-delay 2 http://localhost:8000/health
+
+      - name: Show service logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Stop services
+        if: always()
+        run: docker compose down --volumes --remove-orphans
