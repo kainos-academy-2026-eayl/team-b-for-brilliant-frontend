@@ -96,6 +96,9 @@ function fakeProfile(overrides: Partial<ProfileService> = {}): ProfileService {
 
 function fakeCheckout(overrides: Partial<CheckoutService> = {}): CheckoutService {
     return {
+        async getReorderSession() {
+            throw new Error('Reorder session should not be requested');
+        },
         async getQuote() {
             return quote;
         },

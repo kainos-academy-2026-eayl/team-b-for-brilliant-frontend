@@ -109,6 +109,9 @@ describe('checkout recovery', () => {
     it('preserves non-card values and disables payment when refreshing a quote fails', async () => {
         let quoteCalls = 0;
         const checkout: CheckoutService = {
+            async getReorderSession() {
+                throw new Error('Reorder session should not be requested');
+            },
             async getQuote() {
                 quoteCalls += 1;
                 if (quoteCalls > 1) throw new Error('Quote service unavailable');
@@ -144,6 +147,9 @@ describe('checkout recovery', () => {
     it('preserves submitted values when basket or profile preflight fails', async () => {
         let profileCalls = 0;
         const checkout: CheckoutService = {
+            async getReorderSession() {
+                throw new Error('Reorder session should not be requested');
+            },
             async getQuote() {
                 return quote;
             },
