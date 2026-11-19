@@ -1,0 +1,26 @@
+name: Trigger E2E tests
+
+on:
+  push:
+
+permissions: {}
+
+jobs:
+  dispatch:
+    name: Dispatch to test harness
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Send repository_dispatch
+        env:
+          # Fine-grained PAT with Contents: read & write on the test harness repo
+          GH_TOKEN: ${{ secrets.E2E_DISPATCH_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          REF: ${{ github.ref_name }}
+        run: |
+          gh api repos/kainos-academy-2026-eayl/team-b-for-brilliant-test-harness/dispatches \
+            -f event_type=frontend-push \
+            -f "client_payload[repository]=$REPOSITORY" \
+            -f "client_payload[sha]=$SHA" \
+            -f "client_payload[ref]=$REF"
