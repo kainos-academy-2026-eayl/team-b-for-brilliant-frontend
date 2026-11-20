@@ -1,10 +1,20 @@
-name: CI
+name: Frontend CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [main]
+    branches:
+      - main
+      - master
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+
+  push:
+    branches:
+      - main
+      - master
 
 jobs:
   lint-test:
@@ -39,8 +49,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions:
-      contents: read
     defaults:
       run:
         working-directory: team-b-for-brilliant-backend
@@ -49,19 +57,19 @@ jobs:
       COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
 
     steps:
-      - name: Checkout frontend
-        uses: actions/checkout@v5
-        with:
-          path: team-b-for-brilliant-frontend
-
       - name: Checkout backend
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           repository: kainos-academy-2026-eayl/team-b-for-brilliant-backend
           token: ${{ secrets.BRILLIANT_REPO_TOKEN || github.token }}
           path: team-b-for-brilliant-backend
 
-      - name: Setup Node.js
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+        with:
+          path: team-b-for-brilliant-frontend
+
+      - name: Setup Node.js for backend
         uses: actions/setup-node@v5
         with:
           node-version-file: team-b-for-brilliant-backend/.nvmrc
@@ -74,18 +82,71 @@ jobs:
       - name: Build backend
         run: npm run build
 
-      - name: Generate missing CI signing keys
+      - name: Build and start services
+        run: docker compose up --build --wait --wait-timeout 120
+
+      - name: Check frontend health
+        run: curl --fail --retry 10 --retry-connrefused --retry-delay 2 http://localhost:8000/health
+
+      - name: Stop services
+        if: always()
+        run: docker compose down --volumes --remove-orphans
+
+  on-merge:
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (
+        github.event_name == 'pull_request' &&
+        github.base_ref == 'main' &&
+        github.event.action == 'labeled' &&
+        github.event.label.name == 'Deployment'
+      )
+    runs-on: ubuntu-latest
+    needs: docker-compose
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: team-b-for-brilliant-backend
+    env:
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+    steps:
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+        with:
+          path: team-b-for-brilliant-frontend
+
+      - name: Checkout backend
+        uses: actions/checkout@v4
+        with:
+          repository: kainos-academy-2026-eayl/team-b-for-brilliant-backend
+          token: ${{ secrets.BRILLIANT_REPO_TOKEN || github.token }}
+          path: team-b-for-brilliant-backend
+
+      - name: Setup Node.js for backend
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: team-b-for-brilliant-backend/.nvmrc
+          cache: npm
+          cache-dependency-path: team-b-for-brilliant-backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Build backend
+        run: npm run build
+
+      - name: AZ Login
         run: |
-          if [ -z "$JWT_SECRET" ]; then
-            JWT_SECRET=$(openssl rand -hex 32)
-            printf '::add-mask::%s\n' "$JWT_SECRET"
-            printf 'JWT_SECRET=%s\n' "$JWT_SECRET" >> "$GITHUB_ENV"
-          fi
-          if [ -z "$COOKIE_SECRET" ]; then
-            COOKIE_SECRET=$(openssl rand -hex 32)
-            printf '::add-mask::%s\n' "$COOKIE_SECRET"
-            printf 'COOKIE_SECRET=%s\n' "$COOKIE_SECRET" >> "$GITHUB_ENV"
-          fi
+          az login --service-principal \
+            --username ${{ secrets.AZURE_CLIENT_ID }} \
+            --password ${{ secrets.AZURE_SECRET }} \
+            --tenant ${{ secrets.AZURE_TENANT_ID }} \
+            --subscription ${{ secrets.SUBSCRIPTION_ID }}
+
+      - name: Log in to ACR
+        run: |
+          az acr login --name ${{ secrets.ACR_NAME }}
 
       - name: Build and start services
         run: docker compose up --build --wait --wait-timeout 120
@@ -93,9 +154,13 @@ jobs:
       - name: Check frontend health
         run: curl --fail --retry 10 --retry-connrefused --retry-delay 2 http://localhost:8000/health
 
-      - name: Show service logs on failure
-        if: failure()
-        run: docker compose logs --no-color
+      - name: Push frontend image
+        env:
+          ACR_NAME: ${{ secrets.ACR_NAME }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker tag "$(docker compose images --quiet frontend)" "$ACR_NAME/frontend:$IMAGE_TAG"
+          docker push "$ACR_NAME/frontend:$IMAGE_TAG"
 
       - name: Stop services
         if: always()
