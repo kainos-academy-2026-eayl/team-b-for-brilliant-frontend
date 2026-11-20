@@ -1,14 +1,20 @@
-name: CI
+name: Frontend CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [main]
-    types: [closed]
-  merge:
-    branches: [main]
-    types: [closed]
+    branches:
+      - main
+      - master
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+
+  push:
+    branches:
+      - main
+      - master
 
 jobs:
   lint-test:
