@@ -1,4 +1,13 @@
 terraform {
+  backend "azurerm" {
+    storage_account_name = "teamb4brilliant"
+    container_name       = "tfstate"
+    key                  = "brilliant-frontend-dev.tfstate"
+
+    use_azuread_auth = true
+    use_cli          = true
+  }
+
   required_version = ">= 1.5.0"
 
   required_providers {
@@ -14,12 +23,6 @@ provider "azurerm" {
   subscription_id = var.subscription_id
 }
 
-resource "azurerm_resource_group" "frontend" {
-  name     = var.resource_group_name
-  location = var.location
-
-  tags = {
-    Environment = var.environment
-    Project     = "brilliant-frontend"
-  }
+data "azurerm_resource_group" "frontend" {
+  name = var.resource_group_name
 }
