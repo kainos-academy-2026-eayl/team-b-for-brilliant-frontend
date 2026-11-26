@@ -20,9 +20,17 @@ jobs:
       - run: npm run format
       - run: npm test
 
+  e2e:
+    name: Test harness gate
+    needs: lint-test
+    uses: ./.github/workflows/trigger-e2e.yml
+    secrets:
+      E2E_DISPATCH_TOKEN: ${{ secrets.E2E_DISPATCH_TOKEN }}
+
   build:
     name: Build
-    needs: lint-test
+    needs: e2e
+    if: needs.e2e.outputs.result == 'pass'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
