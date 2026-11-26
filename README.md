@@ -78,8 +78,21 @@ Before pushing, run `npm run format`, `npm run lint`, `npm run typecheck`, and `
 
 ## Docker Compose CI
 
-CI runs `lint-test` -> `build` -> `docker-compose`, with each job requiring
-the previous job to succeed. The `build` job type-checks and bundles the frontend.
+CI runs `lint-test` -> `e2e` -> `build` -> `docker-compose`, with each job requiring
+the previous job to succeed. The `e2e` job dispatches the pushed or PR merge
+commit to the test harness and waits for that exact run. It exposes a `result`
+output (`pass` or `fail`) and links the harness run in its job summary. Build
+only starts on `pass`; failed, cancelled, or timed-out harness runs block Build
+and Docker Compose. The wait is capped at 40 minutes, including queue time.
+The `build` job type-checks and bundles the frontend.
+
+Configure the frontend's `E2E_DISPATCH_TOKEN` Actions secret as a fine-grained
+PAT with **Contents: read and write** and **Actions: read** on the test harness
+repository. The harness's `.github/workflows/ci.yml` must be on its default
+branch with the `request_id`-based `run-name` before enabling this gate.
+PR runs require the secret, so fork PRs without access to it fail the gate.
+Non-main branch pushes still run the standalone dispatch-and-wait workflow;
+main pushes and PRs use it as a reusable CI job.
 
 After the `build` job succeeds, the `docker-compose` job checks out both
 repositories into sibling folders, builds the backend bundle, and runs the

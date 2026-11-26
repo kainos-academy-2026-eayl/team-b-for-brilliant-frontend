@@ -1,0 +1,105 @@
+name: Trigger E2E tests
+
+on:
+  push:
+    branches-ignore: [main]
+  workflow_call:
+    secrets:
+      E2E_DISPATCH_TOKEN:
+        required: true
+    outputs:
+      result:
+        description: Test harness result (pass or fail)
+        value: ${{ jobs.dispatch.outputs.result }}
+      run_url:
+        description: URL of the correlated test harness run
+        value: ${{ jobs.dispatch.outputs.run_url }}
+
+permissions: {}
+
+jobs:
+  dispatch:
+    name: Dispatch and wait for test harness
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      result: ${{ steps.result.outputs.result }}
+      run_url: ${{ steps.wait.outputs.run_url }}
+    env:
+      # Fine-grained PAT: Contents read/write and Actions read on the harness.
+      GH_TOKEN: ${{ secrets.E2E_DISPATCH_TOKEN }}
+      HARNESS_REPO: kainos-academy-2026-eayl/team-b-for-brilliant-test-harness
+      REQUEST_ID: frontend-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: Send repository_dispatch
+        env:
+          REPOSITORY: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          REF: ${{ github.ref_name }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::E2E_DISPATCH_TOKEN must be configured to dispatch and read test harness runs."
+            exit 1
+          fi
+          echo "DISPATCHED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          gh api "repos/$HARNESS_REPO/dispatches" \
+            -f event_type=frontend-push \
+            -f "client_payload[repository]=$REPOSITORY" \
+            -f "client_payload[sha]=$SHA" \
+            -f "client_payload[ref]=$REF" \
+            -f "client_payload[request_id]=$REQUEST_ID"
+
+      - name: Wait for test harness result
+        id: wait
+        run: |
+          set -euo pipefail
+          deadline=$((SECONDS + 2400))
+          run_id=""
+          while (( SECONDS < deadline )); do
+            if [ -z "$run_id" ]; then
+              runs=$(gh api --method GET "repos/$HARNESS_REPO/actions/workflows/ci.yml/runs" \
+                -f event=repository_dispatch -f "created=>=$DISPATCHED_AT" \
+                -f per_page=100 --paginate --slurp)
+              run_id=$(jq -r --arg request_id "$REQUEST_ID" \
+                'first(.[].workflow_runs[] | select(.display_title == $request_id) | .id) // empty' \
+                <<< "$runs")
+            fi
+
+            if [ -n "$run_id" ]; then
+              run=$(gh api "repos/$HARNESS_REPO/actions/runs/$run_id")
+              run_url=$(jq -r '.html_url' <<< "$run")
+              echo "run_url=$run_url" >> "$GITHUB_OUTPUT"
+              status=$(jq -r '.status' <<< "$run")
+              echo "Test harness: $status ($run_url)"
+              if [ "$status" = "completed" ]; then
+                conclusion=$(jq -r '.conclusion' <<< "$run")
+                if [ "$conclusion" = "success" ]; then
+                  exit 0
+                fi
+                echo "::error::Test harness failed with conclusion: $conclusion. See $run_url"
+                exit 1
+              fi
+            else
+              echo "Waiting for test harness to accept request $REQUEST_ID"
+            fi
+            sleep 15
+          done
+          echo "::error::Timed out after 40 minutes waiting for test harness request $REQUEST_ID."
+          exit 1
+
+      - name: Publish pass or fail result
+        id: result
+        if: always()
+        env:
+          WAIT_OUTCOME: ${{ steps.wait.outcome }}
+          RUN_URL: ${{ steps.wait.outputs.run_url }}
+        run: |
+          result=fail
+          if [ "$WAIT_OUTCOME" = "success" ]; then
+            result=pass
+          fi
+          echo "result=$result" >> "$GITHUB_OUTPUT"
+          echo "### Test harness: $result" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$RUN_URL" ]; then
+            echo "[View test harness run]($RUN_URL)" >> "$GITHUB_STEP_SUMMARY"
+          fi
